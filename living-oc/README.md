@@ -36,4 +36,5 @@ npx tsc --noEmit -p tsconfig.app.json
 ## 素材署名 / Credits
 
 - 地图像素小人精灵 `public/sprites/folk.png` —— 采用 AI 小镇(a16z `ai-town`)同款 `32x32folk.png`(384×256,8 角色 RPGMaker 角色集)。原始美术由 [ansimuz](https://opengameart.org/content/tiny-rpg-forest) / George Bailey([OpenGameArt 16x16 game assets](https://opengameart.org/content/16x16-game-assets),CC0)提供。
+- 小镇地面/房子图块集 `public/sprites/rpg-tileset.png` 与 Tiled 地图 `public/sprites/town.json`(40×40 格、16px)—— 来自 AI 小镇(a16z `ai-town`)的 `environment/rpg-tileset` 与 `tilemap.json`,底层图块为 [OpenGameArt](https://opengameart.org/) 社区 CC0 的 16×16 RPG tileset。运行时由 `WorldView` 把 terrain/bridge/deco 三个图层合成为一张小镇底图。
 - 生命引擎、记忆/对话、UI 为本项目自研。

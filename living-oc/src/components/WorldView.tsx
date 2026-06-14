@@ -5,10 +5,30 @@ import { actionCN } from '../sim/text';
 import type { Agent } from '../sim/types';
 import WorldGoLive from './WorldGoLive';
 
-const HEX: Record<string, string> = {
-  '--jade': '#9aa0a8', '--amber': '#e3a948', '--coral': '#ff2d2d',
-  '--violet': '#9a6aa0', '--sky': '#7a8694', '--red': '#ff2d2d',
-};
+interface TownData {
+  tilewidth: number; width: number; height: number;
+  tilesets: { firstgid?: number; columns?: number }[];
+  layers: { type: string; data?: number[] }[];
+}
+// 把 AI 小镇的 Tiled 图层(terrain/bridge/deco)合成为一张缓存小镇底图
+function buildTown(tileset: HTMLImageElement, data: TownData): HTMLCanvasElement {
+  const T = data.tilewidth, cols = data.width, rows = data.height;
+  const tsCols = data.tilesets[0].columns || Math.floor(tileset.naturalWidth / T);
+  const first = data.tilesets[0].firstgid || 1;
+  const cv = document.createElement('canvas'); cv.width = cols * T; cv.height = rows * T;
+  const cx = cv.getContext('2d'); if (!cx) return cv;
+  cx.imageSmoothingEnabled = false;
+  for (const layer of data.layers) {
+    if (layer.type !== 'tilelayer' || !layer.data) continue;
+    const d = layer.data;
+    for (let i = 0; i < d.length; i++) {
+      const raw = d[i]; if (!raw) continue;
+      const gid = (raw & 0x1fffffff) - first; if (gid < 0) continue;
+      cx.drawImage(tileset, (gid % tsCols) * T, Math.floor(gid / tsCols) * T, T, T, (i % cols) * T, Math.floor(i / cols) * T, T, T);
+    }
+  }
+  return cv;
+}
 function hue(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
@@ -80,6 +100,7 @@ export default function WorldView() {
   const lines = useRef<Line[]>([]);
   const lastEpoch = useRef(-1);
   const sprite = useRef<HTMLImageElement | null>(null);
+  const townMap = useRef<HTMLCanvasElement | null>(null);
   const selRef = useRef<string | null>(null);
   selRef.current = sel ?? ocId ?? null;
 
@@ -92,6 +113,17 @@ export default function WorldView() {
   // 像素小人精灵图(AI 小镇同款 folk 角色集,32×32 网格,8 角色)
   useEffect(() => { const img = new Image(); img.src = '/sprites/folk.png'; sprite.current = img; }, []);
 
+  // 小镇底图:加载 AI 小镇 tileset + tilemap,合成一张缓存底图(地面/路/房子/装饰)
+  useEffect(() => {
+    let cancelled = false;
+    const ts = new Image(); ts.src = '/sprites/rpg-tileset.png';
+    Promise.all([
+      new Promise<HTMLImageElement>((res, rej) => { ts.onload = () => res(ts); ts.onerror = rej; }),
+      fetch('/sprites/town.json').then((r) => r.json() as Promise<TownData>),
+    ]).then(([img, data]) => { if (!cancelled) townMap.current = buildTown(img, data); }).catch(() => { /* 降级:无底图 */ });
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     const canvas = ref.current; if (!canvas) return;
     const ctx = canvas.getContext('2d'); if (!ctx) return;
@@ -101,18 +133,20 @@ export default function WorldView() {
       const W = canvas.clientWidth, H = canvas.clientHeight;
       if (canvas.width !== W * dpr || canvas.height !== H * dpr) { canvas.width = W * dpr; canvas.height = H * dpr; }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
-      if (!w) { raf = requestAnimationFrame(draw); return; }
       try {
+      // 小镇底图:完整 AI 小镇地图(等比 contain,居中正方形)
+      const tm = townMap.current, src = tm ? tm.width : 640;
+      const mapSize = Math.min(W, H), ox = (W - mapSize) / 2, oy = (H - mapSize) / 2;
+      if (tm) { ctx.imageSmoothingEnabled = false; ctx.drawImage(tm, 0, 0, src, src, ox, oy, mapSize, mapSize); }
+      else { ctx.fillStyle = '#0c0c0e'; ctx.fillRect(ox, oy, mapSize, mapSize); }
+      const MX = (nx: number) => ox + nx * mapSize, MY = (ny: number) => oy + ny * mapSize;
       LOCATIONS.forEach((l) => {
-        const lx = l.x * W, ly = l.y * H, col = HEX[l.colorVar] || '#9aa0a8';
-        const g = ctx.createRadialGradient(lx, ly, 2, lx, ly, 64);
-        g.addColorStop(0, col + '20'); g.addColorStop(1, col + '00');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(lx, ly, 64, 0, 7); ctx.fill();
-        ctx.strokeStyle = 'rgba(245,245,247,.12)'; ctx.setLineDash([2, 4]);
-        ctx.beginPath(); ctx.arc(lx, ly, 40, 0, 7); ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillStyle = 'rgba(245,245,247,.55)'; ctx.font = '11px ui-monospace, monospace'; ctx.textAlign = 'center';
-        ctx.fillText(l.name, lx, ly - 50);
+        const x = MX(l.x), y = MY(l.y) - 26;
+        ctx.font = '10px ui-monospace, monospace'; ctx.textAlign = 'center';
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.85)'; ctx.strokeText(l.name, x, y);
+        ctx.fillStyle = 'rgba(245,245,247,.9)'; ctx.fillText(l.name, x, y);
       });
+      if (!w) { raf = requestAnimationFrame(draw); return; }
       if (w.epoch !== lastEpoch.current) {
         lastEpoch.current = w.epoch;
         for (const p of w.feed) {
@@ -131,8 +165,8 @@ export default function WorldView() {
       }
       for (const id of w.order) {
         const a = w.agents[id]; if (!a) continue; const loc = locById[a.loc]; if (!loc) continue;
-        const jx = (hue('x' + id) / 360 - 0.5) * 60, jy = (hue('y' + id) / 360 - 0.5) * 60;
-        const tx = loc.x * W + jx, ty = loc.y * H + jy;
+        const jx = (hue('x' + id) / 360 - 0.5) * 56, jy = (hue('y' + id) / 360 - 0.5) * 56;
+        const tx = MX(loc.x) + jx, ty = MY(loc.y) + jy;
         let pp = pos.current.get(id); if (!pp) { pp = { px: tx, py: ty }; pos.current.set(id, pp); }
         pp.px += (tx - pp.px) * 0.08; pp.py += (ty - pp.py) * 0.08;
         const isOc = id === ocId, isSel = id === selRef.current;
@@ -153,9 +187,10 @@ export default function WorldView() {
         } else {
           ctx.fillStyle = `hsl(${hue(id)},42%,52%)`; roundRect(ctx, pp.px - 8, pp.py - 8, 16, 16, 3); ctx.fill();
         }
-        ctx.fillStyle = isSel ? '#ff2d2d' : 'rgba(245,245,247,.78)';
+        const label = a.name + (isOc ? ' ★' : '');
         ctx.font = (isSel ? '600 ' : '') + '10px ui-monospace, monospace'; ctx.textAlign = 'center';
-        ctx.fillText(a.name + (isOc ? ' ★' : ''), pp.px, pp.py + 26);
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.8)'; ctx.strokeText(label, pp.px, pp.py + 26);
+        ctx.fillStyle = isSel ? '#ff2d2d' : 'rgba(245,245,247,.92)'; ctx.fillText(label, pp.px, pp.py + 26);
       }
       } catch { /* 单帧出错不冻结世界 */ }
       raf = requestAnimationFrame(draw);
