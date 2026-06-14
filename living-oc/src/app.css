@@ -49,3 +49,33 @@ input{background:var(--panel);color:var(--text);border:1px solid var(--line);bor
 .wpost.ev-bankrupt{background:linear-gradient(90deg,rgba(214,90,78,.09),transparent)}
 .world-empty{color:var(--muted);font-size:13px;padding:20px 4px;line-height:1.7}
 @media(max-width:760px){.world-grid{grid-template-columns:1fr}.map-wrap,.world-feed{height:360px}}
+
+/* 完整观测台:地图(顶) + 社交流 + 人格检查面板 */
+.world-grid3{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"map map" "feed insp";gap:14px}
+.world-grid3 .map-wrap{grid-area:map;height:380px}
+.world-grid3 .world-feed{grid-area:feed;height:320px}
+.world-grid3 .world-insp{grid-area:insp;height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel)}
+.world-feed .col-head,.world-insp .col-head{position:sticky;top:0;background:var(--panel);padding-bottom:6px;z-index:1}
+.wrow{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.wav{width:16px;height:16px;border-radius:4px;flex-shrink:0}
+.whandle{color:var(--muted);font-size:11px}
+.wact{margin-left:auto;color:var(--muted);font-size:10px}
+.wev{font-family:ui-monospace,monospace;font-size:11px;color:var(--muted);margin-top:3px}
+.insp-top{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.insp-av{width:34px;height:34px;border-radius:8px;flex-shrink:0}
+.insp-nm{font-size:16px;font-weight:600}
+.insp-you{color:#6cc2a0;font-size:11px;font-weight:400}
+.insp-hd{color:var(--muted);font-size:11px;margin-top:2px}
+.insp-wallet{font-size:10px;color:#74a8c4;word-break:break-all;margin-bottom:4px}
+.insp-bal{font-size:22px;font-weight:600}.insp-bal.pos{color:#e3a948}.insp-bal.neg{color:#d65a4e}.insp-bal small{font-size:12px;color:var(--muted)}
+.insp-nfts{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
+.insp-nfts .nft{font-size:10px;color:#a594d6;border:1px solid rgba(165,148,214,.4);border-radius:10px;padding:1px 6px}
+.insp-sec{font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin:10px 0 5px}
+.ibar{margin-bottom:5px}
+.ibar-lab{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:2px}
+.ibar-track{height:4px;background:var(--line);border-radius:4px;overflow:hidden}
+.ibar-track>span{display:block;height:100%;border-radius:4px}
+.insp-rel{display:flex;justify-content:space-between;font-size:11px;padding:2px 0}
+.insp-mem{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--muted);padding:3px 0;border-bottom:1px dotted var(--line);line-height:1.4}
+.insp-mem .tk{opacity:.7}
+@media(max-width:760px){.world-grid3{grid-template-columns:1fr;grid-template-areas:"map" "feed" "insp"}}
