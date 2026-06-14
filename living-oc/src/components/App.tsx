@@ -26,7 +26,7 @@ export default function App() {
     );
   }
   return (
-    <div className="app">
+    <div className={'app' + (view === 'world' ? ' wide' : '')}>
       <OcHeader />
       <div className="viewtabs">
         <button className={'tab' + (view === 'room' ? ' on' : '')} onClick={() => setView('room')}>卧室 · 对话 + 生活流</button>
