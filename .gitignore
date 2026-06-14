@@ -1,29 +1,24 @@
-.env
-.env.*
-!.env.example
+# deps / build
 node_modules/
 dist/
 dist-electron/
-tmp-env-test-*/
 release/
-hermes-agent/
-
-# Local preview and generated artifacts
-.DS_Store
 *.log
-artifacts/
-tmp/
-landing-full.jpg
-.playwright-mcp/
-.catpaw/
-frontend-v4/.DS_Store
-frontend-v4/.vscode/
-frontend-v4/screenshots/
+.DS_Store
 
-# Deploy + local-only material
+# secrets
+.env
+.env.*
+!.env.example
+
+# local tooling / caches
+.catpaw/
+.playwright-mcp/
 .vercel
+tmp/
+tmp-env-test-*/
+
+# heavy / generated (kept out of the public repo)
 outputs/
 UCWS-2026/
-前端/
-frontend-v4/uploads/
-logo/
+artifacts/
