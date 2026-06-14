@@ -1,0 +1,1667 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OC World · 成长伙伴游戏 Demo</title>
+    <style>
+      :root {
+        --bg: #f4f0e7;
+        --paper: #fffdf8;
+        --panel: #faf6ed;
+        --ink: #25231f;
+        --muted: #70695f;
+        --faint: #9d9487;
+        --line: rgba(37, 35, 31, 0.13);
+        --line-strong: rgba(37, 35, 31, 0.24);
+        --green: #167568;
+        --green-soft: #ddf0e9;
+        --blue: #365aa6;
+        --blue-soft: #e1e9ff;
+        --gold: #9a6b1f;
+        --gold-soft: #f2e1bc;
+        --red: #b95d46;
+        --red-soft: #f6ddd4;
+        --violet: #66559c;
+        --violet-soft: #e7e1f2;
+        --shadow: 0 28px 80px -52px rgba(37, 35, 31, 0.62);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        min-width: 1180px;
+        color: var(--ink);
+        background:
+          linear-gradient(rgba(42, 37, 30, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(42, 37, 30, 0.035) 1px, transparent 1px),
+          var(--bg);
+        background-size: 24px 24px;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        color: inherit;
+      }
+
+      .app {
+        width: 100%;
+        height: 100%;
+        padding: 24px;
+        display: grid;
+        grid-template-columns: 340px minmax(0, 1fr);
+        gap: 18px;
+      }
+
+      .pet,
+      .chat,
+      .drawer,
+      .toast {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 253, 248, 0.95);
+        box-shadow: var(--shadow);
+      }
+
+      .pet {
+        min-height: 0;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        overflow: hidden;
+      }
+
+      .titlebar {
+        height: 42px;
+        padding: 0 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .traffic {
+        display: flex;
+        gap: 7px;
+      }
+
+      .traffic span {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .traffic span:nth-child(1) {
+        background: #ed6a5e;
+      }
+
+      .traffic span:nth-child(2) {
+        background: #f4bd4f;
+      }
+
+      .traffic span:nth-child(3) {
+        background: #61c454;
+      }
+
+      .kicker {
+        color: var(--faint);
+        font-size: 11px;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .pet-main {
+        min-height: 0;
+        padding: 18px;
+        display: grid;
+        grid-template-rows: auto auto auto minmax(0, 1fr);
+        gap: 14px;
+      }
+
+      .brand-row,
+      .stat-row,
+      .quest-head,
+      .drawer-head,
+      .chat-head,
+      .log-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+      }
+
+      .mark {
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .status,
+      .pill {
+        min-height: 24px;
+        padding: 4px 9px;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--paper);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .status::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        margin-right: 6px;
+        border-radius: 50%;
+        background: #58b765;
+      }
+
+      .level-card {
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--panel);
+      }
+
+      .level-line {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+      }
+
+      .level-line strong {
+        font-size: 26px;
+        line-height: 1;
+      }
+
+      .level-line span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .meter {
+        height: 10px;
+        overflow: hidden;
+        border: 1px solid rgba(37, 35, 31, 0.1);
+        border-radius: 999px;
+        background: rgba(37, 35, 31, 0.06);
+      }
+
+      .meter i {
+        width: var(--value);
+        height: 100%;
+        display: block;
+        border-radius: inherit;
+        background: var(--green);
+        transition: width 260ms ease;
+      }
+
+      .tiny-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+
+      .tiny-stat {
+        min-height: 54px;
+        padding: 9px;
+        display: grid;
+        align-content: center;
+        gap: 3px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .tiny-stat b {
+        font-size: 16px;
+        line-height: 1;
+      }
+
+      .tiny-stat span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .avatar-zone {
+        min-height: 230px;
+        display: grid;
+        place-items: center;
+      }
+
+      .avatar {
+        position: relative;
+        width: 168px;
+        height: 210px;
+        display: grid;
+        place-items: end center;
+      }
+
+      .avatar::after {
+        content: "";
+        position: absolute;
+        bottom: 2px;
+        left: 50%;
+        width: 132px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(37, 35, 31, 0.13);
+        filter: blur(7px);
+        transform: translateX(-50%);
+      }
+
+      .avatar img {
+        position: relative;
+        z-index: 1;
+        width: 154px;
+        image-rendering: auto;
+      }
+
+      .speech {
+        padding: 13px;
+        display: grid;
+        gap: 7px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--paper);
+      }
+
+      .speech b {
+        font-size: 13px;
+      }
+
+      .speech p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .quest-card {
+        min-height: 124px;
+        padding: 12px;
+        display: grid;
+        align-content: start;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--paper);
+      }
+
+      .quest-card h3 {
+        margin: 0;
+        font-size: 14px;
+      }
+
+      .quest-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .pet-actions {
+        padding: 14px 18px 18px;
+        display: grid;
+        gap: 8px;
+        border-top: 1px solid var(--line);
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+
+      .btn {
+        min-height: 38px;
+        padding: 0 13px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        cursor: pointer;
+      }
+
+      .btn:hover {
+        border-color: var(--line-strong);
+        background: #fffaf0;
+      }
+
+      .btn.primary {
+        border-color: rgba(22, 117, 104, 0.28);
+        background: var(--green);
+        color: white;
+      }
+
+      .btn.blue {
+        border-color: rgba(54, 90, 166, 0.25);
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .chat {
+        min-width: 0;
+        min-height: 0;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto auto;
+        overflow: hidden;
+      }
+
+      .chat-head {
+        min-height: 60px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .chat-head h1 {
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.15;
+      }
+
+      .chat-head p {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .head-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .messages {
+        min-height: 0;
+        padding: 22px 24px;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .time-chip {
+        align-self: center;
+        padding: 4px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 253, 248, 0.72);
+        color: var(--faint);
+        font-size: 12px;
+      }
+
+      .message {
+        max-width: 72%;
+        display: grid;
+        gap: 5px;
+      }
+
+      .message.user {
+        align-self: flex-end;
+        justify-items: end;
+      }
+
+      .message.oc {
+        align-self: flex-start;
+      }
+
+      .bubble {
+        padding: 13px 15px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--paper);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .message.user .bubble {
+        border-color: rgba(22, 117, 104, 0.3);
+        background: var(--green);
+        color: white;
+      }
+
+      .meta {
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .system-log {
+        align-self: stretch;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border: 1px solid rgba(154, 107, 31, 0.22);
+        border-radius: 9px;
+        background: var(--gold-soft);
+        color: #6f4e1b;
+        font-size: 12px;
+      }
+
+      .confirm-card {
+        align-self: stretch;
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+        border: 1px solid rgba(22, 117, 104, 0.24);
+        border-radius: 9px;
+        background: var(--green-soft);
+      }
+
+      .confirm-card p {
+        margin: 0;
+        color: #215b54;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .confirm-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .confirm-actions .btn {
+        min-height: 32px;
+        background: rgba(255, 253, 248, 0.82);
+        font-size: 12px;
+      }
+
+      .confirm-actions .btn.primary {
+        border-color: rgba(22, 117, 104, 0.28);
+        background: var(--green);
+        color: white;
+      }
+
+      .effort-panel {
+        padding: 12px 18px 14px;
+        display: grid;
+        gap: 10px;
+        border-top: 1px solid var(--line);
+        background: rgba(250, 246, 237, 0.72);
+      }
+
+      .effort-head,
+      .effort-flow {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .effort-head b {
+        display: block;
+        font-size: 13px;
+      }
+
+      .effort-head span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .effort-list {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 9px;
+      }
+
+      .effort-item {
+        min-height: 92px;
+        padding: 10px;
+        display: grid;
+        align-content: space-between;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .effort-name {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 12px;
+      }
+
+      .effort-name b {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .effort-name span {
+        color: var(--green);
+        font-weight: 800;
+      }
+
+      .effort-evidence {
+        margin: 0;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.45;
+      }
+
+      .effort-flow {
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .composer {
+        padding: 14px 18px 18px;
+        display: grid;
+        gap: 10px;
+        border-top: 1px solid var(--line);
+      }
+
+      .prompts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .prompt {
+        min-height: 30px;
+        padding: 0 11px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .prompt:hover {
+        color: var(--ink);
+        border-color: var(--line-strong);
+      }
+
+      .input-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+      }
+
+      .input-box {
+        min-height: 50px;
+        padding: 0 14px;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        gap: 11px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--paper);
+      }
+
+      .plus {
+        color: var(--muted);
+        font-size: 22px;
+      }
+
+      input {
+        min-width: 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--ink);
+      }
+
+      .drawer {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        bottom: 24px;
+        width: 420px;
+        z-index: 20;
+        display: grid;
+        grid-template-rows: auto auto minmax(0, 1fr);
+        transform: translateX(calc(100% + 36px));
+        transition: transform 230ms ease;
+        overflow: hidden;
+      }
+
+      .drawer.is-open {
+        transform: translateX(0);
+      }
+
+      .drawer-head {
+        padding: 16px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .drawer-head h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .drawer-head p {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .tabs {
+        padding: 10px 12px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
+        gap: 7px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .tab {
+        min-height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .tab.is-active {
+        border-color: rgba(22, 117, 104, 0.28);
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .drawer-body {
+        min-height: 0;
+        padding: 14px;
+        overflow: auto;
+        display: grid;
+        align-content: start;
+        gap: 10px;
+      }
+
+      .card {
+        padding: 13px;
+        display: grid;
+        gap: 9px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--paper);
+      }
+
+      .card h3 {
+        margin: 0;
+        font-size: 14px;
+      }
+
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .reward {
+        color: var(--green);
+        font-weight: 800;
+        font-size: 12px;
+      }
+
+      .ability {
+        display: grid;
+        gap: 6px;
+      }
+
+      .ability-line {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .project {
+        display: grid;
+        gap: 7px;
+      }
+
+      .inventory {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 9px;
+      }
+
+      .item {
+        min-height: 86px;
+        padding: 11px;
+        display: grid;
+        align-content: space-between;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--panel);
+      }
+
+      .item b {
+        font-size: 13px;
+      }
+
+      .item span {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.4;
+      }
+
+      .source-tag {
+        width: fit-content;
+        padding: 3px 7px;
+        border: 1px solid rgba(22, 117, 104, 0.2);
+        border-radius: 999px;
+        background: var(--green-soft);
+        color: var(--green);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .mechanism-flow {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .mechanism-step {
+        min-height: 76px;
+        padding: 10px;
+        display: grid;
+        align-content: space-between;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .mechanism-step b {
+        font-size: 12px;
+      }
+
+      .mechanism-step span {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.4;
+      }
+
+      .creation-card,
+      .standard-card {
+        padding: 13px;
+        display: grid;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--paper);
+      }
+
+      .creation-roles {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .role-box {
+        min-height: 72px;
+        padding: 10px;
+        display: grid;
+        align-content: start;
+        gap: 5px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .role-box b,
+      .standard-row b {
+        font-size: 12px;
+      }
+
+      .role-box span,
+      .standard-row span,
+      .rubric-list span {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.4;
+      }
+
+      .artifact-line,
+      .standard-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .standard-row {
+        color: var(--muted);
+      }
+
+      .standard-row strong {
+        color: var(--ink);
+        font-size: 13px;
+      }
+
+      .compare-stack {
+        display: grid;
+        gap: 7px;
+      }
+
+      .rubric-list {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .rubric-list span {
+        min-height: 54px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 22px;
+        padding: 12px 16px;
+        z-index: 30;
+        color: var(--ink);
+        opacity: 0;
+        pointer-events: none;
+        transform: translate(-50%, 10px);
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      @media (max-width: 900px) {
+        body {
+          min-width: 0;
+        }
+
+        .app {
+          height: auto;
+          min-height: 100%;
+          grid-template-columns: 1fr;
+          padding: 14px;
+        }
+
+        .pet {
+          min-height: 620px;
+        }
+
+        .drawer {
+          left: 14px;
+          right: 14px;
+          top: 14px;
+          bottom: 14px;
+          width: auto;
+        }
+
+        .effort-list {
+          grid-template-columns: 1fr;
+        }
+
+        .mechanism-flow {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .creation-roles,
+        .rubric-list {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <aside class="pet">
+        <div class="titlebar">
+          <div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
+          <span class="kicker">growth partner game</span>
+        </div>
+
+        <div class="pet-main">
+          <div class="brand-row">
+            <div class="brand">
+              <span class="mark">⌘</span>
+              <span>OC World</span>
+            </div>
+            <span class="status">在线</span>
+          </div>
+
+          <section class="level-card" aria-label="今日成长状态">
+            <div class="level-line">
+              <div>
+                <strong id="level">成长</strong>
+                <span id="title">Luma 正在陪你变好</span>
+              </div>
+              <span id="xpText">今日成长线 2 条</span>
+            </div>
+            <div class="meter" aria-hidden="true"><i id="xpBar" style="--value: 80%"></i></div>
+            <div class="tiny-stats">
+              <div class="tiny-stat"><b id="energy">判断 +4</b><span>能力变化</span></div>
+              <div class="tiny-stat"><b id="streak">5 天</b><span>连续成长</span></div>
+              <div class="tiny-stat"><b id="questsDone">项目 +1</b><span>今日推进</span></div>
+            </div>
+          </section>
+
+          <div class="avatar-zone">
+            <div class="avatar"><img src="./oc-avatar-pet.png" alt="OC 成长伙伴形象" /></div>
+          </div>
+
+          <section class="speech">
+            <b id="speechTitle">Luma 在旁边</b>
+            <p id="speechText">你不用打开复杂系统。只要把今天发生的事告诉我，我会陪你看见自己哪里成长了。</p>
+          </section>
+
+          <section class="quest-card">
+            <div class="quest-head">
+              <h3>今日成长线</h3>
+              <span class="pill" id="mainQuestProgress">正在形成</span>
+            </div>
+            <p id="mainQuestText">从“产品方向被纠正”这件事里，看见你的判断力、表达力和项目推进力。</p>
+            <div class="meter" aria-hidden="true"><i id="questBar" style="--value: 66%"></i></div>
+          </section>
+        </div>
+
+        <div class="pet-actions">
+          <div class="actions">
+            <button class="btn" type="button" data-pet="touch">陪我想</button>
+            <button class="btn" type="button" data-pet="settle">记录</button>
+            <button class="btn" type="button" data-pet="focus">专注</button>
+          </div>
+          <button class="btn blue" type="button" id="openDrawerFromPet">打开人生系统</button>
+        </div>
+      </aside>
+
+      <section class="chat">
+        <header class="chat-head">
+          <div>
+            <h1>成长游戏记录</h1>
+            <p>成长伙伴先理解你，再由你确认，最后沉淀为成长游戏里的反馈。</p>
+          </div>
+          <div class="head-actions">
+            <button class="btn blue" type="button" id="runDemo">播放完整交互</button>
+            <button class="btn" type="button" id="openDrawer">人生系统</button>
+          </div>
+        </header>
+
+        <div class="messages" id="messages"></div>
+
+        <section class="effort-panel" aria-label="今日努力可视化">
+          <div class="effort-head">
+            <div>
+              <b>今日努力可视化</b>
+              <span id="effortSummary">3 段努力进入成长线</span>
+            </div>
+            <button class="btn" type="button" id="openEfforts">查看努力线</button>
+          </div>
+          <div class="effort-list" id="effortList"></div>
+        </section>
+
+        <div class="composer">
+          <div class="prompts" id="prompts"></div>
+          <div class="input-row">
+            <label class="input-box">
+              <span class="plus">＋</span>
+              <input id="input" value="我们的定义不是桌宠，而是成长伙伴，然后是成长游戏。" />
+            </label>
+            <button class="btn primary" type="button" id="send">发送</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="drawer" id="drawer" aria-label="隐藏的人生系统">
+      <div class="drawer-head">
+        <div>
+          <h2>人生系统</h2>
+          <p id="drawerSubtitle">后台记录，不抢走主对话。</p>
+        </div>
+        <button class="btn" type="button" id="closeDrawer">关闭</button>
+      </div>
+      <div class="tabs" id="tabs"></div>
+      <div class="drawer-body" id="drawerBody"></div>
+    </aside>
+
+    <div class="toast" id="toast">已记录</div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const esc = (text) =>
+        String(text).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[m]);
+
+      const state = {
+        level: 12,
+        xp: 420,
+        xpMax: 520,
+        energy: 72,
+        streak: 5,
+        questDone: 2,
+        questTotal: 3,
+        tab: 0,
+        pending: {
+          source: "我们的定义不是桌宠，而是成长伙伴，然后是成长游戏。",
+          insight: "你把产品定义从外形拉回到了关系和机制：成长伙伴负责陪伴，成长游戏负责反馈。",
+        },
+        efforts: [
+          {
+            name: "产品判断",
+            text: "否定“桌宠”这个表层定义，回到成长伙伴。",
+            source: "对话确认",
+            ability: "判断力",
+            delta: "+4",
+            value: 82,
+          },
+          {
+            name: "概念收束",
+            text: "提出“成长伙伴 + 成长游戏”的产品定义。",
+            source: "产品定义",
+            ability: "表达力",
+            delta: "+2",
+            value: 70,
+          },
+          {
+            name: "机制追问",
+            text: "要求讲清反馈机制，以及反馈到底来自哪里。",
+            source: "需求追问",
+            ability: "系统思考",
+            delta: "+3",
+            value: 74,
+          },
+        ],
+        messages: [
+          { type: "time", text: "今天 21:44" },
+          { type: "user", text: "我们的定义不是桌宠，而是成长伙伴，然后是成长游戏。", meta: "你" },
+          {
+            type: "oc",
+            text: "对。我的角色是成长伙伴，机制是成长游戏：我陪你经历、理解你，再把真实变化变成可确认的成长反馈。",
+            meta: "Luma · 理解产品定义",
+          },
+          { type: "confirm", text: "我先这样理解：成长伙伴是关系，成长游戏是反馈机制。你确认后，我再把它写进努力线和成长线。" },
+        ],
+        timeline: [
+          ["09:40", "理念校准", "OC 不是替你做事，而是陪你成长。", "判断力 +4"],
+          ["16:42", "交互骨架", "左侧成长伙伴，右侧对话，人生系统隐藏。", "产品感 +3"],
+          ["现在", "方向收束", "让陪伴感在第一层，成长反馈要被清楚看见。", "表达力 +2"],
+        ],
+        abilities: [
+          ["判断力", 78, "+4"],
+          ["表达力", 70, "+2"],
+          ["行动力", 72, "+1"],
+          ["创造力", 65, "+2"],
+          ["项目推进", 62, "+3"],
+          ["自我理解", 68, "+3"],
+        ],
+        projects: [
+          ["OC 成长陪伴主体验", 58, "主界面不做大后台，对话触发成长记录。"],
+          ["成长伙伴互动", 46, "补理解、确认、专注陪跑和待机状态。"],
+          ["成长系统后台", 41, "整理时间线、印象、能力和项目推进。"],
+        ],
+        creations: [
+          {
+            name: "反馈来源模型",
+            player: "你追问“来源于什么”，把模糊的不舒服变成产品问题。",
+            agent: "OC 把它整理成五类证据和一个反馈闭环。",
+            artifact: "可复用的成长判断标准",
+            progress: 72,
+          },
+          {
+            name: "成长伙伴原型",
+            player: "你不断校准“不是桌宠、不是纯游戏、是成长伙伴”。",
+            agent: "OC 把校准沉淀成界面、文案和交互状态。",
+            artifact: "可点击的产品 demo",
+            progress: 64,
+          },
+          {
+            name: "能力值标准",
+            player: "你指出能力值必须有标准和对比。",
+            agent: "OC 将能力值拆成过去基线、当前证据、下一阶要求。",
+            artifact: "能力对比系统",
+            progress: 48,
+          },
+        ],
+        standards: [
+          {
+            name: "判断力",
+            baseline: 52,
+            current: 78,
+            next: 85,
+            evidence: "能否说清为什么某个方向不对，并提出更准确的定义。",
+            compare: "这次从“桌宠”推翻到“成长伙伴 + 成长游戏”。",
+            rubric: ["感觉不对", "说清偏差", "提出标准", "推动迭代", "形成方法"],
+          },
+          {
+            name: "表达力",
+            baseline: 46,
+            current: 70,
+            next: 78,
+            evidence: "能否把模糊感受说成别人能接住、能继续设计的语言。",
+            compare: "从“感觉少点什么”推进到“能力值标准是什么”。",
+            rubric: ["零散表达", "描述现象", "说出关系", "形成定义", "影响协作"],
+          },
+          {
+            name: "创造力",
+            baseline: 44,
+            current: 65,
+            next: 76,
+            evidence: "能否和 OC 一起产生可沉淀的作品、模型、原型或方法。",
+            compare: "从单纯体验页面推进到共创平台和能力标准系统。",
+            rubric: ["想法火花", "组合概念", "做出原型", "复用模型", "创造体系"],
+          },
+        ],
+        impressions: [
+          "你对 OC 的核心期待不是效率工具，而是长期一起成长的伙伴。",
+          "你会快速纠正产品方向，说明你在意第一感受和关系感。",
+          "你想要的不是游戏界面，但你希望人生像游戏一样能看见成长。",
+        ],
+        feedback: [
+          ["对话表达", "你主动说出的经历、困惑、选择、情绪。它提供“发生了什么”和“你怎么看”。", "主来源"],
+          ["行为证据", "项目推进、完成物、文档、代码、截图、日程、运动等可验证痕迹。它提供“你真的做了什么”。", "证据"],
+          ["目标语境", "你当前关注的项目、长期目标、能力模型。它决定这件事应该反馈到哪条成长线上。", "归因"],
+          ["时间对比", "和过去的你对比：重复出现的模式、阶段变化、连续努力。它提供“你变了什么”。", "趋势"],
+          ["你确认/修正", "OC 的理解必须被你确认或修正。最终成长解释权在你这里。", "校准"],
+        ],
+        feedbackCycle: [
+          ["输入", "真实经历进入 OC"],
+          ["理解", "OC 提炼成长信号"],
+          ["校准", "你确认或修正"],
+          ["沉淀", "进入努力线、能力和项目"],
+        ],
+      };
+
+      const tabs = ["努力", "共创", "标准", "日志", "能力", "项目", "印象", "反馈"];
+      const prompts = ["记录进展", "我卡住了", "能力标准", "共创作品", "确认反馈", "今天复盘"];
+
+      function toast(text) {
+        $("toast").textContent = text;
+        $("toast").classList.add("is-visible");
+        window.clearTimeout(toast.timer);
+        toast.timer = window.setTimeout(() => $("toast").classList.remove("is-visible"), 1500);
+      }
+
+      function progress(value, max) {
+        return Math.max(0, Math.min(100, Math.round((value / max) * 100)));
+      }
+
+      function updateStats() {
+        const topEffort = state.efforts[0];
+        $("level").textContent = "成长";
+        $("xpText").textContent = `今日努力 ${state.efforts.length} 段`;
+        $("xpBar").style.setProperty("--value", `${progress(state.xp, state.xpMax)}%`);
+        $("energy").textContent = topEffort ? `${topEffort.ability} ${topEffort.delta}` : "需要记录";
+        $("streak").textContent = `${state.streak} 天`;
+        $("questsDone").textContent = `项目 +${Math.max(1, state.efforts.length - 2)}`;
+        $("mainQuestProgress").textContent = "正在形成";
+        $("questBar").style.setProperty("--value", `${progress(state.questDone, state.questTotal)}%`);
+      }
+
+      function effortFromPending(source, insight) {
+        if (source.includes("反馈")) {
+          return {
+            name: "机制追问",
+            text: insight,
+            source: "反馈确认",
+            ability: "系统思考",
+            delta: "+3",
+            value: 76,
+          };
+        }
+        if (source.includes("标准") || source.includes("对比")) {
+          return {
+            name: "标准意识",
+            text: insight,
+            source: "能力校准",
+            ability: "判断力",
+            delta: "+4",
+            value: 80,
+          };
+        }
+        if (source.includes("创造") || source.includes("共创")) {
+          return {
+            name: "共创意识",
+            text: insight,
+            source: "共同创造",
+            ability: "创造力",
+            delta: "+3",
+            value: 73,
+          };
+        }
+        if (source.includes("成长伙伴") || source.includes("成长游戏") || source.includes("成长")) {
+          return {
+            name: "概念收束",
+            text: insight,
+            source: "产品定义",
+            ability: "表达力",
+            delta: "+2",
+            value: 72,
+          };
+        }
+        if (source.includes("卡住")) {
+          return {
+            name: "问题拆解",
+            text: insight,
+            source: "卡点复盘",
+            ability: "行动力",
+            delta: "+2",
+            value: 73,
+          };
+        }
+        return {
+          name: "真实推进",
+          text: insight,
+          source: "日常经历",
+          ability: "行动力",
+          delta: "+1",
+          value: 70,
+        };
+      }
+
+      function renderEfforts() {
+        $("effortSummary").textContent = `${state.efforts.length} 段努力进入成长线`;
+        $("effortList").innerHTML = state.efforts
+          .slice(0, 3)
+          .map(
+            (effort) => `
+              <article class="effort-item">
+                <div class="effort-name"><b>${esc(effort.name)}</b><span>${esc(effort.delta)}</span></div>
+                <p class="effort-evidence">${esc(effort.text)}</p>
+                <div>
+                  <div class="effort-flow"><span>${esc(effort.source)}</span><span>${esc(effort.ability)}</span></div>
+                  <div class="meter" aria-hidden="true"><i style="--value:${effort.value}%"></i></div>
+                </div>
+              </article>
+            `,
+          )
+          .join("");
+      }
+
+      function renderMessages() {
+        $("messages").innerHTML = state.messages
+          .map((msg) => {
+            if (msg.type === "time") return `<div class="time-chip">${esc(msg.text)}</div>`;
+            if (msg.type === "system") {
+              return `<div class="system-log"><span>${esc(msg.text)}</span><b>${esc(msg.reward)}</b></div>`;
+            }
+            if (msg.type === "confirm") {
+              return `
+                <div class="confirm-card">
+                  <p>${esc(msg.text)}</p>
+                  <div class="confirm-actions">
+                    <button class="btn primary" type="button" data-confirm="yes">确认，进入成长线</button>
+                    <button class="btn" type="button" data-confirm="edit">不完全对，我来修正</button>
+                  </div>
+                </div>
+              `;
+            }
+            return `
+              <div class="message ${msg.type}">
+                <div class="bubble">${esc(msg.text)}</div>
+                <div class="meta">${esc(msg.meta)}</div>
+              </div>
+            `;
+          })
+          .join("");
+        document.querySelectorAll("[data-confirm]").forEach((button) => {
+          button.addEventListener("click", () => confirmFeedback(button.dataset.confirm === "yes"));
+        });
+        $("messages").scrollTop = $("messages").scrollHeight;
+      }
+
+      function renderPrompts() {
+        $("prompts").innerHTML = prompts.map((item) => `<button class="prompt" type="button" data-prompt="${esc(item)}">${esc(item)}</button>`).join("");
+        document.querySelectorAll("[data-prompt]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const text = button.dataset.prompt;
+            const map = {
+              记录进展: "我完成了今天的一个真实推进，想让你帮我记录下来。",
+              我卡住了: "我现在卡住了，不知道下一步该做什么。",
+              能力标准: "能力值的标准是什么？它要和什么做对比？",
+              共创作品: "我想和 OC 一起创造一个能证明成长的作品。",
+              确认反馈: "我想确认一下，OC 对我的成长理解是不是准确。",
+              今天复盘: "帮我把今天总结成一条成长记录。",
+            };
+            $("input").value = map[text] || text;
+            $("input").focus();
+          });
+        });
+      }
+
+      function settle(text) {
+        state.xp = Math.min(state.xpMax, state.xp + 28);
+        state.energy = Math.max(0, state.energy - 3);
+        state.questDone = Math.min(state.questTotal, state.questDone + 1);
+        state.timeline.unshift(["现在", "新的成长记录", text, "项目推进 +2"]);
+        state.abilities[1][1] = Math.min(100, state.abilities[1][1] + 1);
+        state.abilities[4][1] = Math.min(100, state.abilities[4][1] + 2);
+        state.projects[0][1] = Math.min(100, state.projects[0][1] + 4);
+        state.messages.push({ type: "system", text: "已记录：这段经历会进入努力线、成长线，并更新能力与项目推进。", reward: "努力线 +1" });
+        updateStats();
+      }
+
+      function growthInsight(text) {
+        if (text.includes("卡住")) return "你不是没有方向，而是在把问题从一整团拆成一个可推进的小步骤。";
+        if (text.includes("反馈")) return "你在追问反馈来源，说明你想让成长判断变得可信，而不是随便加分。";
+        if (text.includes("标准") || text.includes("对比")) return "你意识到能力值需要一把尺：过去的你、当前证据、下一阶要求要能放在一起比较。";
+        if (text.includes("创造") || text.includes("共创")) return "你把成长游戏从记录系统推向共创平台：玩家和 OC 一起创造作品，作品反过来证明能力。";
+        if (text.includes("成长伙伴") || text.includes("成长游戏")) return "你把产品定义从外形拉回到了关系和机制：成长伙伴负责陪伴，成长游戏负责反馈。";
+        if (text.includes("复盘")) return "你在把一天的经历压缩成可回看的成长线索。";
+        return "你把一个真实发生的想法说清楚了，这本身就是一次可记录的表达推进。";
+      }
+
+      function replyFor(text) {
+        if (text.includes("卡住")) {
+          return "先不要把它想成一整个项目。我们只取下一格：写出 3 个场景里 OC 应该怎么反馈，然后选一个做成可点击交互。";
+        }
+        if (text.includes("能力")) {
+          return "这条主要提升的是判断力和表达力：你把“人生系统”从功能集合，重新定义成真实成长的反馈层。";
+        }
+        if (text.includes("反馈")) {
+          return "反馈来源于五类证据：你说出的经历、你做出的痕迹、你正在推进的目标、和过去自己的对比，以及你对我理解的确认或修正。";
+        }
+        if (text.includes("标准") || text.includes("对比")) {
+          return "对，能力值必须有一把尺：过去的你、当前证据、下一阶标准。OC 不能凭感觉给分，要把对比依据亮出来。";
+        }
+        if (text.includes("创造") || text.includes("共创")) {
+          return "可以叫共创。成长游戏不只是记录人生，而是你和 OC 一起把经历变成作品、模型、原型和方法。";
+        }
+        if (text.includes("成长")) {
+          return "成长要放在核心位置，但它应该从真实经历里长出来。你说发生了什么，我帮你看见能力、项目和自我理解的变化。";
+        }
+        if (text.includes("任务") || text.includes("下一步")) {
+          return "下一步：让一次普通对话触发一条成长记录、一个能力提示和一次项目推进。只做这一条，别扩散。";
+        }
+        if (text.includes("复盘")) {
+          return "今日复盘：你把 OC 从工具拉回到成长伙伴，重点变成理解、陪伴、记录和慢慢变好。";
+        }
+        return "我会把这句话记成一条成长记录：它不只是想法，而是你今天对产品方向的确认。";
+      }
+
+      function sendMessage(text = $("input").value.trim()) {
+        if (!text) return;
+        state.messages.push({ type: "user", text, meta: "你" });
+        state.messages.push({ type: "oc", text: replyFor(text), meta: "Luma · 成长记录员" });
+        state.pending = { source: text, insight: growthInsight(text) };
+        state.messages.push({ type: "confirm", text: `我先这样理解：${state.pending.insight} 这个判断准确吗？` });
+        $("speechTitle").textContent = "Luma 等你确认";
+        $("speechText").textContent = "我不会直接替你定义成长。你确认或修正后，这条反馈才会进入努力线和成长线。";
+        $("input").value = "我补充一点真实证据。";
+        renderMessages();
+        renderDrawer();
+        toast("等待你确认反馈");
+      }
+
+      function confirmFeedback(accepted) {
+        if (!state.pending) return;
+        const source = state.pending.source;
+        if (accepted) {
+          state.efforts.unshift(effortFromPending(source, state.pending.insight));
+          settle(source);
+          state.messages.push({ type: "system", text: `已确认：${state.pending.insight}`, reward: "成长线 +1" });
+          $("speechTitle").textContent = "Luma 已沉淀成长线";
+          $("speechText").textContent = "这条反馈已经进入今天的努力线和成长线，也会影响能力和项目推进。";
+          renderEfforts();
+          toast("确认后进入努力线");
+        } else {
+          state.messages.push({
+            type: "oc",
+            text: "好，你来修正。我会把你的修正当作更高优先级的反馈，不用自己的判断覆盖你。",
+            meta: "Luma · 等待修正",
+          });
+          $("input").value = "我想修正为：";
+          $("speechTitle").textContent = "Luma 等你修正";
+          $("speechText").textContent = "成长伙伴要尊重你的自我理解，确认权在你这里。";
+          toast("等待你的修正");
+        }
+        state.pending = null;
+        renderMessages();
+        renderDrawer();
+      }
+
+      function renderTabs() {
+        $("tabs").innerHTML = tabs
+          .map((tab, index) => `<button class="tab ${index === state.tab ? "is-active" : ""}" type="button" data-tab="${index}">${tab}</button>`)
+          .join("");
+        document.querySelectorAll("[data-tab]").forEach((button) => {
+          button.addEventListener("click", () => {
+            state.tab = Number(button.dataset.tab);
+            renderDrawer();
+          });
+        });
+      }
+
+      function renderDrawer() {
+        renderTabs();
+        const body = $("drawerBody");
+        const tab = tabs[state.tab];
+        if (tab === "努力") {
+          body.innerHTML = `
+            <section class="card">
+              <h3>人生努力可视化</h3>
+              <p>不是把生活做成任务清单，而是把真实努力变成可回看的成长证据。每一条都来自经历、对话、行为证据或你的确认。</p>
+            </section>
+            ${state.efforts
+              .map(
+                (effort) => `
+                  <section class="card ability">
+                    <div class="ability-line"><b>${esc(effort.name)}</b><span>${esc(effort.ability)} ${esc(effort.delta)}</span></div>
+                    <p>${esc(effort.text)}</p>
+                    <div class="effort-flow"><span>来源：${esc(effort.source)}</span><span>进入成长线</span></div>
+                    <div class="meter"><i style="--value:${effort.value}%"></i></div>
+                  </section>
+                `,
+              )
+              .join("")}
+          `;
+        }
+        if (tab === "共创") {
+          body.innerHTML = `
+            <section class="card">
+              <h3>共创平台</h3>
+              <p>成长游戏里，玩家不是只完成任务，而是和 OC 一起创造作品、模型、原型和方法。创造物就是能力成长的外化证据。</p>
+            </section>
+            ${state.creations
+              .map(
+                (creation) => `
+                  <section class="creation-card">
+                    <div class="ability-line"><b>${esc(creation.name)}</b><span>${creation.progress}%</span></div>
+                    <div class="creation-roles">
+                      <div class="role-box"><b>你创造的部分</b><span>${esc(creation.player)}</span></div>
+                      <div class="role-box"><b>OC 支持的部分</b><span>${esc(creation.agent)}</span></div>
+                    </div>
+                    <div class="artifact-line"><span class="source-tag">共同产物</span><b>${esc(creation.artifact)}</b></div>
+                    <div class="meter"><i style="--value:${creation.progress}%"></i></div>
+                  </section>
+                `,
+              )
+              .join("")}
+          `;
+        }
+        if (tab === "标准") {
+          body.innerHTML = `
+            <section class="card">
+              <h3>能力值标准</h3>
+              <p>能力值不是和别人排名，而是把当前证据放到同一把尺上：过去基线、当前水平、下一阶要求。没有标准，就没有可信成长。</p>
+            </section>
+            ${state.standards
+              .map(
+                (standard) => `
+                  <section class="standard-card">
+                    <div class="ability-line"><b>${esc(standard.name)}</b><span>当前 ${standard.current}/100</span></div>
+                    <p>${esc(standard.evidence)}</p>
+                    <div class="compare-stack">
+                      <div class="standard-row"><span>过去基线</span><strong>${standard.baseline}</strong></div>
+                      <div class="meter"><i style="--value:${standard.baseline}%"></i></div>
+                      <div class="standard-row"><span>当前证据</span><strong>${standard.current}</strong></div>
+                      <div class="meter"><i style="--value:${standard.current}%"></i></div>
+                      <div class="standard-row"><span>下一阶标准</span><strong>${standard.next}</strong></div>
+                      <div class="meter"><i style="--value:${standard.next}%"></i></div>
+                    </div>
+                    <p>${esc(standard.compare)}</p>
+                    <div class="rubric-list">${standard.rubric.map((item) => `<span>${esc(item)}</span>`).join("")}</div>
+                  </section>
+                `,
+              )
+              .join("")}
+          `;
+        }
+        if (tab === "日志") {
+          body.innerHTML = state.timeline
+            .map(
+              ([time, title, text, reward]) => `
+                <section class="card">
+                  <div class="log-top"><h3>${esc(time)} · ${esc(title)}</h3><span class="reward">${esc(reward)}</span></div>
+                  <p>${esc(text)}</p>
+                </section>
+              `,
+            )
+            .join("");
+        }
+        if (tab === "能力") {
+          body.innerHTML = state.abilities
+            .map(
+              ([name, value, delta]) => `
+                <section class="card ability">
+                  <div class="ability-line"><b>${esc(name)}</b><span>${value}/100 · ${esc(delta)}</span></div>
+                  <div class="meter"><i style="--value:${value}%"></i></div>
+                </section>
+              `,
+            )
+            .join("");
+        }
+        if (tab === "项目") {
+          body.innerHTML = state.projects
+            .map(
+              ([name, value, text]) => `
+                <section class="card project">
+                  <div class="ability-line"><b>${esc(name)}</b><span>${value}%</span></div>
+                  <div class="meter"><i style="--value:${value}%"></i></div>
+                  <p>${esc(text)}</p>
+                  <button class="btn" type="button" data-next="${esc(name)}">生成下一步</button>
+                </section>
+              `,
+            )
+            .join("");
+          document.querySelectorAll("[data-next]").forEach((button) => {
+            button.addEventListener("click", () => toast(`${button.dataset.next}：下一步已生成`));
+          });
+        }
+        if (tab === "印象") {
+          body.innerHTML = state.impressions.map((text) => `<section class="card"><h3>OC 对你的印象</h3><p>${esc(text)}</p></section>`).join("");
+        }
+        if (tab === "反馈") {
+          body.innerHTML = `
+            <section class="card">
+              <h3>反馈来源</h3>
+              <p>反馈不是系统随便给分。它来源于真实经历、行为证据、目标语境、时间对比，以及你对 OC 理解的确认。</p>
+            </section>
+            <section class="card">
+              <h3>反馈闭环</h3>
+              <div class="mechanism-flow">${state.feedbackCycle
+                .map(([name, text]) => `<div class="mechanism-step"><b>${esc(name)}</b><span>${esc(text)}</span></div>`)
+                .join("")}</div>
+            </section>
+            <div class="inventory">${state.feedback
+              .map(([name, text, tag]) => `<div class="item"><span class="source-tag">${esc(tag)}</span><b>${esc(name)}</b><span>${esc(text)}</span></div>`)
+              .join("")}</div>
+          `;
+        }
+      }
+
+      async function runDemo() {
+        $("input").value = "我想让 OC 既陪伴我，也让我看见自己在成长。";
+        sendMessage();
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+        confirmFeedback(true);
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+        $("input").value = "我想知道 OC 的反馈应该从哪里来。";
+        sendMessage();
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+        confirmFeedback(true);
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+        $("input").value = "能力值的标准是什么？我们要有一个对比。";
+        sendMessage();
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+        confirmFeedback(true);
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+        state.tab = tabs.indexOf("标准");
+        $("drawer").classList.add("is-open");
+        renderDrawer();
+        toast("演示完成：打开能力标准");
+      }
+
+      document.querySelectorAll("[data-pet]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const type = button.dataset.pet;
+          if (type === "touch") {
+            $("speechTitle").textContent = "Luma 在听";
+            $("speechText").textContent = "我会先陪你把事情说清楚，再一起判断它意味着什么成长。";
+            toast("陪伴状态已切换");
+          }
+          if (type === "settle") sendMessage("我想把刚才这一步记录下来。");
+          if (type === "focus") {
+            $("speechTitle").textContent = "Luma 进入专注陪跑";
+            $("speechText").textContent = "接下来只做一个小步骤：把对话后的轻量反馈做出来。";
+            toast("专注步骤已锁定");
+          }
+        });
+      });
+
+      $("send").addEventListener("click", () => sendMessage());
+      $("input").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") sendMessage();
+      });
+      $("runDemo").addEventListener("click", runDemo);
+      $("openDrawer").addEventListener("click", () => $("drawer").classList.add("is-open"));
+      $("openDrawerFromPet").addEventListener("click", () => $("drawer").classList.add("is-open"));
+      $("openEfforts").addEventListener("click", () => {
+        state.tab = tabs.indexOf("努力");
+        $("drawer").classList.add("is-open");
+        renderDrawer();
+      });
+      $("closeDrawer").addEventListener("click", () => $("drawer").classList.remove("is-open"));
+
+      updateStats();
+      renderEfforts();
+      renderPrompts();
+      renderMessages();
+      renderDrawer();
+    </script>
+  </body>
+</html>

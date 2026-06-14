@@ -1,0 +1,22 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "installCommand": "",
+  "buildCommand": "",
+  "outputDirectory": "frontend-v4",
+  "cleanUrls": false,
+  "trailingSlash": false,
+  "functions": { "api/*.js": { "maxDuration": 60 } },
+  "rewrites": [
+    { "source": "/app", "destination": "/web.html" }
+  ],
+  "headers": [
+    { "source": "/(.*)", "headers": [
+      { "key": "X-Content-Type-Options", "value": "nosniff" },
+      { "key": "X-Frame-Options", "value": "DENY" },
+      { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+      { "key": "Permissions-Policy", "value": "microphone=(self), camera=(), geolocation=()" }
+    ] },
+    { "source": "/vendor/(.*)", "headers": [ { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" } ] }
+  ]
+}

@@ -1,0 +1,74 @@
+[
+  {
+    "userId": "user-001",
+    "signal": "跑通 Chat 主链路",
+    "count": 3,
+    "firstSeenAt": 1777746941585,
+    "lastSeenAt": 1777779040713,
+    "lastTriggeredAt": 1777777974672
+  },
+  {
+    "userId": "user-001",
+    "signal": "准备一组可演示时间线数据",
+    "count": 3,
+    "firstSeenAt": 1777746941585,
+    "lastSeenAt": 1777779040713,
+    "lastTriggeredAt": 1777777974672
+  },
+  {
+    "userId": "user-001",
+    "signal": "兜底 mock AirJelly 数据",
+    "count": 3,
+    "firstSeenAt": 1777746941585,
+    "lastSeenAt": 1777779040713,
+    "lastTriggeredAt": 1777777974672
+  },
+  {
+    "userId": "user-001",
+    "signal": "整理 OC World 技术方案",
+    "count": 3,
+    "firstSeenAt": 1777746941585,
+    "lastSeenAt": 1777779040713,
+    "lastTriggeredAt": 1777777974672
+  },
+  {
+    "userId": "user-001",
+    "signal": "Feishu",
+    "count": 3,
+    "firstSeenAt": 1777746941585,
+    "lastSeenAt": 1777779040713,
+    "lastTriggeredAt": 1777777974672
+  },
+  {
+    "userId": "user-001",
+    "signal": "浏览 Electron 文档",
+    "count": 3,
+    "firstSeenAt": 1777746941585,
+    "lastSeenAt": 1777779040713,
+    "lastTriggeredAt": 1777777974672
+  },
+  {
+    "userId": "user-001",
+    "signal": "Arc",
+    "count": 3,
+    "firstSeenAt": 1777746941585,
+    "lastSeenAt": 1777779040713,
+    "lastTriggeredAt": 1777777974672
+  },
+  {
+    "userId": "user-001",
+    "signal": "写 React 页面草图",
+    "count": 3,
+    "firstSeenAt": 1777746941585,
+    "lastSeenAt": 1777779040713,
+    "lastTriggeredAt": 1777777974672
+  },
+  {
+    "userId": "user-001",
+    "signal": "VS Code",
+    "count": 3,
+    "firstSeenAt": 1777746941585,
+    "lastSeenAt": 1777779040713,
+    "lastTriggeredAt": 1777777974672
+  }
+]

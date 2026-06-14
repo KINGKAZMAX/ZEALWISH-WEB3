@@ -1,0 +1,122 @@
+[
+  {
+    "timestamp": 1777748267133,
+    "userMessage": "今天有点累",
+    "ocResponse": "看得出来你已经绷很久了。先把最能演示的那条链路跑通，别跟自己硬耗。",
+    "emotion": "sad"
+  },
+  {
+    "timestamp": 1777748274071,
+    "userMessage": "帮我整理一下思路",
+    "ocResponse": "你今天已经做了不少事，但真正缺的还是一个能给别人看懂的结果。我盯着，你继续。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777748276677,
+    "userMessage": "聊点开心的",
+    "ocResponse": "你今天已经做了不少事，但真正缺的还是一个能给别人看懂的结果。我盯着，你继续。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777749234438,
+    "userMessage": "你好\n你在干嘛\n你现在是接了什么模型",
+    "ocResponse": "在。今天看你又在方案和代码之间来回横跳，所以这次别聊空的，直接推进。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777750246284,
+    "userMessage": "现在卡住我的那一步，是什么？下一步呢？\n你好\n你在干嘛",
+    "ocResponse": "在。今天看你又在方案和代码之间来回横跳，所以这次别聊空的，直接推进。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777751434188,
+    "userMessage": "把我最近的对话和兴趣，整理成你眼中的我。",
+    "ocResponse": "你今天已经做了不少事，但真正缺的还是一个能给别人看懂的结果。我盯着，你继续。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777758255542,
+    "userMessage": "你好\n你在干嘛\n我呢",
+    "ocResponse": "在。今天看你又在方案和代码之间来回横跳，所以这次别聊空的，直接推进。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777760723068,
+    "userMessage": "你好",
+    "ocResponse": "在。今天看你又在方案和代码之间来回横跳，所以这次别聊空的，直接推进。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777760726286,
+    "userMessage": "你好\n在吗",
+    "ocResponse": "在。今天看你又在方案和代码之间来回横跳，所以这次别聊空的，直接推进。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777761703512,
+    "userMessage": "我在干嘛",
+    "ocResponse": "你今天已经做了不少事，但真正缺的还是一个能给别人看懂的结果。我盯着，你继续。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777761707056,
+    "userMessage": "我在干嘛\n你呢",
+    "ocResponse": "你今天已经做了不少事，但真正缺的还是一个能给别人看懂的结果。我盯着，你继续。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777762238356,
+    "userMessage": "你好",
+    "ocResponse": "在。今天看你又在方案和代码之间来回横跳，所以这次别聊空的，直接推进。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777762241014,
+    "userMessage": "你好\n你呢",
+    "ocResponse": "在。今天看你又在方案和代码之间来回横跳，所以这次别聊空的，直接推进。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777776152070,
+    "userMessage": "把我最近的对话和兴趣，整理成你眼中的我。",
+    "ocResponse": "你今天已经做了不少事，但真正缺的还是一个能给别人看懂的结果。我盯着，你继续。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777776168603,
+    "userMessage": "把我最近的对话和兴趣，整理成你眼中的我。\n基于我现在的状态，先处理哪件事比较好？",
+    "ocResponse": "你今天已经做了不少事，但真正缺的还是一个能给别人看懂的结果。我盯着，你继续。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777776476473,
+    "userMessage": "把我最近的对话和兴趣，整理成你眼中的我。\n基于我现在的状态，先处理哪件事比较好？\n把我最近的对话和兴趣，整理成你眼中的我。",
+    "ocResponse": "你今天已经做了不少事，但真正缺的还是一个能给别人看懂的结果。我盯着，你继续。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777777974671,
+    "userMessage": "v有v个",
+    "ocResponse": "你今天已经做了不少事，但真正缺的还是一个能给别人看懂的结果。我盯着，你继续。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777778024921,
+    "userMessage": "v有v个\n这周我的注意力都流向了哪里？",
+    "ocResponse": "你今天已经做了不少事，但真正缺的还是一个能给别人看懂的结果。我盯着，你继续。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777778957503,
+    "userMessage": "v有v个\n这周我的注意力都流向了哪里？\nvt f v t",
+    "ocResponse": "你今天已经做了不少事，但真正缺的还是一个能给别人看懂的结果。我盯着，你继续。",
+    "emotion": "thinking"
+  },
+  {
+    "timestamp": 1777779040711,
+    "userMessage": "这周我的注意力都流向了哪里？\nvt f v t\nvtfvt",
+    "ocResponse": "你今天已经做了不少事，但真正缺的还是一个能给别人看懂的结果。我盯着，你继续。",
+    "emotion": "thinking"
+  }
+]

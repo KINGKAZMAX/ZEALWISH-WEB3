@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OC World · 产品路线原型</title>
+    <style>
+      :root {
+        --bg: #f4ede4;
+        --panel: rgba(255, 249, 241, 0.84);
+        --panel-strong: #fffaf3;
+        --line: rgba(31, 24, 18, 0.12);
+        --line-strong: rgba(31, 24, 18, 0.22);
+        --ink: #211913;
+        --muted: #6e6257;
+        --faint: #9a8e82;
+        --moss: #1d6359;
+        --moss-soft: #dcece7;
+        --ember: #a85e42;
+        --ember-soft: #f3ddd3;
+        --plum: #6b4f88;
+        --plum-soft: #e8dff1;
+        --gold: #9b732f;
+        --gold-soft: #f1e4c8;
+        --shadow: 0 34px 90px -52px rgba(24, 18, 12, 0.52);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; }
+      body {
+        background:
+          radial-gradient(circle at top left, rgba(255,255,255,.88), transparent 28%),
+          linear-gradient(rgba(31,24,18,.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(31,24,18,.035) 1px, transparent 1px),
+          var(--bg);
+        background-size: auto, 26px 26px, 26px 26px;
+        color: var(--ink);
+        font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      button { font: inherit; color: inherit; }
+
+      .page {
+        min-height: 100vh;
+        padding: 24px;
+        display: grid;
+        place-items: center;
+      }
+
+      .shell {
+        width: min(1460px, calc(100vw - 48px));
+        border: 1px solid var(--line);
+        border-radius: 34px;
+        background: var(--panel);
+        backdrop-filter: blur(18px);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .hero {
+        padding: 28px 32px 20px;
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        gap: 26px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .cover {
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(237,226,211,.82));
+        padding: 20px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .window-dots { display: inline-flex; gap: 8px; }
+      .window-dots span { width: 10px; height: 10px; border-radius: 999px; display: block; }
+      .window-dots span:nth-child(1) { background: #ed6d5f; }
+      .window-dots span:nth-child(2) { background: #efbb4e; }
+      .window-dots span:nth-child(3) { background: #62c555; }
+
+      .cover-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .pill,
+      .chip,
+      .tag,
+      .switch-btn,
+      .surface-tab,
+      .mini-btn {
+        min-height: 32px;
+        padding: 0 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255,255,255,.72);
+        color: var(--muted);
+        font-size: 12px;
+        transition: transform .16s ease, background-color .16s ease, border-color .16s ease, color .16s ease;
+      }
+
+      .switch-btn,
+      .surface-tab,
+      .mini-btn {
+        cursor: pointer;
+      }
+
+      .pill::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--moss);
+      }
+
+      .avatar-box {
+        border-radius: 24px;
+        border: 1px dashed rgba(31,24,18,.14);
+        background:
+          radial-gradient(circle at 50% 18%, rgba(255,255,255,.9), transparent 40%),
+          linear-gradient(180deg, #f2e7d9, #e6d9c8);
+        min-height: 268px;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+
+      .avatar-box img {
+        width: 208px;
+        object-fit: contain;
+        filter: drop-shadow(0 18px 22px rgba(31,24,18,.14));
+      }
+
+      .kicker,
+      .cover-copy small {
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: .16em;
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .display,
+      h1,
+      h2,
+      h3,
+      h4 {
+        font-family: "Iowan Old Style", "Palatino Linotype", "Songti SC", serif;
+      }
+
+      .cover-copy h2 {
+        margin: 6px 0 0;
+        font-size: 30px;
+      }
+
+      .cover-copy p,
+      .hero-main p,
+      .surface-card p,
+      .check-card p,
+      .summary-card p,
+      .list-card li,
+      .prototype-card p {
+        color: var(--muted);
+        line-height: 1.76;
+      }
+
+      .hero-main {
+        display: grid;
+        gap: 18px;
+      }
+
+      .hero-main h1 {
+        margin: 8px 0 0;
+        font-size: 48px;
+        line-height: 1.05;
+      }
+
+      .principles {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .principle {
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: rgba(255,255,255,.7);
+        padding: 16px;
+      }
+
+      .principle h3 {
+        margin: 8px 0 0;
+        font-size: 22px;
+      }
+
+      .workspace {
+        padding: 22px 32px 32px;
+        display: grid;
+        gap: 20px;
+      }
+
+      .roadmap-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .roadmap-top h2 {
+        margin: 6px 0 0;
+        font-size: 34px;
+      }
+
+      .version-switcher {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .switch-btn.is-active,
+      .surface-tab.is-active,
+      .mini-btn:hover {
+        background: var(--ink);
+        color: #fffaf3;
+        border-color: var(--ink);
+        transform: translateY(-1px);
+      }
+
+      .content-grid {
+        display: grid;
+        grid-template-columns: 360px minmax(0, 1fr);
+        gap: 18px;
+      }
+
+      .summary-card,
+      .surface-card,
+      .check-card,
+      .prototype-card,
+      .list-card {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(255,255,255,.78);
+      }
+
+      .summary-card,
+      .surface-card,
+      .check-card,
+      .prototype-card,
+      .list-card {
+        padding: 18px;
+      }
+
+      .summary-card {
+        display: grid;
+        gap: 16px;
+        align-content: start;
+      }
+
+      .version-badge {
+        width: fit-content;
+        min-height: 32px;
+        padding: 0 12px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .tone-moss { background: var(--moss-soft); color: var(--moss); }
+      .tone-gold { background: var(--gold-soft); color: var(--gold); }
+      .tone-plum { background: var(--plum-soft); color: var(--plum); }
+
+      .summary-card h3 {
+        margin: 8px 0 0;
+        font-size: 30px;
+      }
+
+      .quote {
+        padding: 14px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(255,249,241,.86);
+      }
+
+      .quote strong {
+        display: block;
+        font-size: 13px;
+      }
+
+      .quote p {
+        margin: 8px 0 0;
+      }
+
+      .right-pane {
+        display: grid;
+        gap: 18px;
+      }
+
+      .surface-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      .surface-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .surface-view {
+        display: none;
+        gap: 14px;
+      }
+
+      .surface-view.is-active {
+        display: grid;
+      }
+
+      .prototype-shell {
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(247,241,233,.88));
+        overflow: hidden;
+      }
+
+      .prototype-topbar {
+        height: 44px;
+        padding: 0 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .prototype-window {
+        padding: 18px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .mini-stage {
+        display: grid;
+        grid-template-columns: 180px minmax(0, 1fr);
+        gap: 14px;
+      }
+
+      .mini-avatar {
+        border: 1px dashed rgba(31,24,18,.14);
+        border-radius: 20px;
+        min-height: 180px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(180deg, #f2e7d9, #e7dac8);
+      }
+
+      .mini-avatar img {
+        width: 138px;
+        object-fit: contain;
+      }
+
+      .mini-panel {
+        display: grid;
+        gap: 12px;
+      }
+
+      .mini-bubble,
+      .mini-module,
+      .check-card,
+      .list-card {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255,255,255,.76);
+        padding: 14px;
+      }
+
+      .mini-bubble strong,
+      .mini-module strong,
+      .check-card strong,
+      .list-card strong {
+        display: block;
+        font-size: 14px;
+      }
+
+      .mini-module ul,
+      .list-card ul {
+        margin: 10px 0 0;
+        padding-left: 18px;
+      }
+
+      .check-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .list-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .footer-note {
+        border-top: 1px solid var(--line);
+        padding-top: 18px;
+        display: grid;
+        grid-template-columns: 1.1fr .9fr;
+        gap: 18px;
+      }
+
+      @media (max-width: 1180px) {
+        .hero,
+        .content-grid,
+        .footer-note,
+        .principles,
+        .check-grid,
+        .list-grid,
+        .mini-stage {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 820px) {
+        .page { padding: 12px; }
+        .shell { width: 100%; border-radius: 24px; }
+        .hero,
+        .workspace { padding-left: 16px; padding-right: 16px; }
+        .hero-main h1 { font-size: 38px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="shell">
+        <section class="hero">
+          <div class="cover">
+            <div class="cover-top">
+              <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+              <span class="pill">产品原型</span>
+            </div>
+            <div class="avatar-box">
+              <img src="../public/oc-avatar-pet.png" alt="OC 形象" />
+            </div>
+            <div class="cover-copy">
+              <small>OC World</small>
+              <h2>路线图不是文档，是产品状态切换器</h2>
+              <p>这不是一个给团队看的静态路线页，而是一个可以切换 V1 / V1.5 / V2 的产品原型。每切一版，页面都会展示那个阶段用户真正会看到的产品样子。</p>
+            </div>
+          </div>
+
+          <div class="hero-main">
+            <div>
+              <span class="kicker">Prototype Stance</span>
+              <h1>先做一个会陪你的 OC，<br />再让成长慢慢从关系里长出来。</h1>
+              <p>这里看的不是“功能清单”，而是版本变化怎样改变产品感知。每一版都要回答三个问题：用户打开后先看到什么、先感受到什么、哪些东西故意不出现。</p>
+            </div>
+            <div class="principles">
+              <article class="principle">
+                <span class="kicker">01</span>
+                <h3>先有关系</h3>
+                <p>聊天和被接住感先成立，成长系统才有资格出现。</p>
+              </article>
+              <article class="principle">
+                <span class="kicker">02</span>
+                <h3>成长慢慢浮现</h3>
+                <p>不是一上来就告诉用户“你在成长”，而是让用户自己发现。</p>
+              </article>
+              <article class="principle">
+                <span class="kicker">03</span>
+                <h3>克制比堆叠重要</h3>
+                <p>每多一个台前模块，产品就更像工具，不像关系。</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="workspace">
+          <div class="roadmap-top">
+            <div>
+              <span class="kicker">Version Prototype</span>
+              <h2>切换版本，看产品怎么长</h2>
+            </div>
+            <div id="version-switcher" class="version-switcher"></div>
+          </div>
+
+          <div class="content-grid">
+            <aside class="summary-card">
+              <div id="version-badge" class="version-badge tone-moss">V1</div>
+              <div>
+                <span class="kicker">Version Goal</span>
+                <h3 id="version-title">先让关系成立</h3>
+                <p id="version-goal"></p>
+              </div>
+              <div class="quote">
+                <strong>这一版要证明什么</strong>
+                <p id="version-proof"></p>
+              </div>
+              <div class="quote">
+                <strong>用户此刻会怎么理解它</strong>
+                <p id="version-feeling"></p>
+              </div>
+            </aside>
+
+            <div class="right-pane">
+              <section class="surface-card">
+                <div class="surface-header">
+                  <div>
+                    <span class="kicker">Product Surface</span>
+                    <h3 style="margin: 8px 0 0; font-size: 28px;">当前版本的产品长相</h3>
+                    <p id="surface-caption" style="margin-top: 8px;"></p>
+                  </div>
+                  <div id="surface-tabs" class="surface-tabs"></div>
+                </div>
+                <div id="surface-stage"></div>
+              </section>
+
+              <div class="check-grid">
+                <section class="check-card">
+                  <strong>必须做</strong>
+                  <p id="must-copy"></p>
+                  <div id="must-list" class="list-card" style="margin-top: 12px; padding: 12px;"></div>
+                </section>
+                <section class="check-card">
+                  <strong>刻意不做</strong>
+                  <p id="avoid-copy"></p>
+                  <div id="avoid-list" class="list-card" style="margin-top: 12px; padding: 12px;"></div>
+                </section>
+                <section class="check-card">
+                  <strong>下一版触发条件</strong>
+                  <p id="gate-copy"></p>
+                  <div id="gate-list" class="list-card" style="margin-top: 12px; padding: 12px;"></div>
+                </section>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer-note">
+            <section class="prototype-card">
+              <span class="kicker">Read This Correctly</span>
+              <h4 style="margin: 8px 0 0; font-size: 26px;">这个原型的重点不是“做了多少”，而是“前台露出多少”。</h4>
+              <p>V1、V1.5、V2 的本质差别，不只是功能数量，而是成长系统在前台出现的强度。V1 几乎看不到成长系统，V1.5 只看到“被记得”，V2 才开始让用户轻微意识到自己在变化。</p>
+            </section>
+            <section class="list-card">
+              <strong>最重要的节奏判断</strong>
+              <ul>
+                <li>V1：先让用户愿意每天回来。</li>
+                <li>V1.5：再让用户相信 TA 真的记得自己。</li>
+                <li>V2：最后才让用户觉得“我好像在慢慢变好”。</li>
+              </ul>
+            </section>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const versions = {
+        v1: {
+          label: 'V1',
+          tone: 'tone-moss',
+          title: '先让关系成立',
+          goal: '只证明一件事：用户会不会愿意每天回来打开它，跟 TA 说一句真实的话。',
+          proof: '这不是工具，是一个会陪我的 OC。只要这个感觉成立，后面的记忆和成长才有意义。',
+          feeling: '“我打开它，不是为了完成任务，是因为 TA 在。”',
+          surfaceCaption: '这个阶段的前台必须极轻。用户先看到陪伴、聊天、关系感，而不是系统、统计或成长解释。',
+          mustCopy: '都是让陪伴感成立的能力。',
+          avoidCopy: '这些东西现在一出现，产品就会变成另一个管理工具。',
+          gateCopy: '只有这几件事成立，才该往下一版走。',
+          must: ['稳定的陪伴式对话', '清晰的人格感和说话风格', '基础关系推进', '很轻的情绪接住与下一句推动'],
+          avoid: ['显性成长面板', '复杂任务系统', 'Agent 世界前台化', '重度复盘流程'],
+          gate: ['用户愿意高频打开', '愿意说真实的事', '不是把它当问答机使用'],
+          surfaces: {
+            home: {
+              name: '首页',
+              html: `
+                <div class="prototype-shell">
+                  <div class="prototype-topbar"><span class="pill">Today</span><span class="chip">关系阶段 · 熟悉中</span></div>
+                  <div class="prototype-window">
+                    <div class="mini-stage">
+                      <div class="mini-avatar"><img src="../public/oc-avatar-pet.png" alt="OC" /></div>
+                      <div class="mini-panel">
+                        <div class="mini-bubble"><strong>Mori 正在等你</strong><p>“我在。你今天看起来有点累，要不要就说一句现在最烦的事？”</p></div>
+                        <div class="mini-module"><strong>Quick Start</strong><ul><li>Read Me</li><li>Unblock Me</li><li>Daily Report</li></ul></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `
+            },
+            chat: {
+              name: '对话',
+              html: `
+                <div class="prototype-shell">
+                  <div class="prototype-topbar"><span class="pill">Chat</span><span class="chip">TA 在听</span></div>
+                  <div class="prototype-window">
+                    <div class="mini-bubble"><strong>Mori</strong><p>你今天的状态不像“没做成”，更像“已经顶到边了”。先别急着给自己下结论。</p></div>
+                    <div class="mini-bubble"><strong>You</strong><p>但我只完成了两件事。</p></div>
+                    <div class="mini-bubble"><strong>Mori</strong><p>可那两件都是最硬的。你今天不是没做事，你是在最累的时候守住了关键一步。</p></div>
+                  </div>
+                </div>
+              `
+            },
+            memory: {
+              name: '记忆感',
+              html: `
+                <div class="prototype-shell">
+                  <div class="prototype-topbar"><span class="pill">Memory Hint</span><span class="chip">前台只露一点</span></div>
+                  <div class="prototype-window">
+                    <div class="mini-module"><strong>TA 记住的不是资料，是你最近的样子</strong><ul><li>最近在做一个想做深的项目</li><li>累的时候会先怀疑自己</li><li>很在意事情有没有做对</li></ul></div>
+                  </div>
+                </div>
+              `
+            }
+          }
+        },
+        v15: {
+          label: 'V1.5',
+          tone: 'tone-gold',
+          title: '把“记得你”做成优势',
+          goal: '从“能聊”进化到“真的记得我”，让关系开始有连续性和时间感。',
+          proof: '用户不只会回来聊，还会逐渐相信：TA 会延续我们之间发生过的事。',
+          feeling: '“TA 不只是会聊天，TA 会延续我们之前的关系和语境。”',
+          surfaceCaption: '这个阶段前台开始出现记忆和回溯，但仍然不是成长系统。用户首先感受到的是“被记住”，不是“被分析”。',
+          mustCopy: '重点是把连续性做出来。',
+          avoidCopy: '仍然不能掉进通知产品和数据产品的路子。',
+          gateCopy: '只有用户开始把它当“长期关系”看，才能往 V2 走。',
+          must: ['Memory 页真正可用', 'Rewind 页有可回看的关键片段', '低频但贴身的延续感提醒', '关系状态开始更有阶段感'],
+          avoid: ['重通知轰炸', '完整分析中心', '重管理感复盘模板', '数值化成长首页'],
+          gate: ['用户能感到 TA 记得自己', '回溯页有被翻看的价值', '关系感不是一次性氛围'],
+          surfaces: {
+            home: {
+              name: '首页',
+              html: `
+                <div class="prototype-shell">
+                  <div class="prototype-topbar"><span class="pill">Today</span><span class="chip">最近主题 · 表达 / 节奏</span></div>
+                  <div class="prototype-window">
+                    <div class="mini-bubble"><strong>Mori</strong><p>你上次也是在这种时候开始怀疑自己。要不要这次先别急着否定，先把今天最关键的那一步找出来？</p></div>
+                    <div class="mini-module"><strong>你会看到的变化</strong><ul><li>欢迎语开始带连续性</li><li>首页会偶尔提到“上次”</li><li>关系感从即时变成长时段</li></ul></div>
+                  </div>
+                </div>
+              `
+            },
+            rewind: {
+              name: '回溯',
+              html: `
+                <div class="prototype-shell">
+                  <div class="prototype-topbar"><span class="pill">Rewind</span><span class="chip">关系痕迹开始可回看</span></div>
+                  <div class="prototype-window">
+                    <div class="mini-module"><strong>最近几个值得记住的片段</strong><ul><li>你第一次承认自己不是懒，是过载</li><li>你没有逃掉那次最难的表达</li><li>你开始学会在睡前给明天留下一步</li></ul></div>
+                  </div>
+                </div>
+              `
+            },
+            memory: {
+              name: '记忆',
+              html: `
+                <div class="prototype-shell">
+                  <div class="prototype-topbar"><span class="pill">Memory</span><span class="chip">“记得你”成为产品优势</span></div>
+                  <div class="prototype-window">
+                    <div class="mini-module"><strong>关于你</strong><ul><li>很想把事情做深</li><li>累的时候会先怀疑自己</li><li>其实越来越会承认真实能量</li></ul></div>
+                    <div class="mini-module"><strong>最近挂念的事</strong><ul><li>那个你一直没说出口的问题</li><li>总在拖住你的启动门槛</li></ul></div>
+                  </div>
+                </div>
+              `
+            }
+          }
+        },
+        v2: {
+          label: 'V2',
+          tone: 'tone-plum',
+          title: '关系驱动的轻成长',
+          goal: '成长开始浮现，但仍然不破坏陪伴感。用户不是被管理，而是在相处里慢慢变好。',
+          proof: '关系本身会慢慢推动生活节奏和自我理解发生变化，成长开始被用户自己感觉到。',
+          feeling: '“和 TA 相处这件事，本身就在让我慢慢变好。”',
+          surfaceCaption: '这个阶段前台开始出现很轻的成长痕迹，但不能做成 dashboard。用户首先感受到的是“我在变化”，不是“我被衡量”。',
+          mustCopy: '成长只做轻露出，不做重展示。',
+          avoidCopy: '不能让产品滑成 KPI 型人生管理工具。',
+          gateCopy: '再往后走之前，要先确认成长感不会伤害陪伴感。',
+          must: ['关系阶段触发的互动差异', '轻量成长线索回看', '小练习或共同目标', '成长痕迹由回溯与记忆串起来'],
+          avoid: ['重度成长 dashboard', '竞争和排行榜', '强 KPI 叙事', '任务化太重的留存设计'],
+          gate: ['用户开始说“我好像真的在变”', '成长露出不破坏陪伴感', '系统仍然像关系，不像工具'],
+          surfaces: {
+            home: {
+              name: '首页',
+              html: `
+                <div class="prototype-shell">
+                  <div class="prototype-topbar"><span class="pill">Today</span><span class="chip">成长痕迹开始轻露出</span></div>
+                  <div class="prototype-window">
+                    <div class="mini-bubble"><strong>Mori</strong><p>你最近比以前更会在累的时候收一下自己了。今天要不要继续练那种“先守住最关键一步”的感觉？</p></div>
+                    <div class="mini-module"><strong>首页只会轻轻提示</strong><ul><li>不是能力面板</li><li>不是成长汇报</li><li>只是偶尔一句：你最近真的不一样了</li></ul></div>
+                  </div>
+                </div>
+              `
+            },
+            growth: {
+              name: '轻成长',
+              html: `
+                <div class="prototype-shell">
+                  <div class="prototype-topbar"><span class="pill">Growth Hint</span><span class="chip">不是 dashboard</span></div>
+                  <div class="prototype-window">
+                    <div class="mini-module"><strong>最近浮现出来的变化</strong><ul><li>开始更会辨认过载，而不是直接自责</li><li>表达自己时没有那么快先删掉自己</li><li>更愿意把第一步压小，然后先启动</li></ul></div>
+                  </div>
+                </div>
+              `
+            },
+            practice: {
+              name: '小练习',
+              html: `
+                <div class="prototype-shell">
+                  <div class="prototype-topbar"><span class="pill">Next Step</span><span class="chip">轻推动，不管控</span></div>
+                  <div class="prototype-window">
+                    <div class="mini-module"><strong>今晚只练一件事</strong><ul><li>把明天最先要做的一步写成一句话</li><li>然后停下来，不要再补更多任务</li></ul></div>
+                  </div>
+                </div>
+              `
+            }
+          }
+        }
+      };
+
+      const versionSwitcher = document.getElementById('version-switcher');
+      const surfaceTabs = document.getElementById('surface-tabs');
+      const surfaceStage = document.getElementById('surface-stage');
+      const versionBadge = document.getElementById('version-badge');
+      const versionTitle = document.getElementById('version-title');
+      const versionGoal = document.getElementById('version-goal');
+      const versionProof = document.getElementById('version-proof');
+      const versionFeeling = document.getElementById('version-feeling');
+      const surfaceCaption = document.getElementById('surface-caption');
+      const mustCopy = document.getElementById('must-copy');
+      const avoidCopy = document.getElementById('avoid-copy');
+      const gateCopy = document.getElementById('gate-copy');
+      const mustList = document.getElementById('must-list');
+      const avoidList = document.getElementById('avoid-list');
+      const gateList = document.getElementById('gate-list');
+
+      let activeVersion = 'v1';
+      let activeSurface = 'home';
+
+      function renderList(container, items) {
+        container.innerHTML = `<ul>${items.map((item) => `<li>${item}</li>`).join('')}</ul>`;
+      }
+
+      function renderSurfaceTabs() {
+        const version = versions[activeVersion];
+        surfaceTabs.innerHTML = Object.entries(version.surfaces)
+          .map(([key, surface]) => `<button class="surface-tab ${key === activeSurface ? 'is-active' : ''}" data-surface="${key}">${surface.name}</button>`)
+          .join('');
+
+        surfaceTabs.querySelectorAll('[data-surface]').forEach((button) => {
+          button.addEventListener('click', () => {
+            activeSurface = button.dataset.surface;
+            renderSurfaceTabs();
+            renderSurfaceStage();
+          });
+        });
+      }
+
+      function renderSurfaceStage() {
+        surfaceStage.innerHTML = Object.entries(versions[activeVersion].surfaces)
+          .map(([key, surface]) => `<div class="surface-view ${key === activeSurface ? 'is-active' : ''}">${surface.html}</div>`)
+          .join('');
+      }
+
+      function renderVersionSwitcher() {
+        versionSwitcher.innerHTML = Object.entries(versions)
+          .map(([key, version]) => `<button class="switch-btn ${key === activeVersion ? 'is-active' : ''}" data-version="${key}">${version.label} · ${version.title}</button>`)
+          .join('');
+
+        versionSwitcher.querySelectorAll('[data-version]').forEach((button) => {
+          button.addEventListener('click', () => {
+            activeVersion = button.dataset.version;
+            activeSurface = Object.keys(versions[activeVersion].surfaces)[0];
+            hydrate();
+          });
+        });
+      }
+
+      function hydrate() {
+        const version = versions[activeVersion];
+        versionBadge.className = `version-badge ${version.tone}`;
+        versionBadge.textContent = version.label;
+        versionTitle.textContent = version.title;
+        versionGoal.textContent = version.goal;
+        versionProof.textContent = version.proof;
+        versionFeeling.textContent = version.feeling;
+        surfaceCaption.textContent = version.surfaceCaption;
+        mustCopy.textContent = version.mustCopy;
+        avoidCopy.textContent = version.avoidCopy;
+        gateCopy.textContent = version.gateCopy;
+        renderList(mustList, version.must);
+        renderList(avoidList, version.avoid);
+        renderList(gateList, version.gate);
+        renderVersionSwitcher();
+        renderSurfaceTabs();
+        renderSurfaceStage();
+      }
+
+      hydrate();
+    </script>
+  </body>
+</html>

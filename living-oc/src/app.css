@@ -1,0 +1,26 @@
+:root{--ink:#0a0a0b;--panel:#16161a;--line:rgba(245,245,247,.1);--text:#f5f5f7;--muted:#a0a0a8;--red:#ff2d2d;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ink);color:var(--text);font-family:system-ui,'Noto Sans SC',sans-serif}
+.app{max-width:1000px;margin:0 auto;padding:20px}
+.app.create{max-width:480px;text-align:center;padding-top:18vh}
+.app.create p{color:var(--muted);margin:10px 0 18px}
+h1{font-size:28px;letter-spacing:1px}
+.oc-header{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}
+.oc-header .nm{font-size:20px} .oc-header .hd{color:var(--muted);font-size:13px}
+.oc-header .meta{color:var(--muted);font-size:12px;margin-top:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.col-head{font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.btn{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px}
+.btn:hover{border-color:var(--red);color:var(--red)}
+.btn.primary{background:var(--red);color:#0a0a0b;border-color:var(--red);font-weight:600}
+.btn.export{margin-left:10px;padding:3px 10px;font-size:11px}
+input{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 12px;width:100%}
+.feed{list-style:none;margin:12px 0}
+.feed .ev{padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.feed .imp-hi{color:var(--text)} .feed .imp-lo{color:var(--muted)}
+.diary{white-space:pre-wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:10px;font-size:13px;line-height:1.7}
+.chat .log{min-height:160px;margin:10px 0;display:flex;flex-direction:column;gap:6px}
+.chat .msg{padding:7px 11px;border-radius:10px;max-width:85%;font-size:14px}
+.chat .msg.you{align-self:flex-end;background:var(--red);color:#0a0a0b}
+.chat .msg.oc{align-self:flex-start;background:var(--panel);border:1px solid var(--line)}
+.row{display:flex;gap:8px;margin-top:8px} .row.guide{opacity:.9}

@@ -1,0 +1,1109 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OC World · 交互版本探索</title>
+    <style>
+      :root {
+        --bg: #f5f1ea;
+        --paper: #fffdf8;
+        --panel: #faf6ee;
+        --ink: #25231f;
+        --muted: #6d675d;
+        --faint: #9b9387;
+        --line: rgba(37, 35, 31, 0.12);
+        --line-strong: rgba(37, 35, 31, 0.22);
+        --teal: #15766d;
+        --teal-soft: #dcefea;
+        --blue: #345aa8;
+        --blue-soft: #dde7ff;
+        --coral: #bd6148;
+        --coral-soft: #f5ded4;
+        --gold: #a2711f;
+        --gold-soft: #f1e3c5;
+        --violet: #65549a;
+        --violet-soft: #e6e0f3;
+        --shadow: 0 24px 70px -48px rgba(37, 35, 31, 0.58);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        min-width: 1180px;
+        color: var(--ink);
+        background:
+          linear-gradient(rgba(42, 37, 30, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(42, 37, 30, 0.035) 1px, transparent 1px),
+          var(--bg);
+        background-size: 24px 24px;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        color: inherit;
+      }
+
+      .board {
+        width: 100%;
+        height: 100%;
+        padding: 24px;
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        gap: 18px;
+      }
+
+      .rail,
+      .frame,
+      .system-drawer,
+      .note {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 253, 248, 0.94);
+        box-shadow: var(--shadow);
+      }
+
+      .rail {
+        min-height: 0;
+        padding: 16px;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: 14px;
+      }
+
+      .rail h1 {
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.2;
+      }
+
+      .rail p {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .variant-list {
+        display: grid;
+        align-content: start;
+        gap: 9px;
+        overflow: auto;
+      }
+
+      .variant-button {
+        min-height: 86px;
+        padding: 12px;
+        display: grid;
+        gap: 6px;
+        text-align: left;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--paper);
+        cursor: pointer;
+      }
+
+      .variant-button:hover {
+        border-color: var(--line-strong);
+      }
+
+      .variant-button.is-active {
+        border-color: rgba(21, 118, 109, 0.36);
+        background: var(--teal-soft);
+      }
+
+      .variant-button b {
+        font-size: 14px;
+      }
+
+      .variant-button span {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .note {
+        box-shadow: none;
+        padding: 12px;
+        background: #fbf8f1;
+      }
+
+      .note b {
+        display: block;
+        font-size: 13px;
+      }
+
+      .note span {
+        display: block;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .stage {
+        min-width: 0;
+        min-height: 0;
+        display: grid;
+        place-items: center;
+      }
+
+      .frame {
+        width: min(1080px, 100%);
+        height: min(760px, calc(100vh - 48px));
+        min-height: 700px;
+        position: relative;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 344px minmax(0, 1fr);
+      }
+
+      .frame.compact {
+        width: min(980px, 100%);
+        grid-template-columns: 300px minmax(0, 1fr);
+      }
+
+      .frame.orbit {
+        grid-template-columns: 250px minmax(0, 1fr) 250px;
+      }
+
+      .frame.rpg {
+        grid-template-columns: 370px minmax(0, 1fr);
+      }
+
+      .pet {
+        min-height: 0;
+        display: grid;
+        grid-template-rows: 42px minmax(0, 1fr) auto;
+        border-right: 1px solid var(--line);
+        background: var(--panel);
+      }
+
+      .titlebar {
+        height: 42px;
+        padding: 0 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .traffic {
+        display: inline-flex;
+        gap: 7px;
+      }
+
+      .traffic span {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+      }
+
+      .traffic span:nth-child(1) { background: #ed6a5e; }
+      .traffic span:nth-child(2) { background: #f4bd4f; }
+      .traffic span:nth-child(3) { background: #61c554; }
+
+      .caption {
+        color: var(--faint);
+        font-size: 12px;
+      }
+
+      .pet-body {
+        min-height: 0;
+        padding: 18px;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: 14px;
+      }
+
+      .brand-row,
+      .chat-head,
+      .actions,
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        font-weight: 780;
+      }
+
+      .mark {
+        width: 26px;
+        height: 26px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line-strong);
+        border-radius: 7px;
+        background: var(--paper);
+      }
+
+      .status {
+        min-height: 26px;
+        padding: 0 9px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--paper);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .status::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: #4d8d49;
+      }
+
+      .avatar-wrap {
+        min-height: 0;
+        display: grid;
+        place-items: center;
+      }
+
+      .avatar {
+        width: 238px;
+        height: 238px;
+        position: relative;
+        display: grid;
+        place-items: center;
+        animation: breathe 3.2s ease-in-out infinite;
+      }
+
+      .compact .avatar {
+        width: 188px;
+        height: 188px;
+      }
+
+      .rpg .avatar {
+        width: 270px;
+        height: 270px;
+      }
+
+      .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        filter: drop-shadow(0 18px 18px rgba(37, 35, 31, 0.12));
+      }
+
+      .avatar::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: 4px;
+        width: 62%;
+        height: 20px;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: rgba(37, 35, 31, 0.12);
+        filter: blur(4px);
+        z-index: -1;
+      }
+
+      @keyframes breathe {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+      }
+
+      .speech,
+      .bubble,
+      .soft-panel,
+      .system-card,
+      .mini-card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--paper);
+      }
+
+      .speech {
+        padding: 14px;
+      }
+
+      .speech b,
+      .system-card b,
+      .mini-card b {
+        display: block;
+        font-size: 13px;
+      }
+
+      .speech p,
+      .system-card span,
+      .mini-card span {
+        margin: 7px 0 0;
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .pet-actions {
+        padding: 14px 18px 18px;
+        display: grid;
+        gap: 8px;
+        border-top: 1px solid var(--line);
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .btn,
+      .tab,
+      .prompt,
+      .send,
+      .project {
+        min-height: 38px;
+        padding: 0 11px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        cursor: pointer;
+      }
+
+      .btn:hover,
+      .tab:hover,
+      .prompt:hover,
+      .send:hover,
+      .project:hover {
+        border-color: var(--line-strong);
+      }
+
+      .btn.primary,
+      .send {
+        color: #fffdf8;
+        border-color: var(--teal);
+        background: var(--teal);
+      }
+
+      .btn.blue {
+        color: var(--blue);
+        border-color: rgba(52, 90, 168, 0.24);
+        background: var(--blue-soft);
+      }
+
+      .chat {
+        min-width: 0;
+        min-height: 0;
+        display: grid;
+        grid-template-rows: 58px minmax(0, 1fr) 138px;
+        background: var(--paper);
+      }
+
+      .orbit .chat {
+        grid-template-rows: 58px minmax(0, 1fr) 114px;
+      }
+
+      .chat-head {
+        height: 58px;
+        padding: 0 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .chat-head h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .chat-head p {
+        margin: 3px 0 0;
+        color: var(--faint);
+        font-size: 12px;
+      }
+
+      .head-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .messages {
+        min-height: 0;
+        overflow: auto;
+        padding: 22px 24px 18px;
+        display: grid;
+        align-content: start;
+        gap: 14px;
+        background:
+          linear-gradient(rgba(37, 35, 31, 0.026) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(37, 35, 31, 0.026) 1px, transparent 1px),
+          var(--paper);
+        background-size: 22px 22px;
+      }
+
+      .time {
+        justify-self: center;
+        min-height: 24px;
+        padding: 0 9px;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--faint);
+        font-size: 12px;
+        background: rgba(255, 253, 248, 0.9);
+      }
+
+      .msg {
+        max-width: min(620px, 82%);
+        display: grid;
+        gap: 5px;
+      }
+
+      .msg.user {
+        justify-self: end;
+      }
+
+      .msg.oc {
+        justify-self: start;
+      }
+
+      .bubble {
+        padding: 12px 14px;
+        font-size: 14px;
+        line-height: 1.66;
+      }
+
+      .msg.user .bubble {
+        color: #fffdf8;
+        border-color: var(--teal);
+        background: var(--teal);
+      }
+
+      .meta {
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .msg.user .meta {
+        text-align: right;
+      }
+
+      .memory {
+        max-width: 560px;
+        padding: 10px 12px;
+        border: 1px solid rgba(52, 90, 168, 0.18);
+        border-radius: 10px;
+        background: var(--blue-soft);
+        color: #2f416b;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .composer {
+        padding: 12px 18px 14px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: auto auto;
+        gap: 10px;
+        align-items: center;
+        border-top: 1px solid var(--line);
+      }
+
+      .prompts {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .prompt {
+        min-height: 30px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .input {
+        min-height: 50px;
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fbf8f1;
+      }
+
+      .input input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--ink);
+        font-size: 14px;
+      }
+
+      .system-drawer {
+        position: absolute;
+        inset: 58px 0 138px auto;
+        width: min(640px, 74%);
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        border-radius: 0;
+        border-top: 0;
+        border-right: 0;
+        border-bottom: 0;
+        box-shadow: -24px 0 56px -46px rgba(37, 35, 31, 0.55);
+        transform: translateX(100%);
+        transition: transform 220ms ease;
+        z-index: 8;
+      }
+
+      .system-drawer.is-open {
+        transform: translateX(0);
+      }
+
+      .drawer-head {
+        padding: 16px 18px 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .drawer-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .drawer-title h2 {
+        margin: 0;
+        font-size: 20px;
+      }
+
+      .drawer-title p {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .tabs {
+        margin-top: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .tab.is-active {
+        color: var(--teal);
+        border-color: rgba(21, 118, 109, 0.3);
+        background: var(--teal-soft);
+      }
+
+      .drawer-body {
+        min-height: 0;
+        overflow: auto;
+        padding: 16px 18px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .system-card,
+      .mini-card {
+        padding: 13px;
+      }
+
+      .system-card.is-highlight {
+        border-color: rgba(21, 118, 109, 0.32);
+        background: var(--teal-soft);
+      }
+
+      .mini-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .bar {
+        height: 7px;
+        margin-top: 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(37, 35, 31, 0.08);
+      }
+
+      .bar span {
+        display: block;
+        height: 100%;
+        background: var(--teal);
+      }
+
+      .right-orbit {
+        min-height: 0;
+        padding: 16px;
+        display: grid;
+        align-content: start;
+        gap: 10px;
+        border-left: 1px solid var(--line);
+        background: var(--panel);
+      }
+
+      .quest {
+        border-color: rgba(162, 113, 31, 0.24);
+        background: var(--gold-soft);
+      }
+
+      .rpg .pet {
+        background:
+          linear-gradient(rgba(37, 35, 31, 0.028) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(37, 35, 31, 0.028) 1px, transparent 1px),
+          #f7f1e8;
+        background-size: 18px 18px;
+      }
+
+      .xp {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .xp .mini-card {
+        min-height: 72px;
+      }
+
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 24px;
+        min-width: 260px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: rgba(255, 253, 248, 0.98);
+        color: var(--ink);
+        box-shadow: var(--shadow);
+        transform: translate(-50%, 12px);
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+        z-index: 30;
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="board">
+      <aside class="rail">
+        <div>
+          <h1>OC World 交互版本</h1>
+          <p>四个方向都保留“左侧 Agent / 右侧对话”，区别在于陪伴感、系统入口、游戏化强度和后台存在感。</p>
+        </div>
+        <div class="variant-list" id="variantList"></div>
+        <div class="note">
+          <b>张小龙式自检</b>
+          <span id="whyNote">入口应该自然，不要为了展示功能而打断用户。</span>
+        </div>
+      </aside>
+
+      <section class="stage">
+        <div class="frame" id="frame">
+          <aside class="pet">
+            <div class="titlebar">
+              <div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
+              <span class="caption" id="variantKicker">desktop pet agent</span>
+            </div>
+            <div class="pet-body">
+              <div class="brand-row">
+                <div class="brand">
+                  <span class="mark">⌘</span>
+                  <span>OC World</span>
+                </div>
+                <span class="status" id="agentState">在线</span>
+              </div>
+              <div class="avatar-wrap">
+                <div class="avatar"><img src="./oc-avatar-pet.png" alt="OC 桌面宠物形象" /></div>
+              </div>
+              <div class="speech">
+                <b id="speechTitle">Luma 正在陪你</b>
+                <p id="speechText">你先说今天发生了什么。我会帮你记住、理解，然后把它慢慢变成人生系统里的成长线索。</p>
+              </div>
+            </div>
+            <div class="pet-actions">
+              <div class="actions">
+                <button class="btn" data-mood="happy" type="button">摸摸</button>
+                <button class="btn" data-mood="think" type="button">解惑</button>
+                <button class="btn" data-mood="focus" type="button">专注</button>
+              </div>
+              <button class="btn" id="petSystem" type="button">查看隐藏的人生系统</button>
+            </div>
+          </aside>
+
+          <section class="chat">
+            <header class="chat-head">
+              <div>
+                <h2 id="chatTitle">和 Luma 对话</h2>
+                <p id="chatSubtitle">主界面保持轻，成长记录和能力值在右侧隐藏页面里。</p>
+              </div>
+              <div class="head-actions">
+                <button class="btn blue" id="runFlow" type="button">播放完整交互</button>
+                <button class="btn" id="openSystem" type="button">人生系统</button>
+              </div>
+            </header>
+
+            <div class="messages" id="messages"></div>
+
+            <div class="composer">
+              <div class="prompts" id="prompts"></div>
+              <div class="input">
+                <span>＋</span>
+                <input id="chatInput" />
+              </div>
+              <button class="send" id="send" type="button">发送</button>
+            </div>
+
+            <aside class="system-drawer" id="drawer">
+              <div class="drawer-head">
+                <div class="drawer-title">
+                  <div>
+                    <h2 id="drawerTitle">人生系统</h2>
+                    <p id="drawerSubtitle">后台保存日常经历、OC 印象、能力值和项目推进。</p>
+                  </div>
+                  <button class="btn" id="closeSystem" type="button">关闭</button>
+                </div>
+                <div class="tabs" id="tabs"></div>
+              </div>
+              <div class="drawer-body" id="drawerBody"></div>
+            </aside>
+          </section>
+
+          <aside class="right-orbit" id="rightOrbit"></aside>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast">已更新</div>
+
+    <script>
+      const variants = [
+        {
+          id: "quiet",
+          name: "A · 轻陪伴",
+          desc: "最接近当前方向：桌宠为第一入口，人生系统藏在抽屉。",
+          why: "为什么这样做：先建立关系，不把用户一打开就推到系统里。",
+          frame: "",
+          kicker: "desktop pet agent",
+          title: "和 Luma 对话",
+          subtitle: "主界面保持轻，成长记录和能力值在右侧隐藏页面里。",
+          speech: "你先说今天发生了什么。我会帮你记住、理解，然后把它慢慢变成人生系统里的成长线索。",
+          prompts: ["我卡住了", "记录进展", "今日复盘", "推进项目"],
+          input: "今天我想让你记住：主界面要像桌面宠物，人生系统藏在后面。",
+          tabs: ["时序", "印象", "能力值", "项目推进"],
+        },
+        {
+          id: "capsule",
+          name: "B · 桌面胶囊",
+          desc: "更像桌面常驻小组件：宠物更小，状态更轻，适合长期挂着。",
+          why: "为什么这样做：真实使用时，OC 应该不占用注意力，只在需要时出现。",
+          frame: "compact",
+          kicker: "ambient companion",
+          title: "Luma 小窗",
+          subtitle: "常驻桌面，不主动打扰；需要复盘时再展开人生系统。",
+          speech: "我在这里。你不用打开一个复杂应用，只要把今天的一句话丢给我。",
+          prompts: ["一句存档", "陪我专注", "提醒复盘", "打开后台"],
+          input: "今天先记一句：我把主界面变轻了。",
+          tabs: ["今天", "印象", "练习", "后台"],
+        },
+        {
+          id: "orbit",
+          name: "C · 关系轨道",
+          desc: "右侧常驻一点点人生线索，仍不压迫主对话。",
+          why: "为什么这样做：让用户看到成长在后台发生，但不抢走对话主线。",
+          frame: "orbit",
+          kicker: "relationship orbit",
+          title: "和 Luma 相处",
+          subtitle: "对话是主线，右侧只露出轻量成长轨道。",
+          speech: "我会把你反复出现的状态放在旁边，不评价你，只帮你看见它。",
+          prompts: ["今天状态", "我又拖延了", "帮我看模式", "推进 OC"],
+          input: "我发现我总在产品方向模糊时反复看参考。",
+          tabs: ["轨道", "印象", "能力", "项目"],
+        },
+        {
+          id: "rpg",
+          name: "D · 人生 RPG",
+          desc: "游戏化更强：等级、任务、能力变化更明显，但仍由对话触发。",
+          why: "为什么这样做：把成长变得有反馈，但不能让数值成为目的。",
+          frame: "rpg",
+          kicker: "life rpg companion",
+          title: "今日冒险记录",
+          subtitle: "你负责真实生活，Luma 负责把经历翻译成成长反馈。",
+          speech: "今天的任务不是赢过谁，是完成一次真实推进。我会把证据保存下来。",
+          prompts: ["领取今日任务", "完成一步", "能力结算", "项目副本"],
+          input: "我完成了 OC 主界面的第一轮交互。",
+          tabs: ["冒险", "能力", "任务", "项目"],
+        },
+      ];
+
+      const baseMessages = [
+        { role: "user", text: "我觉得 OC 应该是桌面宠物一样的 Agent，不要一打开就是人生仪表盘。", meta: "你" },
+        {
+          role: "oc",
+          text: "懂了。你平时应该先看到我，像一个在桌面陪着你的伙伴。能力值、经历、项目推进这些东西，我会在后台帮你整理。",
+          meta: "Luma · 理解产品方向",
+        },
+      ];
+
+      let current = 3;
+      let activeTab = 0;
+      const state = {
+        messages: [...baseMessages],
+        timeline: [
+          ["09:40", "纠正产品理念", "OC 是成长陪伴，不是替人生活。", "判断力 +4"],
+          ["16:42", "主界面方向修正", "左侧桌宠 Agent，右侧对话，后台人生系统。", "项目推进 +3"],
+          ["现在", "等待下一次真实记录", "你说一句，Luma 再同步到后台。", "表达力 +1"],
+        ],
+        abilities: [
+          ["判断力", 76, "+4"],
+          ["表达力", 68, "+2"],
+          ["自我理解", 64, "+3"],
+          ["行动力", 71, "+1"],
+          ["创造力", 63, "+2"],
+          ["项目推进", 58, "+3"],
+        ],
+        projects: [
+          ["OC World 主界面", 70, "验证桌宠 + 对话的第一感受。"],
+          ["人生系统后台", 38, "把时序、印象、能力、项目统一。"],
+          ["桌宠交互动作", 48, "补充情绪、专注、提醒与陪伴反馈。"],
+        ],
+      };
+
+      const $ = (id) => document.getElementById(id);
+      const esc = (text) => String(text).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[m]);
+
+      function toast(text) {
+        $("toast").textContent = text;
+        $("toast").classList.add("is-visible");
+        window.clearTimeout(toast.timer);
+        toast.timer = window.setTimeout(() => $("toast").classList.remove("is-visible"), 1500);
+      }
+
+      function renderVariants() {
+        $("variantList").innerHTML = variants
+          .map(
+            (variant, index) => `
+              <button class="variant-button ${index === current ? "is-active" : ""}" type="button" data-variant="${index}">
+                <b>${variant.name}</b>
+                <span>${variant.desc}</span>
+              </button>
+            `,
+          )
+          .join("");
+        document.querySelectorAll("[data-variant]").forEach((button) => {
+          button.addEventListener("click", () => {
+            current = Number(button.dataset.variant);
+            activeTab = 0;
+            state.messages = [...baseMessages];
+            render();
+          });
+        });
+      }
+
+      function renderFrame() {
+        const variant = variants[current];
+        $("frame").className = `frame ${variant.frame}`;
+        $("variantKicker").textContent = variant.kicker;
+        $("chatTitle").textContent = variant.title;
+        $("chatSubtitle").textContent = variant.subtitle;
+        $("speechTitle").textContent = variant.id === "rpg" ? "Luma 等待结算" : "Luma 正在陪你";
+        $("speechText").textContent = variant.speech;
+        $("chatInput").value = variant.input;
+        $("whyNote").textContent = variant.why;
+        $("prompts").innerHTML = variant.prompts.map((item) => `<button class="prompt" type="button" data-prompt="${esc(item)}">${esc(item)}</button>`).join("");
+        $("tabs").innerHTML = variant.tabs.map((item, index) => `<button class="tab ${index === activeTab ? "is-active" : ""}" type="button" data-tab="${index}">${esc(item)}</button>`).join("");
+        renderRightOrbit();
+
+        document.querySelectorAll("[data-prompt]").forEach((button) => {
+          button.addEventListener("click", () => {
+            $("chatInput").value = button.textContent.includes("卡住")
+              ? "我今天有点卡住，想让你帮我一起拆一下。"
+              : button.textContent.includes("推进") || button.textContent.includes("项目") || button.textContent.includes("完成")
+                ? "我今天推进了 OC 主界面，把它改成桌面宠物和对话。"
+                : button.textContent.includes("复盘") || button.textContent.includes("结算")
+                  ? "帮我复盘今天，我想知道能力值有哪些变化。"
+                  : `今天记录：${button.textContent}`;
+          });
+        });
+        document.querySelectorAll("[data-tab]").forEach((button) => {
+          button.addEventListener("click", () => {
+            activeTab = Number(button.dataset.tab);
+            renderDrawer();
+          });
+        });
+      }
+
+      function renderMessages() {
+        $("messages").innerHTML = `<div class="time">今天 16:42</div>` +
+          state.messages
+            .map(
+              (message) => `
+                <div class="msg ${message.role}">
+                  <div class="bubble">${esc(message.text)}</div>
+                  <div class="meta">${esc(message.meta)}</div>
+                </div>
+              `,
+            )
+            .join("") +
+          `<div class="memory">已记录为印象：你希望 OC 的第一感受是“陪伴和互动”，成长系统应该隐藏但持续运转。</div>`;
+      }
+
+      function renderDrawer() {
+        const variant = variants[current];
+        document.querySelectorAll("[data-tab]").forEach((button) => button.classList.toggle("is-active", Number(button.dataset.tab) === activeTab));
+        $("drawerTitle").textContent = variant.id === "rpg" ? "人生后台 · 今日结算" : "人生系统";
+        $("drawerSubtitle").textContent = activeTab === 0 ? "按时间保存真实经历。" : activeTab === 1 ? "Luma 对你的长期理解，可以被你修正。" : activeTab === 2 ? "能力值只来自真实行为证据。" : "项目不是任务堆，而是成长主线。";
+        if (activeTab === 0) {
+          $("drawerBody").innerHTML = state.timeline
+            .map(
+              ([time, title, text, chip], index) => `
+                <button class="system-card ${index === 0 ? "is-highlight" : ""}" type="button">
+                  <b>${esc(time)} · ${esc(title)}</b>
+                  <span>${esc(text)}</span>
+                  <span style="color:var(--teal);margin-top:8px">${esc(chip)}</span>
+                </button>
+              `,
+            )
+            .join("");
+        } else if (activeTab === 1) {
+          $("drawerBody").innerHTML = [
+            ["你重视人的成长", "AI 应该帮人更清醒、更能行动，而不是替人生活。"],
+            ["你在意第一感受", "用户应该先感到一个 OC 在身边，再看到复杂后台。"],
+            ["你需要完整闭环", "静态界面不够，对话必须能驱动记忆、能力和项目变化。"],
+          ]
+            .map(([title, text]) => `<div class="system-card"><b>${title}</b><span>${text}</span></div>`)
+            .join("");
+        } else if (activeTab === 2) {
+          $("drawerBody").innerHTML = `<div class="mini-grid">${state.abilities
+            .map(
+              ([name, score, delta]) => `
+                <div class="mini-card">
+                  <b>${esc(name)} · ${score}</b>
+                  <span>${esc(delta)} 今日变化</span>
+                  <div class="bar"><span style="width:${score}%"></span></div>
+                </div>
+              `,
+            )
+            .join("")}</div>`;
+        } else {
+          $("drawerBody").innerHTML = state.projects
+            .map(
+              ([title, progress, next]) => `
+                <button class="project system-card" type="button" data-project-title="${esc(title)}">
+                  <b>${esc(title)} · ${progress}%</b>
+                  <span>${esc(next)}</span>
+                  <div class="bar"><span style="width:${progress}%"></span></div>
+                </button>
+              `,
+            )
+            .join("");
+        }
+      }
+
+      function renderRightOrbit() {
+        const variant = variants[current];
+        const orbit = $("rightOrbit");
+        if (variant.id !== "orbit") {
+          orbit.style.display = "none";
+          return;
+        }
+        orbit.style.display = "grid";
+        orbit.innerHTML = `
+          <div class="system-card"><b>关系轨道</b><span>今天 Luma 观察到：你在方向模糊时，会先找参考，再通过对话校准价值观。</span></div>
+          <div class="system-card quest"><b>轻任务</b><span>写一句：这个功能是在增强人，还是替代人？</span></div>
+          <div class="mini-grid">
+            <div class="mini-card"><b>判断力</b><span>76 · +4</span></div>
+            <div class="mini-card"><b>项目推进</b><span>58 · +3</span></div>
+          </div>
+        `;
+      }
+
+      function sendMessage(text = $("chatInput").value.trim()) {
+        if (!text) return;
+        state.messages.push({ role: "user", text, meta: "你" });
+        const reply = /卡住|困惑/.test(text)
+          ? "我先不急着给答案。我们把它拆成：发生了什么、你真正担心什么、下一步只做哪一个最小动作。"
+          : /复盘|能力|结算/.test(text)
+            ? "今天主要是判断力和项目推进在涨：你把主界面从系统面板拉回到陪伴关系，这是一次产品判断。"
+            : "我记住了。这会进入时序记录，也会更新我对你的印象。你继续自然说话，后台我来整理。";
+        state.messages.push({ role: "oc", text: reply, meta: "Luma · 已理解并记录" });
+        state.timeline.unshift(["现在", "新的对话记录", text, "表达力 +1"]);
+        state.abilities[1][1] += 1;
+        state.projects[0][1] = Math.min(100, state.projects[0][1] + 2);
+        $("chatInput").value = "";
+        renderMessages();
+        renderDrawer();
+        $("messages").scrollTop = $("messages").scrollHeight;
+        toast("已同步到人生系统");
+      }
+
+      async function runFlow() {
+        sendMessage(variants[current].id === "rpg" ? "我完成了 OC 主界面的第一轮交互。" : "我今天推进了 OC 主界面，把它改成桌面宠物和对话。");
+        $("drawer").classList.add("is-open");
+        activeTab = variants[current].id === "rpg" ? 2 : 3;
+        renderFrame();
+        renderDrawer();
+        toast("演示完成：对话驱动后台变化");
+      }
+
+      function render() {
+        renderVariants();
+        renderFrame();
+        renderMessages();
+        renderDrawer();
+      }
+
+      document.addEventListener("click", (event) => {
+        const mood = event.target.closest("[data-mood]");
+        if (mood) {
+          $("agentState").textContent = mood.dataset.mood === "happy" ? "开心" : mood.dataset.mood === "think" ? "思考中" : "专注";
+          $("speechText").textContent = mood.dataset.mood === "focus" ? "接下来我只陪你盯一个最小动作，结束后再一起存档。" : mood.dataset.mood === "think" ? "我先问为什么，再问下一步，不急着给结论。" : "我会记住这次互动，它属于我们共同成长的关系。";
+          toast("Luma 状态已变化");
+        }
+      });
+      $("openSystem").addEventListener("click", () => $("drawer").classList.add("is-open"));
+      $("petSystem").addEventListener("click", () => $("drawer").classList.add("is-open"));
+      $("closeSystem").addEventListener("click", () => $("drawer").classList.remove("is-open"));
+      $("send").addEventListener("click", () => sendMessage());
+      $("chatInput").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          sendMessage();
+        }
+      });
+      $("runFlow").addEventListener("click", runFlow);
+
+      render();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,1517 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OC World 1.0 · 隐形成长系统</title>
+    <style>
+      :root {
+        --bg: #eff3f0;
+        --paper: #fbfcf8;
+        --panel: #f4f7f1;
+        --ink: #202622;
+        --muted: #69736d;
+        --faint: #929c96;
+        --line: rgba(32, 38, 34, 0.13);
+        --line-strong: rgba(32, 38, 34, 0.25);
+        --green: #147866;
+        --green-soft: #dcefe8;
+        --blue: #315fa7;
+        --blue-soft: #dfe9fb;
+        --gold: #93691f;
+        --gold-soft: #f3e6c9;
+        --shadow: 0 28px 78px -58px rgba(24, 30, 27, 0.72);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        min-width: 1120px;
+        color: var(--ink);
+        background:
+          linear-gradient(rgba(32, 38, 34, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(32, 38, 34, 0.04) 1px, transparent 1px),
+          var(--bg);
+        background-size: 24px 24px;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        color: inherit;
+      }
+
+      .app {
+        width: 100%;
+        height: 100%;
+        padding: 24px;
+        display: grid;
+        grid-template-columns: 318px minmax(0, 1fr);
+        gap: 16px;
+      }
+
+      .companion,
+      .chat,
+      .memory-drawer,
+      .toast {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(251, 252, 248, 0.96);
+        box-shadow: var(--shadow);
+      }
+
+      .companion,
+      .chat {
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .companion {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+      }
+
+      .titlebar,
+      .chat-head,
+      .drawer-head {
+        min-height: 52px;
+        padding: 13px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .traffic {
+        display: flex;
+        gap: 7px;
+      }
+
+      .traffic span {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .traffic span:nth-child(1) {
+        background: #ed6a5e;
+      }
+
+      .traffic span:nth-child(2) {
+        background: #f4bd4f;
+      }
+
+      .traffic span:nth-child(3) {
+        background: #61c454;
+      }
+
+      .kicker {
+        color: var(--faint);
+        font-size: 11px;
+        text-transform: uppercase;
+      }
+
+      .companion-main {
+        min-height: 0;
+        padding: 16px;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: 14px;
+      }
+
+      .brand,
+      .state-row,
+      .quiet-line,
+      .drawer-card-head,
+      .signal-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .brand {
+        justify-content: flex-start;
+        font-weight: 800;
+      }
+
+      .mark {
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .state,
+      .pill {
+        min-height: 24px;
+        padding: 4px 9px;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--paper);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .state::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        margin-right: 6px;
+        border-radius: 50%;
+        background: #58b765;
+      }
+
+      .avatar-wrap {
+        min-height: 300px;
+        display: grid;
+        place-items: center;
+      }
+
+      .avatar {
+        position: relative;
+        width: 168px;
+        height: 214px;
+        display: grid;
+        place-items: end center;
+      }
+
+      .avatar::after {
+        content: "";
+        position: absolute;
+        bottom: 2px;
+        left: 50%;
+        width: 132px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(32, 38, 34, 0.12);
+        filter: blur(7px);
+        transform: translateX(-50%);
+      }
+
+      .avatar img {
+        position: relative;
+        z-index: 1;
+        width: 154px;
+      }
+
+      .quiet-panel,
+      .whisper,
+      .drawer-card,
+      .empty-signal {
+        padding: 13px;
+        display: grid;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--panel);
+      }
+
+      .quiet-panel h2,
+      .whisper h3,
+      .drawer-card h3,
+      .empty-signal h3 {
+        margin: 0;
+        font-size: 15px;
+      }
+
+      .quiet-panel p,
+      .whisper p,
+      .drawer-card p,
+      .empty-signal p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .quiet-line span {
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .companion-actions {
+        padding: 14px 16px 16px;
+        display: grid;
+        gap: 8px;
+        border-top: 1px solid var(--line);
+      }
+
+      .btn {
+        min-height: 38px;
+        padding: 0 13px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        cursor: pointer;
+      }
+
+      .btn:hover {
+        border-color: var(--line-strong);
+        background: #ffffff;
+      }
+
+      .btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .btn.primary {
+        border-color: rgba(20, 120, 102, 0.28);
+        background: var(--green);
+        color: white;
+      }
+
+      .btn.blue {
+        border-color: rgba(49, 95, 167, 0.25);
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .btn.ghost {
+        color: var(--muted);
+      }
+
+      .chat {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+      }
+
+      .chat-head h1,
+      .drawer-head h2 {
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.1;
+      }
+
+      .chat-head p,
+      .drawer-head p {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .head-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .messages {
+        min-height: 0;
+        padding: 24px;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .time-chip {
+        align-self: center;
+        padding: 4px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(251, 252, 248, 0.76);
+        color: var(--faint);
+        font-size: 12px;
+      }
+
+      .message {
+        max-width: 72%;
+        display: grid;
+        gap: 5px;
+      }
+
+      .message.user {
+        align-self: flex-end;
+        justify-items: end;
+      }
+
+      .message.oc {
+        align-self: flex-start;
+      }
+
+      .message.typing {
+        align-self: flex-start;
+      }
+
+      .bubble {
+        padding: 13px 15px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--paper);
+        font-size: 14px;
+        line-height: 1.58;
+      }
+
+      .message.user .bubble {
+        border-color: rgba(20, 120, 102, 0.28);
+        background: var(--green);
+        color: white;
+      }
+
+      .message.typing .bubble {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--muted);
+      }
+
+      .typing-dots {
+        display: inline-flex;
+        gap: 3px;
+      }
+
+      .typing-dots i {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: currentColor;
+        animation: typingPulse 900ms ease-in-out infinite;
+      }
+
+      .typing-dots i:nth-child(2) {
+        animation-delay: 120ms;
+      }
+
+      .typing-dots i:nth-child(3) {
+        animation-delay: 240ms;
+      }
+
+      @keyframes typingPulse {
+        0%,
+        80%,
+        100% {
+          opacity: 0.35;
+          transform: translateY(0);
+        }
+        40% {
+          opacity: 1;
+          transform: translateY(-2px);
+        }
+      }
+
+      .meta {
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .system-note {
+        align-self: stretch;
+        padding: 9px 12px;
+        border: 1px solid rgba(20, 120, 102, 0.18);
+        border-radius: 9px;
+        background: var(--green-soft);
+        color: #245b53;
+        font-size: 12px;
+      }
+
+      .composer {
+        padding: 14px 18px 18px;
+        display: grid;
+        gap: 10px;
+        border-top: 1px solid var(--line);
+      }
+
+      .prompts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .prompt {
+        min-height: 30px;
+        padding: 0 11px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .prompt:hover {
+        color: var(--ink);
+        border-color: var(--line-strong);
+      }
+
+      .input-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+      }
+
+      .input-box {
+        min-height: 50px;
+        padding: 0 14px;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 11px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--paper);
+      }
+
+      .input-box.is-recording {
+        border-color: rgba(181, 78, 63, 0.34);
+        box-shadow: 0 0 0 3px rgba(181, 78, 63, 0.08);
+      }
+
+      .plus {
+        color: var(--muted);
+        font-size: 22px;
+      }
+
+      .voice-input-button {
+        width: 32px;
+        height: 32px;
+        display: inline-grid;
+        place-items: center;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      .voice-input-button:hover {
+        border-color: var(--line);
+        background: rgba(20, 120, 102, 0.06);
+        color: var(--green);
+      }
+
+      .voice-input-button.is-recording {
+        border-color: rgba(181, 78, 63, 0.24);
+        background: rgba(181, 78, 63, 0.1);
+        color: #b54e3f;
+      }
+
+      .voice-input-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      input {
+        min-width: 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--ink);
+      }
+
+      .composer-status {
+        min-height: 16px;
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .memory-drawer {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        bottom: 24px;
+        width: 430px;
+        z-index: 20;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        overflow: hidden;
+        transform: translateX(calc(100% + 36px));
+        transition: transform 220ms ease;
+      }
+
+      .memory-drawer.is-open {
+        transform: translateX(0);
+      }
+
+      .drawer-body {
+        min-height: 0;
+        padding: 14px;
+        overflow: auto;
+        display: grid;
+        align-content: start;
+        gap: 10px;
+      }
+
+      .drawer-card {
+        background: var(--paper);
+      }
+
+      .drawer-card-head b {
+        font-size: 13px;
+      }
+
+      .signal-row {
+        padding-top: 4px;
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .signal-tag {
+        width: fit-content;
+        padding: 4px 8px;
+        border: 1px solid rgba(20, 120, 102, 0.18);
+        border-radius: 999px;
+        background: var(--green-soft);
+        color: var(--green);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .runtime-panel {
+        padding: 12px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: rgba(251, 252, 248, 0.74);
+      }
+
+      .runtime-item {
+        min-width: 0;
+        display: grid;
+        gap: 3px;
+      }
+
+      .runtime-item span,
+      .drawer-section-title {
+        color: var(--faint);
+        font-size: 11px;
+        text-transform: uppercase;
+      }
+
+      .runtime-item b {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+      }
+
+      .drawer-section {
+        display: grid;
+        gap: 10px;
+      }
+
+      .drawer-section + .drawer-section {
+        padding-top: 4px;
+      }
+
+      .drawer-section-title {
+        padding: 0 2px;
+      }
+
+      .drawer-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .drawer-actions .btn {
+        min-height: 30px;
+        font-size: 12px;
+      }
+
+      .compact-list {
+        margin: 0;
+        padding-left: 16px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 22px;
+        padding: 12px 16px;
+        z-index: 30;
+        opacity: 0;
+        pointer-events: none;
+        transform: translate(-50%, 10px);
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      @media (max-width: 920px) {
+        body {
+          min-width: 0;
+        }
+
+        .app {
+          height: auto;
+          min-height: 100%;
+          padding: 14px;
+          grid-template-columns: 1fr;
+        }
+
+        .companion,
+        .chat {
+          min-height: 560px;
+        }
+
+        .memory-drawer {
+          left: 14px;
+          right: 14px;
+          top: 14px;
+          bottom: 14px;
+          width: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <aside class="companion">
+        <div class="titlebar">
+          <div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
+          <span class="kicker">quiet growth</span>
+        </div>
+
+        <div class="companion-main">
+          <div class="state-row">
+            <div class="brand"><span class="mark">⌘</span><span>OC World</span></div>
+            <span class="state" id="stateText">在听</span>
+          </div>
+
+          <div class="avatar-wrap">
+            <div class="avatar"><img src="./oc-avatar-pet.png" alt="OC 成长伙伴形象" /></div>
+          </div>
+
+          <section class="quiet-panel">
+            <div class="quiet-line">
+              <h2 id="quietTitle">Luma 正在学会你</h2>
+              <span id="quietCount">正在听</span>
+            </div>
+            <p id="quietText">第一版不让你管理系统。你只需要说话，OC 会在背后慢慢整理目标、优势、证据和下一步。</p>
+          </section>
+
+          <section class="runtime-panel">
+            <div class="runtime-item"><span>关系</span><b id="relationshipText">读取中</b></div>
+            <div class="runtime-item"><span>Hermes</span><b id="hermesText">启动中</b></div>
+            <div class="runtime-item"><span>上下文</span><b id="airjellyText">读取中</b></div>
+            <div class="runtime-item"><span>语音</span><b id="voiceStatusText">读取中</b></div>
+          </section>
+        </div>
+
+        <div class="companion-actions">
+          <button class="btn" type="button" id="focusInput">和 Luma 说话</button>
+          <button class="btn blue" type="button" id="softOpen">看看它发现了什么</button>
+        </div>
+      </aside>
+
+      <section class="chat">
+        <header class="chat-head">
+          <div>
+            <h1>先对话，系统在背后长出来</h1>
+            <p>一开始不展示人生系统。OC 先陪伴、记住、理解，再等待你探索。</p>
+          </div>
+          <div class="head-actions">
+            <button class="btn ghost" type="button" id="refreshRuntime">刷新</button>
+            <button class="btn ghost" type="button" id="generateAvatar">生成形象</button>
+            <button class="btn ghost" type="button" id="openMemory">探索</button>
+          </div>
+        </header>
+
+        <div class="messages" id="messages"></div>
+
+        <div class="composer">
+          <div class="prompts" id="prompts"></div>
+          <div class="input-row">
+            <div class="input-box" id="inputBox">
+              <span class="plus">＋</span>
+              <input id="input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="和 Luma 说点真实发生的事" />
+              <button class="voice-input-button" type="button" id="voiceInput" aria-label="语音输入" title="语音输入">
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <path d="M12 19v3"></path>
+                </svg>
+              </button>
+            </div>
+            <button class="btn primary" type="button" id="send">发送</button>
+          </div>
+          <div class="composer-status" id="composerStatus">可以直接打字，也可以点麦克风说话。</div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="memory-drawer" id="memoryDrawer" aria-label="Luma 正在学会你的内容">
+      <div class="drawer-head">
+        <div>
+          <h2>Luma 正在学会你</h2>
+          <p>这些不是第一屏功能，是慢慢被发现的成长系统。</p>
+        </div>
+        <button class="btn" type="button" id="closeMemory">关闭</button>
+      </div>
+      <div class="drawer-body" id="drawerBody"></div>
+    </aside>
+
+    <div class="toast" id="toast">已默默记住</div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const esc = (text) =>
+        String(text ?? "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[m]);
+
+      const prompts = ["我今天在想", "我有点卡住", "你觉得你懂我吗", "我们可以沉淀什么"];
+      const runtime = window.ocWorld;
+      const defaultUserId = "user-001";
+      const defaultCharacterId = "char-001";
+      const targetSampleRate = 16000;
+
+      let activeAudio = null;
+      let voiceSessionId = null;
+      let voiceStream = null;
+      let audioContext = null;
+      let voiceSource = null;
+      let voiceProcessor = null;
+      let detachTranscript = null;
+      let detachError = null;
+      let messageIdSeq = 0;
+
+      const stageLabel = {
+        stranger: "陌生",
+        acquaintance: "相识",
+        friend: "朋友",
+        close_friend: "亲密",
+        soulmate: "灵魂伴侣",
+      };
+
+      const insightLabel = {
+        goal: "目标",
+        strength: "优势",
+        evidence: "证据",
+        plan: "计划",
+        preference: "偏好",
+        open_question: "问题",
+      };
+
+      const fallbackMemory = {
+        target: {
+          title: "可能的长期目标",
+          text: "你在找的不是一个工具，而是一种人和 AI 长期共同成长的关系。",
+          status: "等待更多证据",
+          tag: "目标图谱",
+        },
+        strength: {
+          title: "反复出现的优势",
+          text: "你很擅长从“不对劲的感觉”里提出更准确的产品定义。",
+          status: "已出现 3 次",
+          tag: "优势画像",
+        },
+        evidence: {
+          title: "最近的成长证据",
+          text: "你连续校准了三个方向：不是任务代理、不是桌宠、不是把系统全展示出来。",
+          status: "默默记录",
+          tag: "成长证据",
+        },
+        plan: {
+          title: "下一步规划",
+          text: "先验证一个最小动作：用户是否愿意每天和 OC 说一件真实经历。",
+          status: "适合现在",
+          tag: "规划建议",
+        },
+      };
+
+      const state = {
+        isSending: false,
+        isListening: false,
+        queuedMessages: [],
+        lastDiscoveryText: "",
+        ttsEnabled: true,
+        unlocked: false,
+        signals: [],
+        character: null,
+        relationship: null,
+        history: [],
+        timeline: [],
+        summaries: [],
+        activeReveal: null,
+        growthInsights: [],
+        growthProfile: null,
+        airjelly: null,
+        hermesStatus: null,
+        ttsStatus: null,
+        asrStatus: null,
+        messages: [
+          { type: "time", text: "今天 23:08" },
+          {
+            type: "oc",
+            text: "你不用先打开什么系统。你只要跟我说今天发生了什么，我会先陪你把它讲清楚。",
+            meta: "Luma · 成长伙伴",
+          },
+        ],
+      };
+
+      function ocName() {
+        return state.character?.name?.trim() || "Luma";
+      }
+
+      function nextMessageId(prefix = "msg") {
+        messageIdSeq += 1;
+        return `${prefix}-${Date.now()}-${messageIdSeq}`;
+      }
+
+      function toast(text) {
+        $("toast").textContent = text;
+        $("toast").classList.add("is-visible");
+        window.clearTimeout(toast.timer);
+        toast.timer = window.setTimeout(() => $("toast").classList.remove("is-visible"), 1500);
+      }
+
+      function setComposerStatus(text) {
+        $("composerStatus").textContent = text;
+      }
+
+      function focusComposerInput() {
+        const input = $("input");
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
+
+      function clearComposerDraft() {
+        $("input").value = "";
+        setSending(state.isSending);
+      }
+
+      function shortTime(timestamp) {
+        if (!timestamp) return "刚刚";
+        return new Date(timestamp).toLocaleString("zh-CN", {
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+
+      function remember(signal) {
+        if (!state.signals.includes(signal)) state.signals.push(signal);
+        $("quietCount").textContent = `${state.signals.length} 个线索`;
+        renderRuntimePanel();
+      }
+
+      function setSending(isSending) {
+        state.isSending = isSending;
+        $("send").disabled = false;
+        $("input").disabled = false;
+        $("voiceInput").disabled = isSending && !state.isListening;
+        $("stateText").textContent = isSending ? "在想" : state.signals.length >= 3 ? "更懂你了" : "在听";
+        $("send").textContent = isSending && $("input").value.trim() ? "排队" : "发送";
+      }
+
+      function renderRuntimePanel() {
+        const relationship = state.relationship;
+        const intimacy = relationship ? `${relationship.intimacy} · ${stageLabel[relationship.stage] || relationship.stage}` : "未建立";
+        const hermes = state.hermesStatus?.state ? `${state.hermesStatus.state}${state.hermesStatus.pid ? ` #${state.hermesStatus.pid}` : ""}` : "未知";
+        const airjelly = state.airjelly ? `${state.airjelly.source} · ${state.airjelly.events?.length || 0} 事件` : "未读取";
+        const speech = `${state.ttsStatus?.provider || "tts"} / ${state.asrStatus?.configured ? "asr ready" : "asr off"}`;
+
+        $("relationshipText").textContent = intimacy;
+        $("hermesText").textContent = hermes;
+        $("airjellyText").textContent = airjelly;
+        $("voiceStatusText").textContent = speech;
+        $("voiceInput").classList.toggle("is-recording", state.isListening);
+        $("inputBox").classList.toggle("is-recording", state.isListening);
+        $("voiceInput").setAttribute("aria-pressed", state.isListening ? "true" : "false");
+        $("voiceInput").setAttribute("aria-label", state.isListening ? "停止语音输入" : "语音输入");
+        $("voiceInput").setAttribute("title", state.isListening ? "停止语音输入" : "语音输入");
+        $("quietTitle").textContent = `${ocName()} 正在学会你`;
+      }
+
+      function inferReply(text) {
+        if (text.includes("不应该") || text.includes("展示")) {
+          remember("evidence");
+          remember("plan");
+          return "对。第一版不应该让用户看到一堆成长系统。系统应该先在背后工作，你只感受到我越来越懂你。";
+        }
+        if (text.includes("卡住")) {
+          remember("plan");
+          return "我先不急着给你一个方案。我想确认：你现在卡住的是功能怎么收，还是第一版到底要验证什么？";
+        }
+        if (text.includes("懂我")) {
+          remember("target");
+          remember("strength");
+          return "我现在只看见一点：你一直在找的是“人和 AI 的长期关系”，不是一个短期效率工具。这个判断对吗？";
+        }
+        if (text.includes("沉淀")) {
+          remember("target");
+          return "可以沉淀，但不要太早展示。先让沉淀发生在后台，等它足够准确时，我再轻轻问你要不要看看。";
+        }
+        remember("evidence");
+        return "我先把这句话记成一个线索，不急着给它命名。等类似的线索多一点，我再帮你看它可能指向什么。";
+      }
+
+      function addDiscoveryIfReady() {
+        if (state.activeReveal || state.signals.length >= 2) {
+          $("quietTitle").textContent = `${ocName()} 发现了一点东西`;
+          $("quietText").textContent = "它先留在后台，不插入当前对话。你想看时再点探索。";
+        } else {
+          $("quietTitle").textContent = `${ocName()} 默默记住了`;
+          $("quietText").textContent = "这些线索会先留在后台，不会马上变成指标或任务。";
+        }
+      }
+
+      function hydrateMessagesFromHistory() {
+        if (!state.history.length) return;
+        const recent = state.history.slice(-3);
+        state.messages = [{ id: nextMessageId("time"), type: "time", text: shortTime(recent[0].timestamp) }];
+        recent.forEach((entry) => {
+          state.messages.push({ id: nextMessageId("user"), type: "user", text: entry.userMessage, meta: state.relationship?.userName || "你" });
+          state.messages.push({ id: nextMessageId("oc"), type: "oc", text: entry.ocResponse, meta: `${ocName()} · 历史记忆` });
+        });
+      }
+
+      function pushTypingMessage(text = `${ocName()} 正在组织回复`) {
+        const id = nextMessageId("typing");
+        state.messages.push({ id, type: "typing", text, meta: "正在回复" });
+        renderMessages();
+        return id;
+      }
+
+      function replaceTypingMessage(id, message) {
+        const index = state.messages.findIndex((item) => item.id === id);
+        if (index >= 0) {
+          state.messages.splice(index, 1, message);
+        } else {
+          state.messages.push(message);
+        }
+      }
+
+      function renderMessages() {
+        $("messages").innerHTML = state.messages
+          .map((msg) => {
+            if (msg.type === "time") return `<div class="time-chip">${esc(msg.text)}</div>`;
+            if (msg.type === "note") return `<div class="system-note">${esc(msg.text)}</div>`;
+            if (msg.type === "typing") {
+              return `
+                <div class="message typing">
+                  <div class="bubble"><span>${esc(msg.text)}</span><span class="typing-dots"><i></i><i></i><i></i></span></div>
+                  <div class="meta">${esc(msg.meta)}</div>
+                </div>
+              `;
+            }
+            return `
+              <div class="message ${msg.type}">
+                <div class="bubble">${esc(msg.text)}</div>
+                <div class="meta">${esc(msg.meta)}</div>
+              </div>
+            `;
+          })
+          .join("");
+        $("messages").scrollTop = $("messages").scrollHeight;
+      }
+
+      function renderPrompts() {
+        $("prompts").innerHTML = prompts.map((item) => `<button class="prompt" type="button" data-prompt="${esc(item)}">${esc(item)}</button>`).join("");
+        document.querySelectorAll("[data-prompt]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const map = {
+              我今天在想: "我今天在想：",
+              我有点卡住: "我有点卡住：",
+              你觉得你懂我吗: "你现在怎么看我刚刚说的这些？",
+              我们可以沉淀什么: "这段对话里，有什么值得先记住？",
+            };
+            $("input").value = map[button.dataset.prompt] || button.dataset.prompt;
+            $("input").focus();
+          });
+        });
+      }
+
+      function drawerCard(title, text, tag, footer = "可继续校准", actions = "") {
+        return `
+          <section class="drawer-card">
+            <div class="drawer-card-head"><b>${esc(title)}</b><span class="signal-tag">${esc(tag)}</span></div>
+            <p>${esc(text)}</p>
+            ${actions}
+            <div class="signal-row"><span>${esc(footer)}</span><span>${esc(shortTime(Date.now()))}</span></div>
+          </section>
+        `;
+      }
+
+      function renderProfileSection() {
+        const profile = state.growthProfile;
+        if (!profile) return "";
+        const groups = [
+          ["长期目标", profile.goals],
+          ["优势画像", profile.strengths],
+          ["偏好", profile.preferences],
+          ["开放问题", profile.openQuestions],
+        ];
+        const cards = groups
+          .flatMap(([label, items]) => (items || []).slice(0, 2).map((item) => drawerCard(item.title, item.text, label, "已确认")))
+          .join("");
+        return cards ? `<div class="drawer-section"><div class="drawer-section-title">Growth Profile</div>${cards}</div>` : "";
+      }
+
+      function renderInsightSection() {
+        const reveal = state.activeReveal;
+        const revealCard = reveal?.text
+          ? drawerCard(
+              reveal.title || "它想让你看见一个新线索",
+              reveal.text,
+              "待确认",
+              reveal.reason || "等待你的判断",
+              `<div class="drawer-actions">
+                <button class="btn primary" data-reveal="confirm" data-insight="${esc(reveal.insightId || "")}">确认</button>
+                <button class="btn" data-reveal="reject" data-insight="${esc(reveal.insightId || "")}">不对</button>
+                <button class="btn" data-reveal="dismiss" data-candidate="${esc(reveal.id || "")}">稍后</button>
+              </div>`,
+            )
+          : "";
+        const insightCards = (state.growthInsights || [])
+          .slice(0, 5)
+          .map((item) => drawerCard(item.title, item.text, insightLabel[item.type] || item.type, `${Math.round((item.confidence || 0) * 100)}% · ${item.status}`))
+          .join("");
+        return revealCard || insightCards
+          ? `<div class="drawer-section"><div class="drawer-section-title">Latent Insights</div>${revealCard}${insightCards}</div>`
+          : "";
+      }
+
+      function renderTimelineSection() {
+        const timeline = state.timeline || [];
+        if (!timeline.length) return "";
+        const items = timeline
+          .slice(-5)
+          .reverse()
+          .map((item) => `<li>${esc(item.date)} · ${esc(item.event)} · 亲密度 ${esc(item.intimacyAfter ?? item.impact)}</li>`)
+          .join("");
+        return `<div class="drawer-section"><div class="drawer-section-title">Timeline</div><section class="drawer-card"><ul class="compact-list">${items}</ul></section></div>`;
+      }
+
+      function renderContextSection() {
+        const airjelly = state.airjelly;
+        const summaries = state.summaries || [];
+        const contextBits = [];
+        if (airjelly?.tasks?.length) contextBits.push(...airjelly.tasks.slice(0, 3).map((task) => `任务：${task.title} · ${task.progressSummary}`));
+        if (airjelly?.events?.length) contextBits.push(...airjelly.events.slice(0, 3).map((event) => `事件：${event.title} · ${event.appName}`));
+        if (summaries.length) contextBits.push(...summaries.slice(0, 2).map((summary) => `记忆：${summary.period} · ${summary.topics.join(" / ")}`));
+        if (!contextBits.length) return "";
+        return `<div class="drawer-section"><div class="drawer-section-title">Context</div><section class="drawer-card"><ul class="compact-list">${contextBits.map((item) => `<li>${esc(item)}</li>`).join("")}</ul></section></div>`;
+      }
+
+      function renderFallbackSignalSection() {
+        const keys = state.signals.length ? state.signals : [];
+        if (!keys.length) {
+          return `
+            <section class="empty-signal">
+              <h3>还没有足够线索</h3>
+              <p>OC 不会太早给你贴标签。先聊几次，让目标和优势自然浮现。</p>
+            </section>
+          `;
+        }
+        return `<div class="drawer-section"><div class="drawer-section-title">Session Signals</div>${keys
+          .map((key) => {
+            const item = fallbackMemory[key];
+            return item ? drawerCard(item.title, item.text, item.tag, item.status) : "";
+          })
+          .join("")}</div>`;
+      }
+
+      function bindDrawerActions() {
+        document.querySelectorAll("[data-reveal]").forEach((button) => {
+          button.addEventListener("click", async () => {
+            if (!runtime?.growth) return;
+            button.disabled = true;
+            try {
+              if (button.dataset.reveal === "confirm" && button.dataset.insight) {
+                await runtime.growth.confirmInsight({ userId: defaultUserId, insightId: button.dataset.insight });
+                toast("已确认进画像");
+              }
+              if (button.dataset.reveal === "reject" && button.dataset.insight) {
+                await runtime.growth.rejectInsight({ userId: defaultUserId, insightId: button.dataset.insight, feedback: "这个理解不对" });
+                toast("已退回校准");
+              }
+              if (button.dataset.reveal === "dismiss" && button.dataset.candidate) {
+                await runtime.growth.dismissReveal({ userId: defaultUserId, candidateId: button.dataset.candidate });
+                toast("稍后再看");
+              }
+              await refreshRuntimeState();
+            } finally {
+              button.disabled = false;
+            }
+          });
+        });
+      }
+
+      function renderMemory() {
+        const sections = [
+          renderInsightSection(),
+          renderProfileSection(),
+          renderTimelineSection(),
+          renderContextSection(),
+          renderFallbackSignalSection(),
+        ].filter(Boolean);
+        $("drawerBody").innerHTML = sections.join("");
+        bindDrawerActions();
+      }
+
+      function openMemory() {
+        state.unlocked = true;
+        renderMemory();
+        $("memoryDrawer").classList.add("is-open");
+        toast("你探索到了后台线索");
+      }
+
+      function cancelAudio() {
+        if (!activeAudio) return;
+        activeAudio.pause();
+        activeAudio.removeAttribute("src");
+        activeAudio.load();
+        activeAudio = null;
+      }
+
+      async function speakText(text) {
+        if (!state.ttsEnabled || !text?.trim() || !runtime?.tts?.synthesize) return;
+        try {
+          cancelAudio();
+          const result = await runtime.tts.synthesize({ text, userId: defaultUserId, interrupt: true });
+          const audio = new Audio(`data:${result.mimeType};base64,${result.audioBase64}`);
+          activeAudio = audio;
+          audio.onended = () => {
+            if (activeAudio === audio) activeAudio = null;
+          };
+          await audio.play();
+        } catch {
+          toast("朗读暂时不可用");
+        }
+      }
+
+      function getAudioContext() {
+        const Ctor = window.AudioContext || window.webkitAudioContext;
+        return Ctor ? new Ctor() : null;
+      }
+
+      function resampleTo16k(input, sourceSampleRate) {
+        if (sourceSampleRate === targetSampleRate) return input;
+        const ratio = sourceSampleRate / targetSampleRate;
+        const outputLength = Math.floor(input.length / ratio);
+        const output = new Float32Array(outputLength);
+        for (let index = 0; index < outputLength; index += 1) {
+          const sourceIndex = index * ratio;
+          const leftIndex = Math.floor(sourceIndex);
+          const rightIndex = Math.min(leftIndex + 1, input.length - 1);
+          const fraction = sourceIndex - leftIndex;
+          output[index] = input[leftIndex] + (input[rightIndex] - input[leftIndex]) * fraction;
+        }
+        return output;
+      }
+
+      function floatTo16BitPcm(input) {
+        const output = new ArrayBuffer(input.length * 2);
+        const view = new DataView(output);
+        for (let index = 0; index < input.length; index += 1) {
+          const sample = Math.max(-1, Math.min(1, input[index]));
+          view.setInt16(index * 2, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+        }
+        return output;
+      }
+
+      async function stopVoiceInput() {
+        const currentSessionId = voiceSessionId;
+        voiceSessionId = null;
+        voiceProcessor?.disconnect();
+        voiceSource?.disconnect();
+        voiceProcessor = null;
+        voiceSource = null;
+        voiceStream?.getTracks().forEach((track) => track.stop());
+        voiceStream = null;
+        if (audioContext && audioContext.state !== "closed") await audioContext.close();
+        audioContext = null;
+        if (currentSessionId) {
+          try {
+            await runtime?.asr?.stop({ sessionId: currentSessionId });
+          } catch {
+            /* ASR may already have closed the session. */
+          }
+        }
+        detachTranscript?.();
+        detachError?.();
+        detachTranscript = null;
+        detachError = null;
+        state.isListening = false;
+        renderRuntimePanel();
+        setComposerStatus("语音已停止，可以发送或继续修改。");
+      }
+
+      async function startVoiceInput() {
+        if (!runtime?.asr || !navigator.mediaDevices?.getUserMedia) {
+          toast("语音输入不可用");
+          return;
+        }
+        focusComposerInput();
+        if (state.isListening) {
+          await stopVoiceInput();
+          focusComposerInput();
+          return;
+        }
+        cancelAudio();
+        const sessionId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        try {
+          voiceSessionId = sessionId;
+          detachTranscript = runtime.asr.onTranscript((event) => {
+            if (event.sessionId !== sessionId) return;
+            $("input").value = event.text;
+            focusComposerInput();
+            setSending(state.isSending);
+            setComposerStatus(event.isFinal ? "识别完成，可以直接发送或继续修改。" : "正在把语音转成文字...");
+          });
+          detachError = runtime.asr.onError((event) => {
+            if (event.sessionId === sessionId) toast(event.message || "语音识别失败");
+          });
+          await runtime.asr.start({ sessionId, userId: defaultUserId, language: "zh-CN" });
+          voiceStream = await navigator.mediaDevices.getUserMedia({
+            audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          });
+          audioContext = getAudioContext();
+          if (!audioContext) throw new Error("AudioContext is not available");
+          voiceSource = audioContext.createMediaStreamSource(voiceStream);
+          voiceProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+          voiceProcessor.onaudioprocess = (event) => {
+            if (!voiceSessionId) return;
+            const channel = event.inputBuffer.getChannelData(0);
+            const resampled = resampleTo16k(channel, audioContext.sampleRate || targetSampleRate);
+            runtime.asr.sendAudio({ sessionId: voiceSessionId, audio: floatTo16BitPcm(resampled) });
+          };
+          voiceSource.connect(voiceProcessor);
+          voiceProcessor.connect(audioContext.destination);
+          state.isListening = true;
+          renderRuntimePanel();
+          setComposerStatus("正在听你说，点麦克风结束录音。");
+          toast("开始听你说");
+        } catch (error) {
+          await stopVoiceInput();
+          throw error;
+        }
+      }
+
+      async function callOcWorldChat(text) {
+        if (!runtime?.chat?.sendMessage) return null;
+        return runtime.chat.sendMessage({
+          userId: defaultUserId,
+          characterId: defaultCharacterId,
+          userMessage: text,
+          userMessages: [text],
+          interrupt: true,
+        });
+      }
+
+      async function refreshRuntimeState({ hydrate = false } = {}) {
+        if (!runtime) {
+          renderRuntimePanel();
+          renderMemory();
+          return;
+        }
+        const [
+          character,
+          relationship,
+          history,
+          timeline,
+          summaries,
+          reveal,
+          insights,
+          profile,
+          airjelly,
+          hermesStatus,
+          ttsStatus,
+          asrStatus,
+        ] = await Promise.all([
+          runtime.character?.getCurrent(defaultCharacterId).catch(() => null),
+          runtime.relationship?.get(defaultUserId).catch(() => null),
+          runtime.memory?.history(defaultUserId).catch(() => []),
+          runtime.timeline?.list(defaultUserId).catch(() => []),
+          runtime.memory?.summaries(defaultUserId).catch(() => []),
+          runtime.growth?.getLatestReveal(defaultUserId).catch(() => null),
+          runtime.growth?.listInsights(defaultUserId).catch(() => []),
+          runtime.growth?.getProfile(defaultUserId).catch(() => null),
+          runtime.airjelly?.getContext().catch(() => null),
+          runtime.hermes?.getStatus().catch(() => null),
+          runtime.tts?.getStatus().catch(() => null),
+          runtime.asr?.getStatus().catch(() => null),
+        ]);
+
+        Object.assign(state, {
+          character,
+          relationship,
+          history: history || [],
+          timeline: timeline || [],
+          summaries: summaries || [],
+          activeReveal: reveal,
+          growthInsights: insights || [],
+          growthProfile: profile,
+          airjelly,
+          hermesStatus,
+          ttsStatus,
+          asrStatus,
+        });
+        if (hydrate) hydrateMessagesFromHistory();
+        renderRuntimePanel();
+        renderMessages();
+        renderMemory();
+      }
+
+      function enqueueMessage(text) {
+        const messageId = nextMessageId("queued-user");
+        state.messages.push({ id: messageId, type: "user", text, meta: `${state.relationship?.userName || "你"} · 排队中` });
+        state.queuedMessages.push({ id: messageId, text });
+        $("input").value = "";
+        setSending(true);
+        renderMessages();
+        focusComposerInput();
+        setComposerStatus(`已排队 ${state.queuedMessages.length} 条，当前回复结束后继续。`);
+      }
+
+      function updateQueuedMessageMeta(id) {
+        const message = state.messages.find((item) => item.id === id);
+        if (message) {
+          message.meta = state.relationship?.userName || "你";
+        }
+      }
+
+      async function processNextQueuedMessage() {
+        const next = state.queuedMessages.shift();
+
+        if (!next) {
+          setComposerStatus("可以继续输入下一句。");
+          focusComposerInput();
+          return;
+        }
+
+        updateQueuedMessageMeta(next.id);
+        renderMessages();
+        await sendMessage(next.text, { alreadyRendered: true });
+      }
+
+      async function sendMessage(text = $("input").value.trim(), options = {}) {
+        if (!text) {
+          focusComposerInput();
+          return;
+        }
+        if (state.isSending) {
+          if (!options.alreadyRendered) enqueueMessage(text);
+          return;
+        }
+        const alreadyRendered = Boolean(options.alreadyRendered);
+        const fallbackReply = inferReply(text);
+        if (!alreadyRendered) {
+          state.messages.push({ id: nextMessageId("user"), type: "user", text, meta: state.relationship?.userName || "你" });
+          $("input").value = "";
+        }
+        renderMessages();
+        focusComposerInput();
+        setComposerStatus("已发送，Luma 正在回复。你可以继续输入下一句。");
+
+        setSending(true);
+        const typingId = pushTypingMessage();
+
+        let reply = fallbackReply;
+        let usedRemote = false;
+        try {
+          const result = await callOcWorldChat(text);
+          if (result?.text?.trim()) {
+            reply = result.text.trim();
+            usedRemote = true;
+            if (result.intimacy !== undefined && state.relationship) {
+              state.relationship = { ...state.relationship, intimacy: result.intimacy, stage: result.stage || state.relationship.stage };
+            }
+          }
+        } catch {
+          reply = fallbackReply;
+          toast("模型暂时不可用，先用本地回应");
+        } finally {
+          setSending(false);
+        }
+
+        replaceTypingMessage(typingId, { id: nextMessageId("oc"), type: "oc", text: reply, meta: usedRemote ? `${ocName()} · MiMo 驱动` : `${ocName()} · 本地演示` });
+        await refreshRuntimeState();
+        addDiscoveryIfReady();
+        renderRuntimePanel();
+        renderMessages();
+        void speakText(reply);
+        await processNextQueuedMessage();
+      }
+
+      async function generateAvatar() {
+        if (!runtime?.imageGen?.generate) {
+          toast("生图能力不可用");
+          return;
+        }
+        $("generateAvatar").disabled = true;
+        try {
+          const character = state.character || {};
+          const prompt = `像素风原创角色头像，OC World 成长伙伴，名字 ${character.name || "Luma"}，性格 ${character.personality || "敏锐、安静、陪伴感"}，透明背景，适合桌面应用侧栏展示`;
+          const image = await runtime.imageGen.generate({ prompt, aspectRatio: "1:1", imageSize: "1024x1024", cacheKey: `oc-avatar-${character.id || defaultCharacterId}` });
+          if (image?.imageBase64) {
+            document.querySelector(".avatar img").src = `data:${image.mimeType || "image/png"};base64,${image.imageBase64}`;
+            toast(image.cached ? "已使用缓存形象" : "形象已生成");
+          }
+        } catch {
+          toast("生图暂时不可用");
+        } finally {
+          $("generateAvatar").disabled = false;
+        }
+      }
+
+      $("send").addEventListener("click", () => void sendMessage());
+      $("input").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          void sendMessage();
+        }
+      });
+      $("input").addEventListener("input", () => {
+        if (activeAudio) cancelAudio();
+        setSending(state.isSending);
+        if (!state.isSending && !state.isListening) setComposerStatus("正在输入，可以直接发送。");
+      });
+      $("focusInput").addEventListener("click", focusComposerInput);
+      $("softOpen").addEventListener("click", openMemory);
+      $("openMemory").addEventListener("click", openMemory);
+      $("closeMemory").addEventListener("click", () => $("memoryDrawer").classList.remove("is-open"));
+      $("refreshRuntime").addEventListener("click", () => void refreshRuntimeState().then(() => toast("状态已刷新")));
+      $("generateAvatar").addEventListener("click", () => void generateAvatar());
+      $("voiceInput").addEventListener("click", () => void startVoiceInput().catch((error) => toast(error?.message || "语音输入失败")));
+
+      if (runtime?.hermes?.onStatusChanged) {
+        runtime.hermes.onStatusChanged((status) => {
+          state.hermesStatus = status;
+          renderRuntimePanel();
+        });
+      }
+
+      renderPrompts();
+      clearComposerDraft();
+      renderMessages();
+      renderMemory();
+      void refreshRuntimeState({ hydrate: true });
+    </script>
+  </body>
+</html>

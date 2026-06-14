@@ -1,0 +1,105 @@
+{
+  "name": "zealwish",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist-electron/main.js",
+  "bin": {
+    "ocworld": "dist-cli/cli/main.js"
+  },
+  "scripts": {
+    "dev": "npm run prepare:hermes-source && vite",
+    "build:web": "node scripts/build-zealwish-web-app.mjs && node scripts/build-zealwish-landing.mjs",
+    "build": "npm run build:web && tsc --noEmit && vite build",
+    "prepare:hermes-source": "node scripts/ensure-hermes-agent.mjs",
+    "build:cli": "tsc -p tsconfig.cli.json",
+    "prepare:hermes-runtime": "node scripts/prepare-hermes-runtime.mjs",
+    "pack:app": "npm run prepare:hermes-runtime && npm run build && electron-builder --dir",
+    "dist:app": "npm run prepare:hermes-runtime && npm run build && electron-builder",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "seed:demo": "tsx scripts/seed-demo-data.ts",
+    "parse:wx": "tsx scripts/parse-wx-chat.ts",
+    "generate:summaries": "tsx scripts/generate-summaries.ts",
+    "cli": "tsx cli/main.ts"
+  },
+  "dependencies": {
+    "bufferutil": "^4.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.1",
+    "utf-8-validate": "^6.0.6",
+    "ws": "^8.20.0",
+    "zod": "^3.24.4"
+  },
+  "optionalDependencies": {
+    "@airjelly/sdk": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "@types/react": "^18.3.20",
+    "@types/react-dom": "^18.3.7",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^4.4.1",
+    "electron": "^35.7.5",
+    "electron-builder": "^26.8.1",
+    "esbuild": "^0.28.1",
+    "ethers": "^6.16.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6",
+    "vitest": "^3.1.2"
+  },
+  "build": {
+    "appId": "ai.zealwish.desktop",
+    "productName": "ZEALWISH",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "demos/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "hermes-agent",
+        "to": "hermes-agent",
+        "filter": [
+          "**/*",
+          "!**/.git/**",
+          "!**/__pycache__/**",
+          "!**/.pytest_cache/**",
+          "!**/.ruff_cache/**",
+          "!**/.mypy_cache/**",
+          "!**/.venv/**",
+          "!**/venv/**",
+          "!**/electron-dist/pyinstaller-build/**",
+          "!**/electron-dist/pyinstaller-spec/**",
+          "!**/ui-tui/node_modules/**",
+          "!**/website/node_modules/**"
+        ]
+      },
+      {
+        "from": "hermes-agent/node_modules",
+        "to": "hermes-agent/node_modules",
+        "filter": [
+          "**/*",
+          "!**/puppeteer-extra-plugin-stealth/evasions/*.app/**"
+        ]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    }
+  }
+}

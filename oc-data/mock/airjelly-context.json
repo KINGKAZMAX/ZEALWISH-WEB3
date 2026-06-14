@@ -1,0 +1,51 @@
+{
+  "source": "mock",
+  "events": [
+    {
+      "title": "整理 OC World 技术方案",
+      "appName": "Feishu",
+      "durationSeconds": 3120,
+      "timestamp": 1777023244485
+    },
+    {
+      "title": "浏览 Electron 文档",
+      "appName": "Arc",
+      "durationSeconds": 2280,
+      "timestamp": 1777026844485
+    },
+    {
+      "title": "写 React 页面草图",
+      "appName": "VS Code",
+      "durationSeconds": 5760,
+      "timestamp": 1777029844485
+    }
+  ],
+  "tasks": [
+    {
+      "title": "跑通 Chat 主链路",
+      "progressSummary": "高优先级"
+    },
+    {
+      "title": "准备一组可演示时间线数据",
+      "progressSummary": "待完成"
+    },
+    {
+      "title": "兜底 mock AirJelly 数据",
+      "progressSummary": "待完成"
+    }
+  ],
+  "appUsage": [
+    {
+      "appName": "VS Code",
+      "totalSeconds": 15120
+    },
+    {
+      "appName": "Feishu",
+      "totalSeconds": 6480
+    },
+    {
+      "appName": "Arc",
+      "totalSeconds": 4680
+    }
+  ]
+}

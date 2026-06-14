@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" preserveAspectRatio="xMidYMax meet">
+  <defs>
+    <linearGradient id="hoodGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a1a1c"></stop>
+      <stop offset="1" stop-color="#2a2a2e"></stop>
+    </linearGradient>
+    <linearGradient id="redGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E63946"></stop>
+      <stop offset="1" stop-color="#B5202D"></stop>
+    </linearGradient>
+    <linearGradient id="hairGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f5f5f5"></stop>
+      <stop offset="1" stop-color="#c8c8cc"></stop>
+    </linearGradient>
+    <pattern id="dots" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="0.8" fill="#fff" opacity="0.35"></circle>
+    </pattern>
+    <filter id="grain">
+      <feTurbulence baseFrequency="0.9" numOctaves="2" seed="3"></feTurbulence>
+      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.18 0"></feColorMatrix>
+      <feComposite in2="SourceGraphic" operator="in"></feComposite>
+    </filter>
+  </defs>
+
+  
+  <g opacity="0.06">
+    <text x="300" y="380" text-anchor="middle" font-family="Impact, sans-serif" font-size="220" font-weight="900" fill="#fff" letter-spacing="-8">OC</text>
+    <text x="300" y="540" text-anchor="middle" font-family="Impact, sans-serif" font-size="120" font-weight="900" fill="#E63946" letter-spacing="-2">WORLD</text>
+  </g>
+
+  
+  <ellipse cx="300" cy="780" rx="160" ry="14" fill="#000" opacity="0.5"></ellipse>
+
+  
+  <g>
+    
+    <path d="M 230 600 L 220 770 L 270 775 L 285 620 Z" fill="#1a1a1c"></path>
+    <path d="M 370 600 L 380 770 L 330 775 L 315 620 Z" fill="#1a1a1c"></path>
+    
+    <path d="M 220 720 L 270 725 L 268 775 L 222 770 Z" fill="#f0f0f2"></path>
+    <path d="M 380 720 L 330 725 L 332 775 L 378 770 Z" fill="#f0f0f2"></path>
+    
+    <rect x="226" y="730" width="40" height="3" fill="#E63946"></rect>
+    <rect x="226" y="740" width="40" height="2" fill="#E63946" opacity="0.6"></rect>
+    <rect x="334" y="730" width="40" height="3" fill="#E63946"></rect>
+    <rect x="334" y="740" width="40" height="2" fill="#E63946" opacity="0.6"></rect>
+
+    
+    <path d="M 180 420 Q 180 380 220 370 L 380 370 Q 420 380 420 420 L 425 620 Q 380 640 300 640 Q 220 640 175 620 Z" fill="url(#hoodGrad)"></path>
+    
+    <path d="M 195 480 L 240 470 L 250 580 L 200 590 Z" fill="url(#redGrad)"></path>
+    <path d="M 200 490 L 240 482 L 248 575 L 205 583 Z" fill="url(#dots)" opacity="0.5"></path>
+    <text x="222" y="535" text-anchor="middle" font-family="Impact" font-size="28" fill="#fff" font-weight="900" transform="rotate(-8 222 535)">OC</text>
+
+    
+    <rect x="178" y="600" width="248" height="12" fill="#E63946"></rect>
+    <rect x="178" y="600" width="248" height="12" fill="url(#dots)" opacity="0.4"></rect>
+    <rect x="290" y="596" width="20" height="20" fill="#1a1a1c" stroke="#fff" stroke-width="1.5"></rect>
+
+    
+    <path d="M 175 430 L 130 580 L 165 600 L 200 460 Z" fill="url(#hoodGrad)"></path>
+    <path d="M 425 430 L 470 580 L 435 600 L 400 460 Z" fill="url(#hoodGrad)"></path>
+    
+    <ellipse cx="148" cy="595" rx="22" ry="16" fill="#f0f0f2"></ellipse>
+    <ellipse cx="452" cy="595" rx="22" ry="16" fill="#f0f0f2"></ellipse>
+    <line x1="135" y1="588" x2="160" y2="603" stroke="#E63946" stroke-width="2"></line>
+    <line x1="445" y1="588" x2="468" y2="603" stroke="#E63946" stroke-width="2"></line>
+
+    
+    <path d="M 195 250 Q 190 200 240 180 L 360 180 Q 410 200 405 250 L 410 380 L 190 380 Z" fill="url(#hoodGrad)"></path>
+    
+    <path d="M 220 195 L 235 145 L 265 185 Z" fill="#1a1a1c"></path>
+    <path d="M 380 195 L 365 145 L 335 185 Z" fill="#1a1a1c"></path>
+    <path d="M 228 178 L 238 155 L 252 178 Z" fill="#E63946"></path>
+    <path d="M 372 178 L 362 155 L 348 178 Z" fill="#E63946"></path>
+  </g>
+
+  
+  <path d="M 215 270 Q 200 360 220 460 L 245 470 L 240 280 Z" fill="url(#hairGrad)"></path>
+  <path d="M 385 270 Q 400 360 380 460 L 355 470 L 360 280 Z" fill="url(#hairGrad)"></path>
+
+  
+  <g>
+    
+    <path d="M 282 340 L 282 380 L 318 380 L 318 340 Z" fill="#f5e0d6"></path>
+    
+    <path d="M 240 240 Q 240 195 300 195 Q 360 195 360 240 L 358 310 Q 350 350 300 350 Q 250 350 242 310 Z" fill="#f8e6dc"></path>
+    
+    <ellipse cx="262" cy="295" rx="14" ry="6" fill="#E63946" opacity="0.35"></ellipse>
+    <ellipse cx="338" cy="295" rx="14" ry="6" fill="#E63946" opacity="0.35"></ellipse>
+
+    
+    <path d="M 240 240 Q 235 200 260 190 L 290 200 L 280 250 Z" fill="url(#hairGrad)"></path>
+    <path d="M 360 240 Q 365 200 340 190 L 310 200 L 320 250 Z" fill="url(#hairGrad)"></path>
+    <path d="M 280 200 L 290 195 L 305 230 L 285 225 Z" fill="#E63946"></path>
+    <path d="M 295 230 L 320 215 L 318 245 L 305 250 Z" fill="url(#hairGrad)"></path>
+
+    
+    <path d="M 230 240 Q 215 280 225 340 L 245 335 L 240 245 Z" fill="url(#hairGrad)"></path>
+    <path d="M 370 240 Q 385 280 375 340 L 355 335 L 360 245 Z" fill="url(#hairGrad)"></path>
+
+    
+    <g>
+      
+      <ellipse cx="270" cy="265" rx="11" ry="13" fill="#fff"></ellipse>
+      <ellipse cx="270" cy="266" rx="9" ry="11" fill="#1a1a1c"></ellipse>
+      <ellipse cx="270" cy="263" rx="6" ry="8" fill="#E63946"></ellipse>
+      <circle cx="272" cy="262" r="2.5" fill="#fff"></circle>
+      
+      <path d="M 258 256 Q 270 250 282 256" stroke="#1a1a1c" stroke-width="2.5" fill="none" stroke-linecap="round"></path>
+
+      
+      <ellipse cx="330" cy="265" rx="11" ry="13" fill="#fff"></ellipse>
+      <ellipse cx="330" cy="266" rx="9" ry="11" fill="#1a1a1c"></ellipse>
+      <ellipse cx="330" cy="263" rx="6" ry="8" fill="#E63946"></ellipse>
+      <circle cx="332" cy="262" r="2.5" fill="#fff"></circle>
+      <path d="M 318 256 Q 330 250 342 256" stroke="#1a1a1c" stroke-width="2.5" fill="none" stroke-linecap="round"></path>
+    </g>
+
+    
+    <path d="M 298 290 Q 300 295 302 290" stroke="#d4a896" stroke-width="1.5" fill="none" stroke-linecap="round"></path>
+
+    
+    <path d="M 290 315 Q 300 322 312 315" stroke="#1a1a1c" stroke-width="2" fill="none" stroke-linecap="round"></path>
+    <path d="M 290 315 Q 300 320 310 315 L 308 318 Q 300 321 292 318 Z" fill="#E63946" opacity="0.6"></path>
+  </g>
+
+  
+  <g>
+    <path d="M 380 380 Q 420 350 440 330 L 460 360 Q 430 395 395 410 Z" fill="#f5e0d6"></path>
+    <line x1="430" y1="345" x2="445" y2="358" stroke="#d4a896" stroke-width="1"></line>
+    <line x1="420" y1="358" x2="435" y2="370" stroke="#d4a896" stroke-width="1"></line>
+  </g>
+
+  
+  <g opacity="0.85">
+    <rect x="155" y="500" width="80" height="22" fill="#E63946" transform="rotate(-12 195 511)"></rect>
+    <text x="195" y="515" text-anchor="middle" font-family="Impact" font-size="14" fill="#fff" font-weight="900" transform="rotate(-12 195 515)">PROJECT-OC</text>
+  </g>
+
+  
+  <rect width="600" height="800" fill="#fff" opacity="0.03" filter="url(#grain)"></rect>
+</svg>

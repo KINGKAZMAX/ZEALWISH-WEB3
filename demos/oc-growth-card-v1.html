@@ -1,0 +1,1100 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OC World 1.0 · 成长卡闭环</title>
+    <style>
+      :root {
+        --bg: #eef2ef;
+        --surface: #fbfcf8;
+        --panel: #f3f6ef;
+        --ink: #202522;
+        --muted: #68716c;
+        --faint: #909b94;
+        --line: rgba(32, 37, 34, 0.13);
+        --strong-line: rgba(32, 37, 34, 0.26);
+        --green: #177868;
+        --green-soft: #dcefe8;
+        --blue: #315fa7;
+        --blue-soft: #dfe9fb;
+        --gold: #9a6a22;
+        --gold-soft: #f3e6c9;
+        --red: #b85d45;
+        --shadow: 0 24px 74px -54px rgba(24, 29, 27, 0.7);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        min-width: 1180px;
+        color: var(--ink);
+        background:
+          linear-gradient(rgba(32, 37, 34, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(32, 37, 34, 0.04) 1px, transparent 1px),
+          var(--bg);
+        background-size: 24px 24px;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        color: inherit;
+      }
+
+      .app {
+        width: 100%;
+        height: 100%;
+        padding: 24px;
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr) 390px;
+        gap: 16px;
+      }
+
+      .companion,
+      .chat,
+      .card-panel,
+      .library,
+      .toast {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(251, 252, 248, 0.96);
+        box-shadow: var(--shadow);
+      }
+
+      .companion,
+      .chat,
+      .card-panel {
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .companion {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+      }
+
+      .titlebar,
+      .chat-head,
+      .card-head,
+      .library-head {
+        min-height: 52px;
+        padding: 13px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .traffic {
+        display: flex;
+        gap: 7px;
+      }
+
+      .traffic span {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .traffic span:nth-child(1) {
+        background: #ed6a5e;
+      }
+
+      .traffic span:nth-child(2) {
+        background: #f4bd4f;
+      }
+
+      .traffic span:nth-child(3) {
+        background: #61c454;
+      }
+
+      .kicker {
+        color: var(--faint);
+        font-size: 11px;
+        text-transform: uppercase;
+      }
+
+      .companion-main {
+        min-height: 0;
+        padding: 16px;
+        display: grid;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        gap: 14px;
+      }
+
+      .brand,
+      .state-row,
+      .micro-row,
+      .card-title,
+      .card-meta,
+      .stage-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .brand {
+        justify-content: flex-start;
+        font-weight: 800;
+      }
+
+      .mark {
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+
+      .pill,
+      .state {
+        min-height: 24px;
+        padding: 4px 9px;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .state::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        margin-right: 6px;
+        border-radius: 50%;
+        background: #58b765;
+      }
+
+      .avatar-wrap {
+        min-height: 210px;
+        display: grid;
+        place-items: center;
+      }
+
+      .avatar {
+        position: relative;
+        width: 154px;
+        height: 198px;
+        display: grid;
+        place-items: end center;
+      }
+
+      .avatar::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        width: 124px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(32, 37, 34, 0.12);
+        filter: blur(7px);
+        transform: translateX(-50%);
+      }
+
+      .avatar img {
+        position: relative;
+        z-index: 1;
+        width: 148px;
+      }
+
+      .listen-box,
+      .daily-card,
+      .empty-card {
+        padding: 13px;
+        display: grid;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--panel);
+      }
+
+      .listen-box h2,
+      .daily-card h3,
+      .empty-card h3,
+      .growth-card h2 {
+        margin: 0;
+        font-size: 15px;
+      }
+
+      .listen-box p,
+      .daily-card p,
+      .empty-card p,
+      .growth-card p,
+      .section p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .micro-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+
+      .micro {
+        min-height: 58px;
+        padding: 9px;
+        display: grid;
+        align-content: center;
+        gap: 4px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+
+      .micro b {
+        font-size: 16px;
+        line-height: 1;
+      }
+
+      .micro span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .companion-actions {
+        padding: 14px 16px 16px;
+        display: grid;
+        gap: 8px;
+        border-top: 1px solid var(--line);
+      }
+
+      .btn {
+        min-height: 38px;
+        padding: 0 13px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        cursor: pointer;
+      }
+
+      .btn:hover {
+        border-color: var(--strong-line);
+        background: #ffffff;
+      }
+
+      .btn.primary {
+        border-color: rgba(23, 120, 104, 0.3);
+        background: var(--green);
+        color: white;
+      }
+
+      .btn.blue {
+        border-color: rgba(49, 95, 167, 0.25);
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .chat {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+      }
+
+      .chat-head h1,
+      .library-head h2 {
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.1;
+      }
+
+      .chat-head p,
+      .library-head p,
+      .card-head p {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .head-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .messages {
+        min-height: 0;
+        padding: 22px 24px;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .time-chip {
+        align-self: center;
+        padding: 4px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(251, 252, 248, 0.76);
+        color: var(--faint);
+        font-size: 12px;
+      }
+
+      .message {
+        max-width: 76%;
+        display: grid;
+        gap: 5px;
+      }
+
+      .message.user {
+        align-self: flex-end;
+        justify-items: end;
+      }
+
+      .message.oc {
+        align-self: flex-start;
+      }
+
+      .bubble {
+        padding: 13px 15px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .message.user .bubble {
+        border-color: rgba(23, 120, 104, 0.28);
+        background: var(--green);
+        color: white;
+      }
+
+      .meta {
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .confirm-box {
+        align-self: stretch;
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+        border: 1px solid rgba(23, 120, 104, 0.25);
+        border-radius: 9px;
+        background: var(--green-soft);
+      }
+
+      .confirm-box p {
+        margin: 0;
+        color: #225b53;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .confirm-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .confirm-actions .btn {
+        min-height: 32px;
+        background: rgba(251, 252, 248, 0.86);
+        font-size: 12px;
+      }
+
+      .confirm-actions .btn.primary {
+        background: var(--green);
+        color: white;
+      }
+
+      .system-log {
+        align-self: stretch;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border: 1px solid rgba(154, 106, 34, 0.24);
+        border-radius: 9px;
+        background: var(--gold-soft);
+        color: #6f4d1f;
+        font-size: 12px;
+      }
+
+      .composer {
+        padding: 14px 18px 18px;
+        display: grid;
+        gap: 10px;
+        border-top: 1px solid var(--line);
+      }
+
+      .prompts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .prompt {
+        min-height: 30px;
+        padding: 0 11px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .prompt:hover {
+        color: var(--ink);
+        border-color: var(--strong-line);
+      }
+
+      .input-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+      }
+
+      .input-box {
+        min-height: 50px;
+        padding: 0 14px;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        gap: 11px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--surface);
+      }
+
+      .plus {
+        color: var(--muted);
+        font-size: 22px;
+      }
+
+      input {
+        min-width: 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--ink);
+      }
+
+      .card-panel {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+      }
+
+      .card-head h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .card-body {
+        min-height: 0;
+        padding: 16px;
+        overflow: auto;
+      }
+
+      .growth-card {
+        min-height: 100%;
+        padding: 16px;
+        display: grid;
+        align-content: start;
+        gap: 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+      }
+
+      .card-title h2 {
+        max-width: 230px;
+      }
+
+      .tag {
+        width: fit-content;
+        padding: 4px 8px;
+        border: 1px solid rgba(49, 95, 167, 0.2);
+        border-radius: 999px;
+        background: var(--blue-soft);
+        color: var(--blue);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .section {
+        display: grid;
+        gap: 6px;
+      }
+
+      .section b {
+        font-size: 13px;
+      }
+
+      .stage-list {
+        display: grid;
+        gap: 6px;
+      }
+
+      .stage-row {
+        min-height: 32px;
+        padding: 7px 9px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .stage-row.is-active {
+        border-color: rgba(23, 120, 104, 0.28);
+        background: var(--green-soft);
+        color: var(--green);
+        font-weight: 800;
+      }
+
+      .artifact {
+        padding: 11px;
+        display: grid;
+        gap: 7px;
+        border: 1px solid rgba(154, 106, 34, 0.28);
+        border-radius: 9px;
+        background: var(--gold-soft);
+      }
+
+      .artifact b {
+        color: #6f4d1f;
+        font-size: 13px;
+      }
+
+      .card-actions {
+        padding: 14px 16px 16px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        border-top: 1px solid var(--line);
+      }
+
+      .library {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        bottom: 24px;
+        width: 430px;
+        z-index: 20;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        overflow: hidden;
+        transform: translateX(calc(100% + 36px));
+        transition: transform 220ms ease;
+      }
+
+      .library.is-open {
+        transform: translateX(0);
+      }
+
+      .library-body {
+        min-height: 0;
+        padding: 14px;
+        overflow: auto;
+        display: grid;
+        align-content: start;
+        gap: 10px;
+      }
+
+      .library-card {
+        padding: 13px;
+        display: grid;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--surface);
+      }
+
+      .library-card h3 {
+        margin: 0;
+        font-size: 14px;
+      }
+
+      .library-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 22px;
+        padding: 12px 16px;
+        z-index: 30;
+        opacity: 0;
+        pointer-events: none;
+        transform: translate(-50%, 10px);
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      @media (max-width: 980px) {
+        body {
+          min-width: 0;
+        }
+
+        .app {
+          height: auto;
+          min-height: 100%;
+          padding: 14px;
+          grid-template-columns: 1fr;
+        }
+
+        .companion,
+        .chat,
+        .card-panel {
+          min-height: 520px;
+        }
+
+        .library {
+          left: 14px;
+          right: 14px;
+          top: 14px;
+          bottom: 14px;
+          width: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <aside class="companion">
+        <div class="titlebar">
+          <div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
+          <span class="kicker">oc world 1.0</span>
+        </div>
+
+        <div class="companion-main">
+          <div class="state-row">
+            <div class="brand"><span class="mark">⌘</span><span>OC World</span></div>
+            <span class="state">陪伴中</span>
+          </div>
+
+          <section class="listen-box">
+            <h2 id="listenTitle">Luma 在听</h2>
+            <p id="listenText">第一版只做一件事：陪你把今天的一件真实经历，沉淀成一张成长卡。</p>
+          </section>
+
+          <div class="avatar-wrap">
+            <div class="avatar"><img src="./oc-avatar-pet.png" alt="OC 成长伙伴形象" /></div>
+          </div>
+
+          <section class="daily-card">
+            <div class="micro-row">
+              <h3>今日闭环</h3>
+              <span class="pill" id="loopState">等待确认</span>
+            </div>
+            <p>说一件事，OC 先理解，你确认后生成成长卡。能力、标准、共创都从卡里长出来。</p>
+            <div class="micro-grid">
+              <div class="micro"><b id="cardCount">1</b><span>成长卡</span></div>
+              <div class="micro"><b id="artifactCount">1</b><span>共同产物</span></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="companion-actions">
+          <button class="btn" type="button" id="focusInput">说一件事</button>
+          <button class="btn blue" type="button" id="openLibraryFromPet">打开卡片库</button>
+        </div>
+      </aside>
+
+      <section class="chat">
+        <header class="chat-head">
+          <div>
+            <h1>每天一张成长卡</h1>
+            <p>主界面只有陪伴对话。系统感留到确认之后。</p>
+          </div>
+          <div class="head-actions">
+            <button class="btn blue" type="button" id="runDemo">播放 1.0 闭环</button>
+            <button class="btn" type="button" id="openLibrary">卡片库</button>
+          </div>
+        </header>
+
+        <div class="messages" id="messages"></div>
+
+        <div class="composer">
+          <div class="prompts" id="prompts"></div>
+          <div class="input-row">
+            <label class="input-box">
+              <span class="plus">＋</span>
+              <input id="input" value="我今天把 OC 的方向从桌宠收束成成长伙伴。" />
+            </label>
+            <button class="btn primary" type="button" id="send">发送</button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="card-panel">
+        <header class="card-head">
+          <div>
+            <h2>当前成长卡</h2>
+            <p>确认后才生成，不替你定义成长。</p>
+          </div>
+          <span class="pill" id="cardStatus">草稿</span>
+        </header>
+
+        <div class="card-body" id="cardBody"></div>
+
+        <div class="card-actions">
+          <button class="btn" type="button" id="regenerateCard">重新理解</button>
+          <button class="btn primary" type="button" id="saveArtifact">沉淀为作品</button>
+        </div>
+      </aside>
+    </main>
+
+    <aside class="library" id="library" aria-label="成长卡片库">
+      <div class="library-head">
+        <div>
+          <h2>成长卡片库</h2>
+          <p>第一版只存卡片和共同产物。</p>
+        </div>
+        <button class="btn" type="button" id="closeLibrary">关闭</button>
+      </div>
+      <div class="library-body" id="libraryBody"></div>
+    </aside>
+
+    <div class="toast" id="toast">已生成</div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const esc = (text) =>
+        String(text).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[m]);
+
+      const stages = ["感知到问题", "能说清问题", "能提出判断", "能推动理解", "形成可复用方法"];
+      const prompts = ["今天发生了什么", "我卡住了", "这算什么成长", "生成成长卡"];
+
+      const state = {
+        pending: {
+          source: "我今天把 OC 的方向从桌宠收束成成长伙伴。",
+          insight: "你不是在改一个界面，而是在把产品从“外形像什么”校准到“它和人是什么关系”。",
+        },
+        messages: [
+          { type: "time", text: "今天 22:18" },
+          { type: "user", text: "我今天把 OC 的方向从桌宠收束成成长伙伴。", meta: "你" },
+          {
+            type: "oc",
+            text: "我先这样理解：你在做一次产品定义校准。真正重要的不是我看起来像什么，而是我能不能陪你看见自己在成长。",
+            meta: "Luma · 成长伙伴",
+          },
+          { type: "confirm", text: "这个理解准确吗？确认后我把它生成一张成长卡。" },
+        ],
+        currentCard: null,
+        cards: [
+          {
+            title: "把 OC 从桌宠校准为成长伙伴",
+            happened: "你否定了“桌宠”这个容易跑偏的定义，把方向收束为成长伙伴和成长游戏。",
+            evidence: "连续追问：服务的是人、不是 Agent 替你做任务；需要陪伴成长；能力值必须有标准和对比。",
+            ability: "判断力",
+            stage: 2,
+            compare: "过去你在判断界面像不像；今天你在判断关系、机制和长期价值是否成立。",
+            practice: "下一次讨论功能时，先问一句：这一步是在帮助人成长，还是只是在增加系统感？",
+            artifact: "OC World 1.0 产品原则",
+            saved: true,
+          },
+        ],
+      };
+
+      function toast(text) {
+        $("toast").textContent = text;
+        $("toast").classList.add("is-visible");
+        window.clearTimeout(toast.timer);
+        toast.timer = window.setTimeout(() => $("toast").classList.remove("is-visible"), 1500);
+      }
+
+      function insightFor(text) {
+        if (text.includes("卡住")) return "你把卡住说出来，本身就是从混乱里提取下一步的开始。";
+        if (text.includes("标准") || text.includes("对比")) return "你意识到成长不能只靠感觉，能力值必须有证据、标准和前后对比。";
+        if (text.includes("成长卡")) return "你在把复杂系统收束成一个每日可完成的成长闭环。";
+        if (text.includes("桌宠") || text.includes("成长伙伴")) {
+          return "你不是在改一个界面，而是在把产品从“外形像什么”校准到“它和人是什么关系”。";
+        }
+        return "你把今天的一件真实经历讲清楚了，这可以成为一张可回看的成长卡。";
+      }
+
+      function replyFor(text) {
+        if (text.includes("卡住")) return "先不用解决全部。你告诉我卡在什么选择上，我帮你把它变成一张能判断下一步的成长卡。";
+        if (text.includes("标准") || text.includes("对比")) {
+          return "对，第一版不应该先做数字。我们先做阶段：感知到问题、能说清问题、能提出判断、能推动理解、形成方法。";
+        }
+        if (text.includes("成长卡")) return "成长卡就是 1.0 的最小作品：一件真实经历、一条能力判断、一个对比、一项练习、一个共同产物。";
+        if (text.includes("桌宠") || text.includes("成长伙伴")) {
+          return "这是一条很适合沉淀的成长卡：你把一个视觉定义，推进成了关系定义和产品原则。";
+        }
+        return "我会先复述我的理解，你确认后再生成成长卡。确认权在你这里。";
+      }
+
+      function cardFromPending(source, insight) {
+        if (source.includes("标准") || source.includes("对比")) {
+          return {
+            title: "为能力值找到对比标准",
+            happened: source,
+            evidence: "你指出能力值不能凭感觉出现，必须说明标准是什么、和什么比较。",
+            ability: "判断力",
+            stage: 2,
+            compare: "过去容易讨论功能本身；现在开始要求功能背后的度量规则成立。",
+            practice: "下次看到任何能力值，先补三行：过去基线、当前证据、下一阶标准。",
+            artifact: "能力值标准草案",
+            saved: false,
+          };
+        }
+        if (source.includes("卡住")) {
+          return {
+            title: "把卡住变成下一步",
+            happened: source,
+            evidence: "你没有绕开卡点，而是把它说出来，让 OC 可以一起拆解。",
+            ability: "行动力",
+            stage: 1,
+            compare: "过去卡住时容易停在情绪里；现在开始把卡住变成可讨论对象。",
+            practice: "写下三个可能的下一步，只选最小的一步做 15 分钟。",
+            artifact: "下一步行动卡",
+            saved: false,
+          };
+        }
+        return {
+          title: "把 OC 从桌宠校准为成长伙伴",
+          happened: source,
+          evidence: "你把产品定义从外形拉回关系：OC 不是替人完成任务，而是陪人看见成长。",
+          ability: "判断力",
+          stage: 2,
+          compare: "过去你在判断界面像不像；今天你在判断关系、机制和长期价值是否成立。",
+          practice: "下一次讨论功能时，先问一句：这一步是在帮助人成长，还是只是在增加系统感？",
+          artifact: "OC World 1.0 产品原则",
+          saved: false,
+        };
+      }
+
+      function renderMessages() {
+        $("messages").innerHTML = state.messages
+          .map((msg) => {
+            if (msg.type === "time") return `<div class="time-chip">${esc(msg.text)}</div>`;
+            if (msg.type === "system") return `<div class="system-log"><span>${esc(msg.text)}</span><b>${esc(msg.reward)}</b></div>`;
+            if (msg.type === "confirm") {
+              return `
+                <div class="confirm-box">
+                  <p>${esc(msg.text)}</p>
+                  <div class="confirm-actions">
+                    <button class="btn primary" type="button" data-confirm="yes">确认，生成成长卡</button>
+                    <button class="btn" type="button" data-confirm="edit">不完全对，我修正</button>
+                  </div>
+                </div>
+              `;
+            }
+            return `
+              <div class="message ${msg.type}">
+                <div class="bubble">${esc(msg.text)}</div>
+                <div class="meta">${esc(msg.meta)}</div>
+              </div>
+            `;
+          })
+          .join("");
+        document.querySelectorAll("[data-confirm]").forEach((button) => {
+          button.addEventListener("click", () => confirmCard(button.dataset.confirm === "yes"));
+        });
+        $("messages").scrollTop = $("messages").scrollHeight;
+      }
+
+      function renderPrompts() {
+        $("prompts").innerHTML = prompts.map((item) => `<button class="prompt" type="button" data-prompt="${esc(item)}">${esc(item)}</button>`).join("");
+        document.querySelectorAll("[data-prompt]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const map = {
+              今天发生了什么: "我今天完成了一次产品方向判断。",
+              我卡住了: "我现在卡住了，不知道第一版到底该保留什么。",
+              这算什么成长: "这件事算什么能力上的成长？",
+              生成成长卡: "请把这次讨论生成一张成长卡。",
+            };
+            $("input").value = map[button.dataset.prompt] || button.dataset.prompt;
+            $("input").focus();
+          });
+        });
+      }
+
+      function renderCard() {
+        if (!state.currentCard) {
+          $("cardStatus").textContent = "等待确认";
+          $("cardBody").innerHTML = `
+            <section class="empty-card">
+              <h3>等待生成成长卡</h3>
+              <p>OC 会先复述它的理解。只有当你确认或修正后，这里才会出现今天的成长卡。</p>
+              <p>第一版不急着展示复杂系统，只验证一个动作：你愿不愿意每天沉淀一张真实成长卡。</p>
+            </section>
+          `;
+          return;
+        }
+        const card = state.currentCard;
+        $("cardStatus").textContent = card.saved ? "已沉淀" : "待沉淀";
+        $("cardBody").innerHTML = `
+          <article class="growth-card">
+            <div class="card-title">
+              <h2>${esc(card.title)}</h2>
+              <span class="tag">${esc(card.ability)}</span>
+            </div>
+            <section class="section">
+              <b>今天发生了什么</b>
+              <p>${esc(card.happened)}</p>
+            </section>
+            <section class="section">
+              <b>证据</b>
+              <p>${esc(card.evidence)}</p>
+            </section>
+            <section class="section">
+              <b>能力阶段</b>
+              <div class="stage-list">
+                ${stages.map((stage, index) => `<div class="stage-row ${index === card.stage ? "is-active" : ""}"><span>${esc(stage)}</span><span>${index === card.stage ? "当前" : ""}</span></div>`).join("")}
+              </div>
+            </section>
+            <section class="section">
+              <b>和过去的你相比</b>
+              <p>${esc(card.compare)}</p>
+            </section>
+            <section class="section">
+              <b>下一次练习</b>
+              <p>${esc(card.practice)}</p>
+            </section>
+            <div class="artifact">
+              <b>共同产物</b>
+              <p>${esc(card.artifact)}</p>
+            </div>
+          </article>
+        `;
+      }
+
+      function renderLibrary() {
+        $("cardCount").textContent = String(state.cards.length);
+        $("artifactCount").textContent = String(state.cards.filter((card) => card.saved).length);
+        $("libraryBody").innerHTML = state.cards
+          .map(
+            (card) => `
+              <section class="library-card">
+                <div class="card-meta"><h3>${esc(card.title)}</h3><span class="tag">${esc(card.ability)}</span></div>
+                <p>${esc(card.compare)}</p>
+                <p><b>共同产物：</b>${esc(card.artifact)}</p>
+              </section>
+            `,
+          )
+          .join("");
+      }
+
+      function sendMessage(text = $("input").value.trim()) {
+        if (!text) return;
+        state.messages.push({ type: "user", text, meta: "你" });
+        state.messages.push({ type: "oc", text: replyFor(text), meta: "Luma · 成长伙伴" });
+        state.pending = { source: text, insight: insightFor(text) };
+        state.messages.push({ type: "confirm", text: `我先这样理解：${state.pending.insight} 这个理解准确吗？` });
+        $("listenTitle").textContent = "Luma 等你确认";
+        $("listenText").textContent = "我不会直接生成成长判断。你确认或修正后，这件事才会进入成长卡。";
+        $("loopState").textContent = "等待确认";
+        $("input").value = "我补充一点真实证据。";
+        renderMessages();
+        toast("等待确认");
+      }
+
+      function confirmCard(accepted) {
+        if (!state.pending) return;
+        if (!accepted) {
+          state.messages.push({
+            type: "oc",
+            text: "好，你来修正。第一版最重要的是：成长解释权在你这里，不在系统这里。",
+            meta: "Luma · 等待修正",
+          });
+          $("input").value = "我想修正为：";
+          renderMessages();
+          toast("等待修正");
+          return;
+        }
+        const card = cardFromPending(state.pending.source, state.pending.insight);
+        state.currentCard = card;
+        state.cards.unshift(card);
+        state.messages.push({ type: "system", text: "已生成一张成长卡。", reward: "成长卡 +1" });
+        state.pending = null;
+        $("listenTitle").textContent = "Luma 已生成成长卡";
+        $("listenText").textContent = "这张卡把经历、证据、能力阶段、对比和共同产物放在一起。";
+        $("loopState").textContent = "已生成";
+        renderMessages();
+        renderCard();
+        renderLibrary();
+        toast("成长卡已生成");
+      }
+
+      function saveArtifact() {
+        if (!state.currentCard) {
+          toast("先确认生成成长卡");
+          return;
+        }
+        const card = state.currentCard;
+        card.saved = true;
+        $("cardStatus").textContent = "已沉淀";
+        $("loopState").textContent = "已沉淀";
+        renderLibrary();
+        toast("共同产物已沉淀");
+      }
+
+      async function runDemo() {
+        $("input").value = "能力值的标准是什么？我们要有一个对比。";
+        sendMessage();
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+        confirmCard(true);
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+        saveArtifact();
+      }
+
+      $("send").addEventListener("click", () => sendMessage());
+      $("input").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") sendMessage();
+      });
+      $("focusInput").addEventListener("click", () => $("input").focus());
+      $("runDemo").addEventListener("click", runDemo);
+      $("openLibrary").addEventListener("click", () => $("library").classList.add("is-open"));
+      $("openLibraryFromPet").addEventListener("click", () => $("library").classList.add("is-open"));
+      $("closeLibrary").addEventListener("click", () => $("library").classList.remove("is-open"));
+      $("regenerateCard").addEventListener("click", () => {
+        if (!state.currentCard) {
+          toast("先确认或修正理解");
+          return;
+        }
+        renderCard();
+        toast("已重新理解当前经历");
+      });
+      $("saveArtifact").addEventListener("click", saveArtifact);
+
+      renderPrompts();
+      renderMessages();
+      renderCard();
+      renderLibrary();
+    </script>
+  </body>
+</html>

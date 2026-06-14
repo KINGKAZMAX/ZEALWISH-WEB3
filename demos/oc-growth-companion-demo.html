@@ -1,0 +1,1777 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OC World · 桌面成长陪伴 Demo</title>
+    <!--
+      Assumptions:
+      - The first screen is a desktop pet agent and a simple conversation surface.
+      - The life growth system is a hidden page/drawer, not the main cockpit.
+      - The OC is still an agent, but the agent serves human growth through companionship, memory, reflection, and project nudges.
+    -->
+    <style>
+      :root {
+        --bg: #f5f1ea;
+        --window: #fffcf7;
+        --panel: #fbf7ef;
+        --soft: #f1ece2;
+        --ink: #25231f;
+        --muted: #6c665c;
+        --faint: #9b9387;
+        --line: rgba(37, 35, 31, 0.12);
+        --line-strong: rgba(37, 35, 31, 0.2);
+        --teal: #15766d;
+        --teal-soft: #dbefea;
+        --blue: #345aa8;
+        --blue-soft: #dde7ff;
+        --coral: #bd6148;
+        --coral-soft: #f5ded4;
+        --gold: #a2711f;
+        --gold-soft: #f1e3c5;
+        --violet: #65549a;
+        --violet-soft: #e6e0f3;
+        --green: #457b42;
+        --green-soft: #e2eddc;
+        --shadow: 0 24px 70px -46px rgba(39, 34, 27, 0.55);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        min-width: 1080px;
+        color: var(--ink);
+        background:
+          linear-gradient(rgba(42, 37, 30, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(42, 37, 30, 0.035) 1px, transparent 1px),
+          var(--bg);
+        background-size: 24px 24px;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+          "Microsoft YaHei", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        color: inherit;
+      }
+
+      .app {
+        width: 100%;
+        min-height: 100%;
+        padding: 26px;
+        display: grid;
+        place-items: center;
+      }
+
+      .desktop {
+        width: min(1260px, calc(100vw - 52px));
+        height: min(800px, calc(100vh - 52px));
+        min-height: 720px;
+        display: grid;
+        grid-template-columns: 350px minmax(0, 1fr);
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 252, 247, 0.94);
+        box-shadow: var(--shadow);
+      }
+
+      .pet-pane {
+        position: relative;
+        min-height: 0;
+        display: grid;
+        grid-template-rows: 42px minmax(0, 1fr) auto;
+        border-right: 1px solid var(--line);
+        background: var(--panel);
+      }
+
+      .titlebar {
+        height: 42px;
+        padding: 0 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .dots {
+        display: inline-flex;
+        gap: 7px;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+      }
+
+      .red {
+        background: #ed6a5e;
+      }
+
+      .yellow {
+        background: #f4bd4f;
+      }
+
+      .green {
+        background: #61c554;
+      }
+
+      .title {
+        color: var(--faint);
+        font-size: 12px;
+      }
+
+      .pet-stage {
+        position: relative;
+        min-height: 0;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        padding: 18px 18px 16px;
+      }
+
+      .agent-status {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        font-weight: 780;
+      }
+
+      .brand-mark {
+        width: 26px;
+        height: 26px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line-strong);
+        border-radius: 7px;
+        background: var(--window);
+      }
+
+      .brand-mark svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .state-pill,
+      .mini-pill {
+        min-height: 26px;
+        padding: 0 9px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--window);
+        color: var(--muted);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .state-pill::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--green);
+      }
+
+      .pet-wrap {
+        min-height: 0;
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        padding: 18px 0 10px;
+      }
+
+      .pet-card {
+        width: 258px;
+        height: 338px;
+        position: relative;
+        display: grid;
+        place-items: center;
+      }
+
+      .pet-shadow {
+        position: absolute;
+        left: 50%;
+        bottom: 16px;
+        width: 154px;
+        height: 24px;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: rgba(37, 35, 31, 0.12);
+        filter: blur(3px);
+      }
+
+      .pet-avatar {
+        position: relative;
+        width: 244px;
+        height: 244px;
+        display: grid;
+        place-items: center;
+        overflow: visible;
+        animation: pet-breathe 3.2s ease-in-out infinite;
+      }
+
+      .pet-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        image-rendering: auto;
+        filter: drop-shadow(0 16px 18px rgba(37, 35, 31, 0.12));
+      }
+
+      .pet-avatar.is-happy {
+        animation: pet-hop 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .pet-avatar.is-thinking img {
+        transform: rotate(-2deg);
+      }
+
+      .pet-avatar.is-focus img {
+        filter: drop-shadow(0 16px 18px rgba(37, 35, 31, 0.12)) saturate(0.82);
+      }
+
+      @keyframes pet-breathe {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-5px);
+        }
+      }
+
+      @keyframes pet-hop {
+        0% {
+          transform: translateY(0) scale(1);
+        }
+        38% {
+          transform: translateY(-20px) scale(1.03);
+        }
+        100% {
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      .speech {
+        width: 100%;
+        min-height: 92px;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--window);
+      }
+
+      .speech b {
+        display: block;
+        font-size: 13px;
+      }
+
+      .speech p {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.58;
+      }
+
+      .pet-actions {
+        padding: 14px 18px 18px;
+        display: grid;
+        gap: 8px;
+        border-top: 1px solid var(--line);
+      }
+
+      .action-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .icon-btn,
+      .soft-btn,
+      .primary-btn,
+      .chip-btn,
+      .drawer-tab,
+      .project-btn {
+        appearance: none;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--window);
+        cursor: pointer;
+        transition:
+          transform 160ms ease,
+          border-color 160ms ease,
+          background-color 160ms ease;
+      }
+
+      .icon-btn:hover,
+      .soft-btn:hover,
+      .primary-btn:hover,
+      .chip-btn:hover,
+      .drawer-tab:hover,
+      .project-btn:hover {
+        transform: translateY(-1px);
+        border-color: var(--line-strong);
+      }
+
+      .icon-btn {
+        height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .soft-btn,
+      .primary-btn {
+        min-height: 40px;
+        padding: 0 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .primary-btn {
+        color: #fffdf7;
+        border-color: var(--teal);
+        background: var(--teal);
+      }
+
+      .soft-btn {
+        color: var(--muted);
+        background: var(--window);
+      }
+
+      .main {
+        min-width: 0;
+        min-height: 0;
+        position: relative;
+        display: grid;
+        grid-template-rows: 58px minmax(0, 1fr) 148px;
+        background: var(--window);
+      }
+
+      .chat-head {
+        height: 58px;
+        padding: 0 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .chat-title {
+        min-width: 0;
+      }
+
+      .chat-title h1 {
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.2;
+        letter-spacing: 0;
+      }
+
+      .chat-title p {
+        margin: 3px 0 0;
+        color: var(--faint);
+        font-size: 12px;
+      }
+
+      .head-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .demo-btn {
+        color: var(--blue);
+        border-color: rgba(52, 90, 168, 0.24);
+        background: var(--blue-soft);
+      }
+
+      .messages {
+        min-height: 0;
+        overflow: auto;
+        padding: 22px 24px 18px;
+        display: grid;
+        align-content: start;
+        gap: 14px;
+        background:
+          linear-gradient(rgba(37, 35, 31, 0.026) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(37, 35, 31, 0.026) 1px, transparent 1px),
+          var(--window);
+        background-size: 22px 22px;
+      }
+
+      .time-chip {
+        justify-self: center;
+        min-height: 24px;
+        padding: 0 9px;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 252, 247, 0.92);
+        color: var(--faint);
+        font-size: 12px;
+      }
+
+      .msg {
+        max-width: min(620px, 82%);
+        display: grid;
+        gap: 5px;
+      }
+
+      .msg.user {
+        justify-self: end;
+      }
+
+      .msg.oc {
+        justify-self: start;
+      }
+
+      .bubble {
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--window);
+        font-size: 14px;
+        line-height: 1.66;
+      }
+
+      .msg.user .bubble {
+        color: #fffdf7;
+        border-color: var(--teal);
+        background: var(--teal);
+      }
+
+      .meta {
+        color: var(--faint);
+        font-size: 11px;
+      }
+
+      .msg.user .meta {
+        text-align: right;
+      }
+
+      .memory-hint {
+        max-width: 540px;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        border: 1px solid rgba(52, 90, 168, 0.18);
+        border-radius: 10px;
+        background: var(--blue-soft);
+        color: #2f416b;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .sync-card {
+        max-width: 620px;
+        padding: 12px;
+        display: grid;
+        gap: 8px;
+        border: 1px solid rgba(21, 118, 109, 0.18);
+        border-radius: 10px;
+        background: var(--teal-soft);
+        color: #21514d;
+        font-size: 12px;
+      }
+
+      .sync-card b {
+        font-size: 13px;
+      }
+
+      .sync-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .sync-grid span {
+        min-height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(21, 118, 109, 0.18);
+        border-radius: 7px;
+        background: rgba(255, 252, 247, 0.66);
+      }
+
+      .composer {
+        min-height: 148px;
+        padding: 12px 18px 14px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: auto auto;
+        gap: 10px;
+        align-items: center;
+        border-top: 1px solid var(--line);
+        background: rgba(255, 252, 247, 0.96);
+      }
+
+      .quick-prompts {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip-btn {
+        min-height: 30px;
+        padding: 0 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .chip-btn.is-active {
+        color: var(--teal);
+        border-color: rgba(21, 118, 109, 0.26);
+        background: var(--teal-soft);
+      }
+
+      .input-wrap {
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fbf8f1;
+      }
+
+      .input-wrap input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--ink);
+        font-size: 14px;
+      }
+
+      .icon {
+        width: 16px;
+        height: 16px;
+        flex: 0 0 auto;
+      }
+
+      .drawer {
+        position: absolute;
+        inset: 58px 0 148px auto;
+        width: min(660px, 76%);
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        border-left: 1px solid var(--line);
+        background: rgba(255, 252, 247, 0.98);
+        box-shadow: -24px 0 56px -46px rgba(37, 35, 31, 0.55);
+        transform: translateX(100%);
+        transition: transform 240ms ease;
+        z-index: 5;
+      }
+
+      .drawer.is-open {
+        transform: translateX(0);
+      }
+
+      .drawer-head {
+        padding: 16px 18px 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .drawer-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+      }
+
+      .drawer-head h2 {
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.2;
+      }
+
+      .drawer-head p {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .drawer-tabs {
+        margin-top: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .drawer-tab {
+        min-height: 34px;
+        padding: 0 10px;
+        color: var(--muted);
+      }
+
+      .drawer-tab.is-active {
+        color: var(--teal);
+        border-color: rgba(21, 118, 109, 0.3);
+        background: var(--teal-soft);
+      }
+
+      .drawer-body {
+        min-height: 0;
+        overflow: auto;
+        padding: 16px 18px 18px;
+      }
+
+      .life-page {
+        display: none;
+        gap: 12px;
+      }
+
+      .life-page.is-active {
+        display: grid;
+      }
+
+      .life-card {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fffdf8;
+      }
+
+      .life-card h3 {
+        margin: 0;
+        font-size: 14px;
+      }
+
+      .life-card p {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.62;
+      }
+
+      .timeline {
+        display: grid;
+        gap: 9px;
+      }
+
+      .event {
+        display: grid;
+        grid-template-columns: 76px minmax(0, 1fr);
+        gap: 10px;
+        padding: 11px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: #fbf8f1;
+      }
+
+      button.event {
+        width: 100%;
+        color: inherit;
+        text-align: left;
+      }
+
+      .event.is-active {
+        border-color: rgba(21, 118, 109, 0.32);
+        background: var(--teal-soft);
+      }
+
+      .event-time {
+        color: var(--faint);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .event b {
+        display: block;
+        font-size: 13px;
+      }
+
+      .event span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.48;
+      }
+
+      .chips {
+        margin-top: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .chip {
+        min-height: 23px;
+        padding: 0 8px;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        background: #fffdf8;
+        font-size: 11px;
+      }
+
+      .chip.teal {
+        color: var(--teal);
+        border-color: rgba(21, 118, 109, 0.16);
+        background: var(--teal-soft);
+      }
+
+      .chip.blue {
+        color: var(--blue);
+        border-color: rgba(52, 90, 168, 0.16);
+        background: var(--blue-soft);
+      }
+
+      .chip.coral {
+        color: var(--coral);
+        border-color: rgba(189, 97, 72, 0.16);
+        background: var(--coral-soft);
+      }
+
+      .chip.gold {
+        color: var(--gold);
+        border-color: rgba(162, 113, 31, 0.16);
+        background: var(--gold-soft);
+      }
+
+      .chip.violet {
+        color: var(--violet);
+        border-color: rgba(101, 84, 154, 0.16);
+        background: var(--violet-soft);
+      }
+
+      .ability-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .ability {
+        min-height: 94px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fbf8f1;
+      }
+
+      button.ability {
+        width: 100%;
+        color: inherit;
+        text-align: left;
+      }
+
+      .ability.is-active {
+        border-color: rgba(21, 118, 109, 0.32);
+        background: var(--teal-soft);
+      }
+
+      .ability-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .ability b {
+        font-size: 13px;
+      }
+
+      .ability strong {
+        font-size: 20px;
+        line-height: 1;
+      }
+
+      .ability small {
+        display: block;
+        margin-top: 7px;
+        color: var(--green);
+        font-size: 12px;
+      }
+
+      .bar {
+        height: 7px;
+        margin-top: 12px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(37, 35, 31, 0.08);
+      }
+
+      .bar span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--teal);
+      }
+
+      .impression {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr);
+        gap: 11px;
+        align-items: start;
+      }
+
+      .impression-icon {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--teal-soft);
+        color: var(--teal);
+      }
+
+      .project-btn {
+        width: 100%;
+        min-height: 64px;
+        padding: 12px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        text-align: left;
+      }
+
+      .project-btn.is-active {
+        border-color: rgba(21, 118, 109, 0.32);
+        background: var(--teal-soft);
+      }
+
+      .project-btn b {
+        display: block;
+        font-size: 13px;
+      }
+
+      .project-btn span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .progress-ring {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--teal);
+        font-size: 12px;
+        background: var(--teal-soft);
+      }
+
+      .detail-panel {
+        position: sticky;
+        bottom: 0;
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: rgba(255, 252, 247, 0.96);
+        box-shadow: 0 -18px 36px -34px rgba(37, 35, 31, 0.48);
+      }
+
+      .detail-panel h3 {
+        margin: 0;
+        font-size: 14px;
+      }
+
+      .detail-panel p {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.58;
+      }
+
+      .detail-actions {
+        margin-top: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .impression-list {
+        display: grid;
+        gap: 9px;
+      }
+
+      .impression-row {
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: #fbf8f1;
+      }
+
+      .impression-row b {
+        display: block;
+        font-size: 13px;
+      }
+
+      .impression-row span {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 24px;
+        min-width: 260px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: rgba(255, 252, 247, 0.98);
+        color: var(--ink);
+        box-shadow: var(--shadow);
+        transform: translate(-50%, 12px);
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+        z-index: 20;
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      @media (max-width: 1080px) {
+        body {
+          min-width: 0;
+        }
+
+        .app {
+          padding: 12px;
+        }
+
+        .desktop {
+          width: 100%;
+          height: auto;
+          min-height: 0;
+          grid-template-columns: 1fr;
+        }
+
+        .pet-pane {
+          grid-template-rows: 42px auto auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .pet-card {
+          height: 250px;
+        }
+
+        .pet-avatar {
+          width: 190px;
+          height: 190px;
+        }
+
+        .main {
+          min-height: 720px;
+        }
+
+        .drawer {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <div class="desktop">
+        <aside class="pet-pane">
+          <div class="titlebar">
+            <div class="dots" aria-hidden="true">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <span class="title">desktop pet agent</span>
+          </div>
+
+          <section class="pet-stage">
+            <div class="agent-status">
+              <div class="brand">
+                <span class="brand-mark">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3l7 4v8l-7 6-7-6V7l7-4Z" stroke="currentColor" stroke-width="1.7" />
+                    <path d="M8.4 12h7.2M12 8.4v7.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  </svg>
+                </span>
+                OC World
+              </div>
+              <span class="state-pill" id="agentState">在线</span>
+            </div>
+
+            <div class="pet-wrap">
+              <div class="pet-card">
+                <div class="pet-shadow"></div>
+                <div class="pet-avatar" id="petAvatar">
+                  <img src="./oc-avatar-pet.png" alt="OC 桌面宠物形象" />
+                </div>
+              </div>
+            </div>
+
+            <div class="speech">
+              <b id="speechTitle">Luma 正在陪你</b>
+              <p id="speechText">你先说今天发生了什么。我会帮你记住、理解，然后把它慢慢变成人生系统里的成长线索。</p>
+            </div>
+          </section>
+
+          <div class="pet-actions">
+            <div class="action-row">
+              <button class="icon-btn" type="button" data-pet="happy">
+                <svg class="icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  <path d="M9 9h.01M15 9h.01" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" />
+                  <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6" />
+                </svg>
+                摸摸
+              </button>
+              <button class="icon-btn" type="button" data-pet="thinking">
+                <svg class="icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 9a3 3 0 1 1 4.2 2.75c-.9.42-1.2.95-1.2 1.75" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  <path d="M12 17h.01" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+                  <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6" />
+                </svg>
+                解惑
+              </button>
+              <button class="icon-btn" type="button" data-pet="focus">
+                <svg class="icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 4v3M12 17v3M4 12h3M17 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8" />
+                </svg>
+                专注
+              </button>
+            </div>
+            <button class="soft-btn" type="button" id="openLifeFromPet">
+              <svg class="icon" viewBox="0 0 24 24" fill="none">
+                <path d="M5 5h14v14H5z" stroke="currentColor" stroke-width="1.7" />
+                <path d="M8 14l2-2 2 2 4-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              查看隐藏的人生系统
+            </button>
+          </div>
+        </aside>
+
+        <section class="main">
+          <header class="chat-head">
+            <div class="chat-title">
+              <h1>和 Luma 对话</h1>
+              <p>主界面保持轻，成长记录和能力值在右侧隐藏页面里。</p>
+            </div>
+            <div class="head-actions">
+              <span class="mini-pill">Hermes Agent · 可感知 · 可记录</span>
+              <button class="soft-btn demo-btn" type="button" id="runDemo">
+                <svg class="icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M8 5v14l11-7-11-7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                </svg>
+                播放完整交互
+              </button>
+              <button class="soft-btn" type="button" id="openLife">
+                <svg class="icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 5h16M4 12h16M4 19h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+                人生系统
+              </button>
+            </div>
+          </header>
+
+          <div class="messages" id="messages">
+            <div class="time-chip">今天 16:42</div>
+            <div class="msg user">
+              <div class="bubble">我觉得 OC 应该是桌面宠物一样的 Agent，不要一打开就是人生仪表盘。</div>
+              <div class="meta">你</div>
+            </div>
+            <div class="msg oc">
+              <div class="bubble">懂了。你平时应该先看到我，像一个在桌面陪着你的伙伴。能力值、经历、项目推进这些东西，我会在后台帮你整理。</div>
+              <div class="meta">Luma · 理解产品方向</div>
+            </div>
+            <div class="memory-hint">
+              <svg class="icon" viewBox="0 0 24 24" fill="none">
+                <path d="M6 4h12v16l-6-3-6 3V4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+              </svg>
+              已记录为印象：你希望 OC 的第一感受是“陪伴和互动”，成长系统应该隐藏但持续运转。
+            </div>
+            <div class="msg oc">
+              <div class="bubble">我会把今天这次讨论存进你的时间线：一次产品判断力提升。等你需要时，再打开人生系统看完整记录。</div>
+              <div class="meta">Luma · 存档完成</div>
+            </div>
+          </div>
+
+          <div class="composer">
+            <div class="quick-prompts">
+              <button class="chip-btn" type="button" data-prompt="我今天有点卡住，想让你帮我一起拆一下。">我卡住了</button>
+              <button class="chip-btn" type="button" data-prompt="我今天推进了 OC 主界面，把它改成桌面宠物和对话。">记录进展</button>
+              <button class="chip-btn" type="button" data-prompt="帮我复盘今天，我想知道能力值有哪些变化。">今日复盘</button>
+              <button class="chip-btn" type="button" data-prompt="帮我把 OC World 主界面重构的下一步拆出来。">推进项目</button>
+            </div>
+            <div class="input-wrap">
+              <svg class="icon" viewBox="0 0 24 24" fill="none">
+                <path d="M4 12h16M12 4v16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+              <input id="chatInput" value="今天我想让你记住：主界面要像桌面宠物，人生系统藏在后面。" />
+            </div>
+            <button class="primary-btn" type="button" id="sendMessage">
+              <svg class="icon" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              发送
+            </button>
+          </div>
+
+          <aside class="drawer" id="lifeDrawer" aria-label="隐藏人生系统">
+            <div class="drawer-head">
+              <div class="drawer-top">
+                <div>
+                  <h2>人生系统</h2>
+                  <p>这里是后台：日常经历、OC 对你的印象、能力值、项目推进，以及时序化成长记录。</p>
+                </div>
+                <button class="soft-btn" type="button" id="closeLife">关闭</button>
+              </div>
+              <div class="drawer-tabs" id="drawerTabs">
+                <button class="drawer-tab is-active" type="button" data-page="timeline">时序</button>
+                <button class="drawer-tab" type="button" data-page="impression">印象</button>
+                <button class="drawer-tab" type="button" data-page="abilities">能力值</button>
+                <button class="drawer-tab" type="button" data-page="projects">项目推进</button>
+              </div>
+            </div>
+            <div class="drawer-body">
+              <section class="life-page is-active" id="page-timeline">
+                <div class="life-card">
+                  <h3>今日主线</h3>
+                  <p>这不是任务列表，而是 OC 帮你把真实经历转成可复盘的人生轨迹。</p>
+                </div>
+                <div class="timeline" id="lifeTimeline"></div>
+                <div class="detail-panel" id="timelineDetail"></div>
+              </section>
+
+              <section class="life-page" id="page-impression">
+                <div class="life-card impression">
+                  <div class="impression-icon">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none">
+                      <path d="M5 12s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5Z" stroke="currentColor" stroke-width="1.7" />
+                      <circle cx="12" cy="12" r="2.2" stroke="currentColor" stroke-width="1.7" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3>OC 对你的当前印象</h3>
+                    <p>你不是单纯追求效率的人。你在意的是产品和人之间的关系：AI 应该帮人更清醒、更能行动，而不是替人生活。</p>
+                  </div>
+                </div>
+                <div class="impression-list" id="impressionList"></div>
+                <div class="detail-panel">
+                  <h3>校准印象</h3>
+                  <p id="impressionDetail">OC 的印象不是标签，而是可被你修正的长期理解。</p>
+                  <div class="detail-actions">
+                    <button class="soft-btn" type="button" id="correctImpression">我来修正一句</button>
+                    <button class="primary-btn" type="button" id="confirmImpression">这个理解是对的</button>
+                  </div>
+                </div>
+              </section>
+
+              <section class="life-page" id="page-abilities">
+                <div class="ability-grid" id="abilityGrid"></div>
+                <div class="detail-panel" id="abilityDetail"></div>
+              </section>
+
+              <section class="life-page" id="page-projects">
+                <div id="projectList"></div>
+                <div class="detail-panel" id="projectDetail"></div>
+              </section>
+            </div>
+          </aside>
+        </section>
+      </div>
+    </main>
+
+    <div class="toast" id="toast">已更新</div>
+
+    <script>
+      const messages = document.getElementById("messages");
+      const petAvatar = document.getElementById("petAvatar");
+      const speechTitle = document.getElementById("speechTitle");
+      const speechText = document.getElementById("speechText");
+      const agentState = document.getElementById("agentState");
+      const drawer = document.getElementById("lifeDrawer");
+      const toast = document.getElementById("toast");
+      const input = document.getElementById("chatInput");
+
+      const state = {
+        selectedEvent: 0,
+        selectedAbility: 0,
+        selectedProject: 0,
+        demoRunning: false,
+      };
+
+      const timeline = [
+        {
+          time: "09:40",
+          type: "对话",
+          title: "纠正产品理念",
+          text: "明确最终服务的是人，OC 是成长陪伴，不是替人生活。",
+          chips: ["判断力 +4", "表达力 +2"],
+          insight: "这是一次价值观校准。你把产品从“替代人”拉回到“支持人成长”。",
+          next: "把这句话转成主界面的默认感受：先看到 OC，再看到系统。",
+        },
+        {
+          time: "14:10",
+          type: "印象更新",
+          title: "OC 更懂你的价值观",
+          text: "你希望 AI 帮人更好地成长，而不是把人生自动化。",
+          chips: ["自我理解 +3"],
+          insight: "你在意的是长期陪伴关系，而不是一次性效率工具。",
+          next: "让 OC 的每次回应都能说明：我记住你了，我理解你了，我能陪你下一步。",
+        },
+        {
+          time: "16:42",
+          type: "产品推进",
+          title: "主界面方向修正",
+          text: "主界面改成桌面宠物 Agent + 对话，人生系统隐藏在二级页面。",
+          chips: ["产品判断 +3", "行动力 +1"],
+          insight: "你识别出第一屏的情绪入口比后台数据更重要。",
+          next: "补完整交互链路：对话、记录、印象、能力值、项目推进联动。",
+        },
+        {
+          time: "今晚",
+          type: "下一步",
+          title: "做一版更轻的交互原型",
+          text: "验证左侧虚拟形象和右侧对话是否符合第一感觉。",
+          chips: ["项目推进"],
+          insight: "这是从理念进入体验验证的动作。",
+          next: "让用户能走完一轮：说一句话，OC 反馈，后台更新。",
+        },
+      ];
+
+      const abilities = [
+        { name: "判断力", score: 76, delta: 4, text: "今天你把产品终点重新拉回人。", evidence: "纠正“Agent 替我完成任务”的叙事偏差。", next: "每次加功能前，问它是在增强人，还是替代人。" },
+        { name: "表达力", score: 68, delta: 2, text: "你把“成长陪伴”讲得更准确。", evidence: "把抽象理念说成：桌面宠物 Agent + 对话 + 隐藏人生系统。", next: "用 30 秒给第一次听的人讲清 OC World。" },
+        { name: "自我理解", score: 64, delta: 3, text: "你明确了自己想要的 AI 关系。", evidence: "你说出了自己真正想要的是陪伴、理解、支持和记录。", next: "写下你最希望 OC 先懂你的三个状态。" },
+        { name: "行动力", score: 71, delta: 1, text: "你把理念推进到可交互 demo。", evidence: "从讨论进入 HTML 原型迭代。", next: "确认主界面以后，推进真实 Electron 组件。" },
+        { name: "创造力", score: 63, delta: 2, text: "桌宠、对话、人生后台开始合成一个体验。", evidence: "把桌面宠物和成长系统组合成了完整产品循环。", next: "补充更多 OC 动作和情绪反馈。" },
+        { name: "项目推进", score: 58, delta: 3, text: "OC World 的主界面方向更清楚了。", evidence: "明确左侧 agent、右侧对话、后台人生系统。", next: "把 demo 变成 React/Electron 的第一版结构。" },
+      ];
+
+      const impressions = [
+        { title: "你重视人的成长", text: "你不想让 AI 替人生活，而是让 AI 陪人更清醒、更能行动。" },
+        { title: "你需要看见交互闭环", text: "只有静态界面不够，你需要看到对话如何驱动记忆、能力和项目变化。" },
+        { title: "你会主动修正方向", text: "当产品叙事跑偏时，你会直接指出，并把它拉回自己的价值观。" },
+      ];
+
+      const projects = [
+        { title: "OC World 主界面重构", text: "从成长仪表盘改为桌面宠物 Agent + 轻对话。", progress: 62, next: "确认左侧桌宠和右侧对话的第一感觉。", ability: "项目推进" },
+        { title: "人生系统后台", text: "沉淀经历、印象、能力值和项目推进的时序模型。", progress: 38, next: "定义经历如何转成能力值和印象更新。", ability: "判断力" },
+        { title: "OC 交互动作", text: "摸摸、思考、专注、提醒、陪伴反馈等桌宠行为。", progress: 48, next: "补充情绪和动作的状态切换。", ability: "创造力" },
+      ];
+
+      const chipColor = {
+        判断力: "gold",
+        表达力: "blue",
+        自我理解: "violet",
+        行动力: "teal",
+        产品判断: "gold",
+        创造力: "coral",
+        项目推进: "teal",
+        情绪稳定: "coral",
+      };
+
+      const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+      const clamp = (value) => Math.max(0, Math.min(100, value));
+      const esc = (text) =>
+        String(text)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+
+      function showToast(text) {
+        toast.textContent = text;
+        toast.classList.add("is-visible");
+        window.clearTimeout(showToast.timer);
+        showToast.timer = window.setTimeout(() => toast.classList.remove("is-visible"), 1700);
+      }
+
+      function addBubble(role, text, meta) {
+        const wrap = document.createElement("div");
+        wrap.className = `msg ${role}`;
+        wrap.innerHTML = `
+          <div class="bubble">${esc(text)}</div>
+          <div class="meta">${esc(meta)}</div>
+        `;
+        messages.appendChild(wrap);
+        messages.scrollTop = messages.scrollHeight;
+        return wrap;
+      }
+
+      function addSyncCard(summary) {
+        const card = document.createElement("div");
+        card.className = "sync-card";
+        card.innerHTML = `
+          <b>${esc(summary)}</b>
+          <div class="sync-grid">
+            <span>时序 +1</span>
+            <span>印象更新</span>
+            <span>能力变化</span>
+            <span>项目推进</span>
+          </div>
+        `;
+        messages.appendChild(card);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      function setPetMood(mood) {
+        petAvatar.classList.remove("is-happy", "is-thinking", "is-focus");
+        if (mood === "happy") {
+          petAvatar.classList.add("is-happy");
+          speechTitle.textContent = "Luma 很开心";
+          speechText.textContent = "我会把这次互动记下来。你不是在喂养我，你是在和我建立一种共同成长的关系。";
+          agentState.textContent = "开心";
+          showToast("OC 亲密度 +1");
+        }
+        if (mood === "thinking") {
+          petAvatar.classList.add("is-thinking");
+          speechTitle.textContent = "Luma 正在思考";
+          speechText.textContent = "我先不急着给答案。我会帮你把困惑拆成：发生了什么、你在意什么、下一步怎么试。";
+          agentState.textContent = "思考中";
+          showToast("已进入解惑模式");
+        }
+        if (mood === "focus") {
+          petAvatar.classList.add("is-focus");
+          speechTitle.textContent = "Luma 陪你专注";
+          speechText.textContent = "接下来 25 分钟，我只帮你盯一个最小动作。结束后再一起存档。";
+          agentState.textContent = "专注";
+          showToast("专注陪伴已开启");
+        }
+        window.setTimeout(() => petAvatar.classList.remove("is-happy"), 900);
+      }
+
+      function bumpAbility(name, delta) {
+        const ability = abilities.find((item) => item.name === name);
+        if (!ability) return;
+        ability.score = clamp(ability.score + delta);
+        ability.delta += delta;
+      }
+
+      function addTimelineEvent(event) {
+        timeline.unshift(event);
+        state.selectedEvent = 0;
+      }
+
+      function analyzeMessage(text) {
+        const hasProject = /项目|推进|主界面|demo|原型|OC World|组件/.test(text);
+        const hasStuck = /卡住|困惑|焦虑|不确定|不知道|乱/.test(text);
+        const hasReview = /复盘|能力|成长|变化|总结/.test(text);
+
+        if (hasStuck) {
+          bumpAbility("自我理解", 2);
+          bumpAbility("表达力", 1);
+          impressions.unshift({ title: "你遇到卡点时需要先被理解", text: "OC 应该先帮你说清发生了什么，再拆下一步，而不是直接给答案。" });
+          return {
+            mood: "thinking",
+            reply: "我先陪你把卡点拆开：第一，发生了什么；第二，你真正担心的是什么；第三，下一步只做哪一个最小动作。你不用马上变强，先把问题说准确。",
+            event: {
+              time: "现在",
+              type: "解惑",
+              title: "拆解一个真实卡点",
+              text,
+              chips: ["自我理解 +2", "表达力 +1"],
+              insight: "你愿意把卡住说出来，本身就是把混乱变成可处理对象。",
+              next: "写下一个 10 分钟能推进的最小动作。",
+            },
+            sync: "Luma 已把这次卡点转成成长证据",
+          };
+        }
+
+        if (hasProject) {
+          bumpAbility("项目推进", 3);
+          bumpAbility("行动力", 2);
+          projects[0].progress = clamp(projects[0].progress + 8);
+          projects[0].next = "把这个交互迁移成 React 组件，并接入真实 useChat 状态。";
+          impressions.unshift({ title: "你更在意第一感受", text: "你希望用户先感到有一个 OC 在身边，再进入复杂人生系统。" });
+          return {
+            mood: "focus",
+            reply: "这条我会同时记成项目推进和能力变化。你不是只改了页面布局，而是把第一触点改成了“我和 OC 相处”。下一步可以验证：用户有没有先感到陪伴，再愿意打开人生系统。",
+            event: {
+              time: "现在",
+              type: "项目推进",
+              title: "推进 OC 主界面交互",
+              text,
+              chips: ["项目推进 +3", "行动力 +2"],
+              insight: "从功能堆叠转向第一感受设计，是一次产品判断。",
+              next: "验证主界面是否足够轻，后台是否足够完整。",
+            },
+            sync: "Luma 已同步：项目进度、能力值、时序记录",
+          };
+        }
+
+        if (hasReview) {
+          bumpAbility("判断力", 2);
+          bumpAbility("自我理解", 1);
+          return {
+            mood: "thinking",
+            reply: "今天的变化主要在判断力和自我理解：你把产品终点从 Agent 能力拉回人的成长，也把主界面从后台系统改成陪伴关系。这个方向比单纯做一个面板更接近你要的东西。",
+            event: {
+              time: "现在",
+              type: "复盘",
+              title: "完成一次能力复盘",
+              text,
+              chips: ["判断力 +2", "自我理解 +1"],
+              insight: "你正在把产品讨论转成对自己判断力的训练。",
+              next: "把能力变化和具体证据绑定，避免空泛数值。",
+            },
+            sync: "Luma 已生成今日复盘线索",
+          };
+        }
+
+        bumpAbility("表达力", 1);
+        impressions.unshift({ title: "你希望被持续记录", text: "你不只是要聊天，而是希望日常表达能被保存为长期成长线索。" });
+        return {
+          mood: "happy",
+          reply: "我记住了。它会进入你的时序记录，也会慢慢更新我对你的理解。你继续和我自然说话就好，后台由我整理。",
+          event: {
+            time: "现在",
+            type: "日常经历",
+            title: "新的日常记录",
+            text,
+            chips: ["表达力 +1"],
+            insight: "日常表达被保存下来，才会形成长期的自我理解。",
+            next: "今晚我会提醒你做一次 6 句复盘。",
+          },
+          sync: "Luma 已把日常内容存入人生系统",
+        };
+      }
+
+      async function handleSend(forcedText = null, options = {}) {
+        const text = (forcedText ?? input.value).trim();
+        if (!text) {
+          showToast("先说一句你想记录的事");
+          return;
+        }
+
+        addBubble("user", text, "你");
+        input.value = "";
+        const typing = addBubble("oc", "……", "Luma · 正在理解");
+        const result = analyzeMessage(text);
+        setPetMood(result.mood);
+
+        await sleep(options.fast ? 180 : 520);
+        typing.querySelector(".bubble").textContent = result.reply;
+        typing.querySelector(".meta").textContent = "Luma · 已理解并记录";
+        addTimelineEvent(result.event);
+        renderAll();
+        addSyncCard(result.sync);
+        speechTitle.textContent = "Luma 已同步后台";
+        speechText.textContent = result.event.next;
+        showToast("对话已同步到人生系统");
+
+        if (options.open) {
+          openDrawer(options.open);
+        }
+      }
+
+      function renderTimeline() {
+        document.getElementById("lifeTimeline").innerHTML = timeline
+          .map((item, index) => {
+            const chips = item.chips
+              .map((chip) => {
+                const key = chip.split(" ")[0];
+                return `<span class="chip ${chipColor[key] || "teal"}">${esc(chip)}</span>`;
+              })
+              .join("");
+            return `
+              <button class="event ${index === state.selectedEvent ? "is-active" : ""}" type="button" data-event="${index}">
+                <div class="event-time">${esc(item.time)}<br />${esc(item.type)}</div>
+                <div>
+                  <b>${esc(item.title)}</b>
+                  <span>${esc(item.text)}</span>
+                  <div class="chips">${chips}</div>
+                </div>
+              </button>
+            `;
+          })
+          .join("");
+
+        document.querySelectorAll("[data-event]").forEach((button) => {
+          button.addEventListener("click", () => {
+            state.selectedEvent = Number(button.dataset.event);
+            renderTimeline();
+          });
+        });
+        renderTimelineDetail();
+      }
+
+      function renderTimelineDetail() {
+        const item = timeline[state.selectedEvent] || timeline[0];
+        document.getElementById("timelineDetail").innerHTML = `
+          <h3>${esc(item.title)}</h3>
+          <p>${esc(item.insight)}</p>
+          <p><b>下一步：</b>${esc(item.next)}</p>
+          <div class="detail-actions">
+            <button class="soft-btn" type="button" id="askEvent">让 Luma 追问我</button>
+            <button class="primary-btn" type="button" id="practiceEvent">生成练习</button>
+          </div>
+        `;
+        document.getElementById("askEvent").addEventListener("click", () => {
+          addBubble("oc", `我想追问你：${item.next}`, "Luma · 追问");
+          showToast("已回到对话继续");
+        });
+        document.getElementById("practiceEvent").addEventListener("click", () => {
+          addBubble("oc", `我给你一个小练习：${item.next} 完成以后，我会把它记成新的成长证据。`, "Luma · 练习");
+          closeDrawer();
+        });
+      }
+
+      function renderImpressions() {
+        document.getElementById("impressionList").innerHTML = impressions
+          .slice(0, 5)
+          .map(
+            (item) => `
+              <div class="impression-row">
+                <b>${esc(item.title)}</b>
+                <span>${esc(item.text)}</span>
+              </div>
+            `,
+          )
+          .join("");
+      }
+
+      function renderAbilities() {
+        document.getElementById("abilityGrid").innerHTML = abilities
+          .map(
+            (ability, index) => `
+              <button class="ability ${index === state.selectedAbility ? "is-active" : ""}" type="button" data-ability="${index}">
+                <div class="ability-top">
+                  <b>${esc(ability.name)}</b>
+                  <strong>${ability.score}</strong>
+                </div>
+                <small>+${ability.delta} 今日变化</small>
+                <div class="bar"><span style="width:${ability.score}%"></span></div>
+                <p style="margin:9px 0 0;color:var(--muted);font-size:12px;line-height:1.45">${esc(ability.text)}</p>
+              </button>
+            `,
+          )
+          .join("");
+
+        document.querySelectorAll("[data-ability]").forEach((button) => {
+          button.addEventListener("click", () => {
+            state.selectedAbility = Number(button.dataset.ability);
+            renderAbilities();
+          });
+        });
+        renderAbilityDetail();
+      }
+
+      function renderAbilityDetail() {
+        const ability = abilities[state.selectedAbility] || abilities[0];
+        document.getElementById("abilityDetail").innerHTML = `
+          <h3>${esc(ability.name)} · ${ability.score}</h3>
+          <p>${esc(ability.evidence)}</p>
+          <p><b>下一步练习：</b>${esc(ability.next)}</p>
+          <div class="detail-actions">
+            <button class="soft-btn" type="button" id="traceAbility">查看相关时序</button>
+            <button class="primary-btn" type="button" id="trainAbility">标记今天已练习</button>
+          </div>
+        `;
+        document.getElementById("traceAbility").addEventListener("click", () => openDrawer("timeline"));
+        document.getElementById("trainAbility").addEventListener("click", () => {
+          bumpAbility(ability.name, 1);
+          addTimelineEvent({
+            time: "现在",
+            type: "能力练习",
+            title: `${ability.name} 练习完成`,
+            text: ability.next,
+            chips: [`${ability.name} +1`],
+            insight: "一次很小的练习也会被保存为长期能力证据。",
+            next: "明天重复一次，观察它是否变得更容易。",
+          });
+          renderAll();
+          showToast(`${ability.name} +1`);
+        });
+      }
+
+      function renderProjects() {
+        document.getElementById("projectList").innerHTML = projects
+          .map(
+            (project, index) => `
+              <button class="project-btn ${index === state.selectedProject ? "is-active" : ""}" type="button" data-project="${index}">
+                <span>
+                  <b>${esc(project.title)}</b>
+                  <span>${esc(project.text)}</span>
+                </span>
+                <span class="progress-ring">${project.progress}%</span>
+              </button>
+            `,
+          )
+          .join("");
+        document.querySelectorAll("[data-project]").forEach((button) => {
+          button.addEventListener("click", () => {
+            state.selectedProject = Number(button.dataset.project);
+            renderProjects();
+          });
+        });
+        renderProjectDetail();
+      }
+
+      function renderProjectDetail() {
+        const project = projects[state.selectedProject] || projects[0];
+        document.getElementById("projectDetail").innerHTML = `
+          <h3>${esc(project.title)}</h3>
+          <p>${esc(project.text)}</p>
+          <div class="bar"><span style="width:${project.progress}%"></span></div>
+          <p><b>下一步：</b>${esc(project.next)}</p>
+          <div class="detail-actions">
+            <button class="soft-btn" type="button" id="askProject">让 Luma 拆任务</button>
+            <button class="primary-btn" type="button" id="completeProjectStep">完成下一步</button>
+          </div>
+        `;
+        document.getElementById("askProject").addEventListener("click", () => {
+          closeDrawer();
+          addBubble("oc", `我建议只做下一步：${project.next}。做完再回来更新项目进度，不要同时开太多分支。`, "Luma · 项目陪跑");
+        });
+        document.getElementById("completeProjectStep").addEventListener("click", () => {
+          project.progress = clamp(project.progress + 7);
+          bumpAbility(project.ability, 1);
+          addTimelineEvent({
+            time: "现在",
+            type: "项目推进",
+            title: `${project.title} 推进了一步`,
+            text: project.next,
+            chips: [`${project.ability} +1`, "项目推进"],
+            insight: "项目推进被保存成时间线，而不是只在任务列表里消失。",
+            next: "让 OC 帮你复盘这一步带来的能力变化。",
+          });
+          renderAll();
+          showToast("项目进度 +7%");
+        });
+      }
+
+      function renderAll() {
+        renderTimeline();
+        renderImpressions();
+        renderAbilities();
+        renderProjects();
+      }
+
+      function openDrawer(page = "timeline") {
+        drawer.classList.add("is-open");
+        activatePage(page);
+      }
+
+      function closeDrawer() {
+        drawer.classList.remove("is-open");
+      }
+
+      function activatePage(page) {
+        document.querySelectorAll(".drawer-tab").forEach((tab) => {
+          tab.classList.toggle("is-active", tab.dataset.page === page);
+        });
+        document.querySelectorAll(".life-page").forEach((panel) => {
+          panel.classList.toggle("is-active", panel.id === `page-${page}`);
+        });
+      }
+
+      async function runFullDemo() {
+        if (state.demoRunning) return;
+        state.demoRunning = true;
+        showToast("开始演示完整交互链路");
+        closeDrawer();
+        setPetMood("happy");
+        await sleep(520);
+        input.value = "我今天推进了 OC 主界面，但想确认它是不是真的像桌面宠物，而不是后台系统。";
+        await handleSend(null, { fast: true });
+        await sleep(520);
+        openDrawer("timeline");
+        await sleep(520);
+        openDrawer("abilities");
+        state.selectedAbility = 5;
+        renderAbilities();
+        await sleep(520);
+        openDrawer("projects");
+        state.selectedProject = 0;
+        renderProjects();
+        showToast("演示完成：对话已驱动后台更新");
+        state.demoRunning = false;
+      }
+
+      document.querySelectorAll("[data-pet]").forEach((button) => {
+        button.addEventListener("click", () => setPetMood(button.dataset.pet));
+      });
+      document.querySelectorAll("[data-prompt]").forEach((button) => {
+        button.addEventListener("click", () => {
+          input.value = button.dataset.prompt;
+          document.querySelectorAll("[data-prompt]").forEach((item) => item.classList.remove("is-active"));
+          button.classList.add("is-active");
+          input.focus();
+        });
+      });
+
+      document.getElementById("sendMessage").addEventListener("click", () => handleSend());
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          handleSend();
+        }
+      });
+      document.getElementById("runDemo").addEventListener("click", runFullDemo);
+      document.getElementById("openLife").addEventListener("click", () => openDrawer("timeline"));
+      document.getElementById("openLifeFromPet").addEventListener("click", () => openDrawer("timeline"));
+      document.getElementById("closeLife").addEventListener("click", closeDrawer);
+      document.querySelectorAll(".drawer-tab").forEach((tab) => {
+        tab.addEventListener("click", () => activatePage(tab.dataset.page));
+      });
+      document.getElementById("correctImpression").addEventListener("click", () => {
+        impressions.unshift({ title: "用户修正", text: "OC 需要允许我纠正它对我的理解，而不是把印象当成不可变结论。" });
+        renderImpressions();
+        showToast("印象已加入可修正记录");
+      });
+      document.getElementById("confirmImpression").addEventListener("click", () => {
+        addBubble("oc", "收到。我会把这个印象提高权重，但之后你仍然可以随时修正我。", "Luma · 印象确认");
+        showToast("已确认当前印象");
+      });
+
+      renderAll();
+    </script>
+  </body>
+</html>

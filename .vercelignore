@@ -1,0 +1,28 @@
+# Deploy only frontend-v4 (static) + api (serverless functions).
+# Patterns follow .gitignore semantics; root-level dirs are anchored with a
+# leading slash so they never match inside frontend-v4 (e.g. frontend-v4/src).
+node_modules
+/dist
+/dist-electron
+/electron
+/src
+/cli
+/demos
+/docs
+/oc-data
+/ocworld-web
+/outputs
+/tmp
+/tests
+/hermes-agent
+/UCWS-2026
+/前端
+/public
+/artifacts
+/logo
+/*.png
+/landing-full.jpg
+/frontend-v4/uploads
+/frontend-v4/screenshots
+/frontend-v4/outputs
+/frontend-v4/assets/xz.png

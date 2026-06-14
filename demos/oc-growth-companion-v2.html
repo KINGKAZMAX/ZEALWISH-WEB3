@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OC World · 人成长陪伴 Demo</title>
+    <style>
+      :root {
+        --bg: #f5efe7;
+        --panel: rgba(255, 250, 243, 0.9);
+        --panel-strong: #fffaf3;
+        --soft: #efe4d5;
+        --line: rgba(33, 26, 20, 0.12);
+        --line-strong: rgba(33, 26, 20, 0.24);
+        --ink: #211a14;
+        --muted: #685e54;
+        --faint: #9a8f84;
+        --moss: #215f56;
+        --moss-soft: #d8ebe5;
+        --ember: #a85a3d;
+        --ember-soft: #f3ddd4;
+        --indigo: #44528e;
+        --indigo-soft: #dee4fb;
+        --plum: #6d4d89;
+        --plum-soft: #e8def0;
+        --gold: #99702d;
+        --gold-soft: #f0e3c6;
+        --shadow: 0 28px 90px -56px rgba(24, 17, 10, 0.6);
+      }
+      * { box-sizing: border-box; }
+      html, body { width: 100%; min-height: 100%; margin: 0; }
+      body {
+        background:
+          radial-gradient(circle at top left, rgba(255,255,255,.9), transparent 28%),
+          linear-gradient(rgba(33,26,20,.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(33,26,20,.035) 1px, transparent 1px),
+          var(--bg);
+        background-size: auto, 26px 26px, 26px 26px;
+        color: var(--ink);
+        font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+      button, textarea { font: inherit; }
+      button { color: inherit; }
+      .app { min-height: 100vh; padding: 24px; display: grid; place-items: center; }
+      .shell {
+        width: min(1440px, calc(100vw - 48px));
+        min-height: min(920px, calc(100vh - 48px));
+        display: grid;
+        grid-template-columns: 340px minmax(0, 1fr);
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 34px;
+        background: rgba(255,249,241,.82);
+        backdrop-filter: blur(20px);
+        box-shadow: var(--shadow);
+      }
+      .aside {
+        display: grid;
+        grid-template-rows: auto auto 1fr auto;
+        gap: 18px;
+        padding: 22px;
+        background: linear-gradient(180deg, rgba(255,255,255,.7), rgba(239,228,213,.82)), var(--panel);
+        border-right: 1px solid var(--line);
+      }
+      .window-dots { display: inline-flex; gap: 8px; }
+      .window-dots span { width: 10px; height: 10px; border-radius: 999px; display: block; }
+      .window-dots span:nth-child(1){ background:#ee6f60; }
+      .window-dots span:nth-child(2){ background:#f1bc4e; }
+      .window-dots span:nth-child(3){ background:#61c555; }
+      .brand-row { display:flex; align-items:center; justify-content:space-between; }
+      .brand { display:inline-flex; align-items:center; gap:12px; }
+      .brand-mark {
+        width: 36px; height: 36px; border-radius: 12px; display:grid; place-items:center;
+        background: var(--panel-strong); border:1px solid var(--line-strong); font-weight:800;
+      }
+      .brand-copy small, .mini-kicker, .section-kicker, .meta-kicker {
+        display:block; letter-spacing:.14em; text-transform:uppercase; font-size:11px; color:var(--faint);
+      }
+      .brand-copy strong, h1, h2, h3, .display {
+        font-family: "Iowan Old Style", "Palatino Linotype", "Songti SC", serif;
+      }
+      .brand-copy strong { display:block; font-size:18px; }
+      .pill, .tag, .metric-chip, .scenario-btn, .tab, .ghost-btn, .primary-btn, .quick-chip {
+        border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.72);
+        transition:transform .18s ease, border-color .18s ease, background-color .18s ease, color .18s ease;
+      }
+      .pill, .metric-chip, .tag, .quick-chip {
+        min-height:30px; padding:0 12px; display:inline-flex; align-items:center; gap:8px; color:var(--muted); font-size:12px;
+      }
+      .pill::before { content:""; width:8px; height:8px; border-radius:999px; background:var(--moss); }
+      .card, .hero-card, .surface, .chat-card, .practice-card, .timeline-card, .memory-card, .ability-card, .story-card {
+        border:1px solid var(--line); border-radius:20px; background:rgba(255,251,246,.86); box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+      }
+      .card, .hero-card, .surface, .chat-card, .practice-card, .timeline-card, .memory-card, .ability-card, .story-card { padding:18px; }
+      .oc-card { display:grid; gap:16px; }
+      .avatar-stage {
+        position:relative; min-height:312px; display:grid; place-items:center; overflow:hidden; border-radius:22px;
+        background:radial-gradient(circle at 50% 20%, rgba(255,255,255,.9), transparent 38%), linear-gradient(180deg, #f2e7d9, #e5d8c6);
+      }
+      .avatar-stage::after {
+        content:""; position:absolute; inset:22px; border:1px dashed rgba(33,26,20,.12); border-radius:20px; pointer-events:none;
+      }
+      .avatar-glow {
+        position:absolute; width:190px; height:190px; border-radius:50%; background:radial-gradient(circle, rgba(33,95,86,.22), transparent 66%); filter:blur(6px);
+      }
+      .avatar-stage img {
+        width:250px; max-width:80%; object-fit:contain; position:relative; z-index:1; animation:breathe 3.4s ease-in-out infinite; filter:drop-shadow(0 18px 24px rgba(31,24,18,.16));
+      }
+      @keyframes breathe { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-7px);} }
+      .oc-meta { display:grid; gap:10px; }
+      .oc-title-row { display:flex; align-items:end; justify-content:space-between; gap:16px; }
+      .oc-title-row h1 { margin:0; font-size:34px; line-height:1; }
+      .oc-sentence { margin:0; color:var(--muted); line-height:1.7; font-size:14px; }
+      .relationship-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+      .sidebar-card { display:grid; gap:12px; }
+      .sidebar-card ul { margin:0; padding-left:16px; color:var(--muted); line-height:1.7; font-size:13px; }
+      .main { display:grid; grid-template-rows:auto auto auto 1fr; min-width:0; }
+      .main-header { padding:24px 28px 16px; display:flex; align-items:start; justify-content:space-between; gap:20px; }
+      .main-header h2 { margin:8px 0 0; font-size:42px; line-height:1.05; }
+      .main-header p { margin:10px 0 0; max-width:640px; color:var(--muted); line-height:1.75; }
+      .header-side { display:grid; gap:10px; justify-items:end; }
+      .loop-strip {
+        margin:0 28px 14px; padding:12px; display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px;
+        border:1px solid var(--line); border-radius:18px; background:rgba(255,255,255,.64);
+      }
+      .loop-step { padding:12px; border-radius:14px; background:rgba(255,250,243,.82); border:1px dashed rgba(33,26,20,.12); }
+      .loop-step strong { display:block; font-size:13px; }
+      .loop-step span { display:block; margin-top:6px; color:var(--muted); font-size:12px; line-height:1.6; }
+      .toolbar { padding:0 28px 18px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+      .tabs, .scenario-switcher, .quick-actions { display:flex; flex-wrap:wrap; gap:10px; }
+      .tab, .scenario-btn, .ghost-btn, .primary-btn, .quick-chip { cursor:pointer; }
+      .tab, .scenario-btn { min-height:40px; padding:0 16px; color:var(--muted); }
+      .tab.is-active, .scenario-btn.is-active, .ghost-btn:hover, .primary-btn:hover, .quick-chip:hover {
+        background:var(--ink); color:#fffaf3; border-color:var(--ink); transform:translateY(-1px);
+      }
+      .quick-chip { min-height:36px; padding:0 14px; }
+      .view-area { min-height:0; padding:0 28px 28px; }
+      .view { display:none; gap:18px; }
+      .view.is-active { display:grid; }
+      .today-view { grid-template-columns:minmax(0,1.08fr) minmax(360px,.92fr); }
+      .hero-card { display:grid; gap:16px; }
+      .hero-card h3, .surface h3, .chat-card h3, .practice-card h3, .timeline-card h3, .memory-card h3, .story-card h3 { margin:6px 0 0; font-size:24px; }
+      .hero-card p, .surface p, .chat-card p, .practice-card p, .timeline-card p, .memory-card p, .story-card p { margin:0; color:var(--muted); line-height:1.75; }
+      .today-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+      .event-list, .evidence-list, .ability-grid, .story-grid { display:grid; gap:12px; }
+      .event-list { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .event-card, .evidence-card, .story-block {
+        padding:14px; border-radius:16px; border:1px solid var(--line); background:rgba(255,255,255,.62);
+      }
+      .event-card strong, .evidence-card strong, .story-block strong { display:block; font-size:14px; }
+      .event-card span, .evidence-card span, .story-block span { display:block; margin-top:8px; font-size:13px; color:var(--muted); line-height:1.65; }
+      .chat-card { display:grid; grid-template-rows:auto minmax(0,1fr) auto auto; min-height:640px; }
+      .chat-stream { display:grid; gap:12px; align-content:start; padding:14px 0; }
+      .bubble {
+        max-width:88%; padding:14px 16px; border-radius:20px; border:1px solid var(--line); background:rgba(255,255,255,.72);
+      }
+      .bubble.user { margin-left:auto; background:var(--ink); color:#fffaf3; border-color:var(--ink); }
+      .bubble.assistant { background:rgba(255,249,241,.92); }
+      .bubble small { display:block; margin-bottom:8px; opacity:.72; font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+      .bubble p { margin:0; line-height:1.72; font-size:14px; }
+      .chat-composer { margin-top:12px; display:grid; gap:12px; }
+      .chat-composer textarea {
+        width:100%; min-height:110px; resize:vertical; padding:16px; border-radius:18px; border:1px solid var(--line); background:rgba(255,255,255,.84); color:var(--ink); outline:none;
+      }
+      .chat-composer textarea:focus { border-color:var(--line-strong); box-shadow:0 0 0 4px rgba(33,95,86,.08); }
+      .composer-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+      .ghost-btn, .primary-btn { min-height:42px; padding:0 16px; }
+      .primary-btn { background:var(--ink); color:#fffaf3; border-color:var(--ink); }
+      .practice-card { display:grid; gap:14px; }
+      .practice-callout {
+        padding:16px; border-radius:18px; background:linear-gradient(135deg, var(--moss-soft), rgba(255,255,255,.7)); border:1px solid rgba(33,95,86,.18);
+      }
+      .practice-callout strong { display:block; font-size:16px; margin-bottom:8px; }
+      .growth-view { grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr); }
+      .ability-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .ability-card { display:grid; gap:12px; }
+      .ability-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+      .ability-top h4 { margin:0; font-size:18px; }
+      .delta {
+        min-width:58px; min-height:28px; padding:0 10px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;
+      }
+      .delta.moss{ background:var(--moss-soft); color:var(--moss); }
+      .delta.ember{ background:var(--ember-soft); color:var(--ember); }
+      .delta.indigo{ background:var(--indigo-soft); color:var(--indigo); }
+      .delta.plum{ background:var(--plum-soft); color:var(--plum); }
+      .delta.gold{ background:var(--gold-soft); color:var(--gold); }
+      .meter { height:12px; border-radius:999px; overflow:hidden; background:rgba(33,26,20,.08); }
+      .meter > span { display:block; height:100%; border-radius:inherit; }
+      .meter.moss > span{ background:linear-gradient(90deg, #2d8376, #1f5f56); }
+      .meter.ember > span{ background:linear-gradient(90deg, #d47b58, #a85a3d); }
+      .meter.indigo > span{ background:linear-gradient(90deg, #6b7cc9, #44528e); }
+      .meter.plum > span{ background:linear-gradient(90deg, #8e67b0, #6d4d89); }
+      .meter.gold > span{ background:linear-gradient(90deg, #bf9441, #99702d); }
+      .ability-note { color:var(--muted); font-size:13px; line-height:1.65; }
+      .rewind-view { grid-template-columns:minmax(0,1fr) 320px; }
+      .timeline { position:relative; display:grid; gap:14px; padding-left:24px; }
+      .timeline::before { content:""; position:absolute; left:8px; top:0; bottom:0; width:1px; background:rgba(33,26,20,.14); }
+      .timeline-item {
+        position:relative; padding:16px 16px 16px 18px; border-radius:18px; border:1px solid var(--line); background:rgba(255,255,255,.72);
+      }
+      .timeline-item::before {
+        content:""; position:absolute; left:-22px; top:22px; width:12px; height:12px; border-radius:50%; background:var(--ink); box-shadow:0 0 0 4px rgba(255,250,243,1);
+      }
+      .timeline-item time { display:block; color:var(--faint); font-size:12px; margin-bottom:8px; }
+      .timeline-item strong { display:block; font-size:16px; }
+      .timeline-item p { margin-top:8px; }
+      .memory-view { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .memory-card ul { margin:0; padding-left:18px; color:var(--muted); line-height:1.7; }
+      .toast {
+        position:fixed; right:24px; bottom:24px; padding:14px 16px; border-radius:16px; background:var(--ink); color:#fffaf3; box-shadow:var(--shadow); opacity:0; transform:translateY(12px); pointer-events:none; transition:opacity .22s ease, transform .22s ease;
+      }
+      .toast.is-visible { opacity:1; transform:translateY(0); }
+      @media (max-width:1240px){
+        .shell{ grid-template-columns:1fr; }
+        .aside{ border-right:none; border-bottom:1px solid var(--line); }
+        .today-view, .growth-view, .rewind-view, .memory-view{ grid-template-columns:1fr; }
+        .loop-strip{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+      }
+      @media (max-width:860px){
+        body{ min-width:0; }
+        .app{ padding:12px; }
+        .shell{ width:100%; min-height:auto; border-radius:24px; }
+        .main-header, .toolbar, .view-area{ padding-left:16px; padding-right:16px; }
+        .loop-strip{ margin-left:16px; margin-right:16px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .today-grid, .event-list, .ability-grid, .memory-view{ grid-template-columns:1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div class="shell">
+        <aside class="aside">
+          <div class="brand-row">
+            <div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+            <span class="pill">共同成长 142 天</span>
+          </div>
+          <div class="brand">
+            <div class="brand-mark">OC</div>
+            <div class="brand-copy"><small>Human Growth Engine</small><strong>OC World Demo</strong></div>
+          </div>
+          <section class="card oc-card">
+            <div class="avatar-stage"><div class="avatar-glow"></div><img src="../public/oc-avatar-pet.png" alt="OC 形象" /></div>
+            <div class="oc-meta">
+              <div class="oc-title-row">
+                <div><span class="mini-kicker">Growth Companion</span><h1>Mori</h1></div>
+                <span id="relationship-chip" class="metric-chip">关系阶段 · 可靠搭子</span>
+              </div>
+              <p id="oc-sentence" class="oc-sentence">你不是来这里完成待办的。你是来让自己慢慢变强，而我会把这个过程看见、记住、陪你走完。</p>
+              <div class="relationship-grid">
+                <span class="metric-chip">懂你程度 · 84</span>
+                <span class="metric-chip">陪伴密度 · 每日复盘中</span>
+                <span class="metric-chip">最近主题 · 表达 / 选择 / 节奏</span>
+                <span class="metric-chip">当前模式 · 累的时候先怀疑自己</span>
+              </div>
+            </div>
+          </section>
+          <section class="card sidebar-card">
+            <div><span class="section-kicker">Product Stance</span><h3 class="display" style="margin:6px 0 0;font-size:24px;">人是主角，OC 是陪练</h3></div>
+            <ul>
+              <li>记录的不是任务，而是成长证据。</li>
+              <li>关系越深，支持越准，成长越可持续。</li>
+              <li>游戏化服务真实生活，不服务空转数值。</li>
+            </ul>
+          </section>
+          <section class="card sidebar-card">
+            <div><span class="section-kicker">What this demo shows</span></div>
+            <div class="quick-actions">
+              <button class="quick-chip" data-quick="readme">看见今天</button>
+              <button class="quick-chip" data-quick="growth">能力变化</button>
+              <button class="quick-chip" data-quick="rewind">成长回溯</button>
+              <button class="quick-chip" data-quick="practice">下一步练习</button>
+            </div>
+          </section>
+        </aside>
+        <main class="main">
+          <header class="main-header">
+            <div>
+              <span class="meta-kicker">OC World · 人成长陪伴产品 Demo</span>
+              <h2>把真实生活里的努力，<br />变成看得见的成长。</h2>
+              <p>这个 demo 不展示“AI 替你做完一切”，只展示一件事：当生活发生以后，OC 如何记录、理解、解释、陪练，最后让人的能力变化变得可见。</p>
+            </div>
+            <div class="header-side">
+              <span id="scenario-label" class="pill">场景 · 加班后的夜晚</span>
+              <span class="metric-chip">Growth Record · 已结构化</span>
+              <span class="metric-chip">Agent 能力 · 辅助层</span>
+            </div>
+          </header>
+          <section class="loop-strip">
+            <div class="loop-step"><strong>生活发生</strong><span>事件、任务、情绪、节奏先在现实里出现。</span></div>
+            <div class="loop-step"><strong>OC 记录</strong><span>把今天真正发生了什么重新整理出来。</span></div>
+            <div class="loop-step"><strong>一起复盘</strong><span>不只安慰，继续追问：你卡在了哪里？</span></div>
+            <div class="loop-step"><strong>提炼成长</strong><span>把事件转成能力变化和成长证据。</span></div>
+            <div class="loop-step"><strong>给出练习</strong><span>下一步只留一件现实可做的小动作。</span></div>
+            <div class="loop-step"><strong>回到生活</strong><span>改变发生在应用外，第二天再带证据回来。</span></div>
+          </section>
+          <section class="toolbar">
+            <div class="tabs">
+              <button class="tab is-active" data-view="today">Today</button>
+              <button class="tab" data-view="growth">Growth</button>
+              <button class="tab" data-view="rewind">Rewind</button>
+              <button class="tab" data-view="memory">Memory</button>
+            </div>
+            <div id="scenario-switcher" class="scenario-switcher"></div>
+          </section>
+          <section class="view-area">
+            <div id="today-view" class="view today-view is-active">
+              <div class="surface" style="display:grid;gap:18px;">
+                <section class="hero-card">
+                  <div><span class="section-kicker">Today Reading</span><h3 id="today-title">今天不是没进步，只是进步还没被你承认。</h3></div>
+                  <p id="today-summary"></p>
+                  <div id="event-list" class="event-list"></div>
+                </section>
+                <section class="today-grid">
+                  <div class="surface">
+                    <div style="display:grid;gap:14px;">
+                      <div><span class="section-kicker">Growth Evidence</span><h3>今天留下来的成长证据</h3></div>
+                      <div id="evidence-list" class="evidence-list"></div>
+                    </div>
+                  </div>
+                  <div class="practice-card">
+                    <div><span class="section-kicker">Next Practice</span><h3>下一步不要大，只要真实。</h3></div>
+                    <div id="practice-callout" class="practice-callout"></div>
+                    <div class="quick-actions"><span class="tag">10 分钟以内</span><span class="tag">可验证</span><span class="tag">贴合今天状态</span></div>
+                  </div>
+                </section>
+              </div>
+              <section class="chat-card">
+                <div>
+                  <span class="section-kicker">Together Review</span>
+                  <h3>不是陪聊，是陪你把今天说清楚。</h3>
+                  <p>输入一段今天的真实经历，demo 会给出一段 OC 式回应，并提示一条成长记录已生成。</p>
+                </div>
+                <div id="chat-stream" class="chat-stream"></div>
+                <div class="quick-actions">
+                  <button class="quick-chip" data-prompt="我明明很累，但还是把最难那段需求收住了。">加班后复盘</button>
+                  <button class="quick-chip" data-prompt="我一直在拖，知道要做什么，就是启动不了。">拖延时求助</button>
+                  <button class="quick-chip" data-prompt="今天我终于把那句该说的话说出去了。">表达后回看</button>
+                </div>
+                <div class="chat-composer">
+                  <textarea id="composer" placeholder="比如：今天开会的时候我其实很想反驳，但还是忍住了，后来一直不舒服……"></textarea>
+                  <div class="composer-actions">
+                    <button id="clear-chat" class="ghost-btn">清空这轮对话</button>
+                    <button id="send-chat" class="primary-btn">让 OC 接住这件事</button>
+                  </div>
+                </div>
+              </section>
+            </div>
+            <div id="growth-view" class="view growth-view">
+              <section class="surface" style="display:grid;gap:18px;">
+                <div><span class="section-kicker">Ability System</span><h3>能力值不是打卡数值，是生活反馈。</h3><p id="growth-summary"></p></div>
+                <div id="ability-grid" class="ability-grid"></div>
+              </section>
+              <section class="story-card">
+                <div><span class="section-kicker">Why it moved</span><h3>为什么这些能力会变化</h3></div>
+                <div id="story-grid" class="story-grid"></div>
+              </section>
+            </div>
+            <div id="rewind-view" class="view rewind-view">
+              <section class="timeline-card">
+                <div style="display:grid;gap:10px;margin-bottom:14px;"><span class="section-kicker">Double-track Rewind</span><h3>关系回溯 + 人生成长回溯</h3><p>时间线不只记录你和 OC 的靠近，也记录你在真实世界里怎样一点点变强。</p></div>
+                <div id="timeline" class="timeline"></div>
+              </section>
+              <section class="story-card">
+                <div><span class="section-kicker">Pattern Reading</span><h3>这一段时间反复出现的模式</h3></div>
+                <div id="pattern-list" class="story-grid"></div>
+              </section>
+            </div>
+            <div id="memory-view" class="view memory-view">
+              <section class="memory-card"><span class="section-kicker">About You</span><h3>TA 记住了怎样的你</h3><ul id="memory-about"></ul></section>
+              <section class="memory-card"><span class="section-kicker">Recurring Knots</span><h3>总在反复卡住你的地方</h3><ul id="memory-knots"></ul></section>
+              <section class="memory-card"><span class="section-kicker">Current Training</span><h3>你最近真正正在练的能力</h3><ul id="memory-training"></ul></section>
+              <section class="memory-card"><span class="section-kicker">Companion Difference</span><h3>为什么这不是普通效率工具</h3><ul id="memory-difference"></ul></section>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+    <div id="toast" class="toast">已生成一条成长记录，并收束成下一步练习。</div>
+    <script>
+      const scenarios = {
+        lateNight: {
+          label: '加班后的夜晚', relationship: '关系阶段 · 可靠搭子',
+          sentence: '你不是没行动，你是已经过载了。今天最重要的不是再逼自己多做一点，而是承认你已经撑住了关键那一步。',
+          todayTitle: '今天不是没进步，只是进步还没被你承认。',
+          todaySummary: 'Mori 看见的重点不是你今天做了多少，而是你在疲惫里仍然没有把最难的一步丢掉。这说明你的行动力和稳定性都在长出来。',
+          growthSummary: '今天的成长不在于任务总量，而在于你在能量见底的时候，依然保住了最关键的推进动作。系统会把这种“压力下仍能推进”的行为，解释成真实能力变化。',
+          practice: { title: '只做一个收尾动作', body: '把明天最先要做的一步写成一句话，然后停下来，不再追加新的任务。你今晚要练的不是更拼，而是知道什么时候该收。' },
+          events: [
+            { title: 'Figma · 2.8h', text: '页面反复推翻重做，注意力一直被拉扯。' },
+            { title: 'Claude Code · 1.6h', text: '最终把最难那段结构压顺了。' },
+            { title: '飞书会议 · 52m', text: '被连续打断，节奏多次中断。' },
+            { title: '待办状态', text: '只完成 2 件，但都是真正关键的事。' }
+          ],
+          evidence: [
+            { title: '没有逃掉最难的任务', text: '很累，但还是把最关键的一步推进了。', badge: '行动力 +4' },
+            { title: '开始会给自己收口', text: '你第一次意识到“停下来”也是能力。', badge: '判断力 +2' },
+            { title: '不再只看完成数', text: '开始用“关键性”看今天，而不是用数量否定自己。', badge: '自我理解 +3' }
+          ],
+          abilities: [
+            { name: '行动力', value: 78, delta: '+4', tone: 'moss', note: '疲惫里仍能推进关键一步。' },
+            { name: '情绪稳定', value: 64, delta: '+2', tone: 'indigo', note: '没有在压力最高时彻底失控。' },
+            { name: '判断力', value: 71, delta: '+2', tone: 'gold', note: '开始知道什么时候该继续，什么时候该收。' },
+            { name: '自我理解', value: 69, delta: '+3', tone: 'plum', note: '意识到自己不是懒，而是过载。' }
+          ],
+          stories: [
+            { title: '行动力为什么上涨', text: '因为你不是“有空才做”，而是在低能量状态下仍然守住了关键动作。' },
+            { title: '判断力为什么也上涨', text: '你开始学会分辨“多做一点”和“把真正重要的做完”不是一回事。' },
+            { title: '这不是效率，是成长', text: '真正变强的证据，是你在高压里没有把自己完全交给惯性。' }
+          ],
+          timeline: [
+            { date: '今天 23:10', title: '认出自己是过载，不是没用', text: '第一次把“我怎么又不行”改写成“我今天已经撑住了关键一步”。' },
+            { date: '昨天 21:45', title: '项目返工时没有直接摆烂', text: '虽然烦，但还是把关键问题重新梳了一遍。' },
+            { date: '三天前 19:20', title: '开始愿意提前写下明天第一步', text: '从拖到最后才想，变成睡前先给自己留一盏灯。' }
+          ],
+          patterns: [
+            { title: '累的时候先否定自己', text: '你的旧模式是：一疲惫就把今天全部清零。' },
+            { title: '真正改变正在发生', text: '你开始能看见“少做但做对”也是进步。' }
+          ],
+          memory: {
+            about: ['你对自己要求高，但也越来越会承认真实能量。', '你最在意的是事情做深，而不是表面热闹。', '你累的时候会先怀疑自己，而不是怀疑任务安排。'],
+            knots: ['能量低的时候，容易把今天全部判成失败。', '一被打断就会怀疑自己没有节奏感。', '对“休息”仍然有一点亏欠感。'],
+            training: ['练习在疲惫里做关键排序。', '练习把停下来视为判断力。', '练习先承认推进，再决定下一步。'],
+            difference: ['普通效率工具只会提醒你还有几项没做。', 'Mori 会告诉你：今天真正重要的是哪一步被守住了。', '系统看的不是完成数，而是能力变化和成长证据。']
+          },
+          chat: [
+            { role: 'assistant', text: '你今天的状态不像“没做成”，更像“已经顶到边了”。先别着急给自己判死刑。' },
+            { role: 'user', text: '但我只完成了两件事。' },
+            { role: 'assistant', text: '可那两件都是最硬的。你今天的成长，不是完成很多，而是没有在最难的时候放掉自己。' }
+          ]
+        },
+        hesitation: {
+          label: '想开始但拖延', relationship: '关系阶段 · 会追问你的搭子',
+          sentence: '你不是不知道做什么，你是在开始之前就先把自己吓住了。先别谈一整天，先谈第一个十分钟。',
+          todayTitle: '你卡住的不是目标，是启动那一下。',
+          todaySummary: 'Mori 判断这不是懒，而是启动门槛被想象得太高。产品要做的不是催你快点，而是把第一步压到足够小，让你能真的开始。',
+          growthSummary: '当系统发现你不是缺目标，而是缺启动，就会把重点从“再规划一次”转成“给出最小可执行动作”。这里增长的是行动启动能力，而不是任务数。',
+          practice: { title: '只开一个十分钟窗口', body: '现在不要做完整任务。只给自己十分钟，把第一段素材列出来，或把第一屏草图铺开。开始比完整更重要。' },
+          events: [
+            { title: 'Notion · 1.1h', text: '花了很多时间看计划，但没有真正开始。' },
+            { title: '浏览器标签页 · 17 个', text: '你在搜更多方法，却没有落下第一个动作。' },
+            { title: '待办状态', text: '想做的事情很多，但都停在门口。' },
+            { title: '情绪读数', text: '焦虑不是因为不会做，而是怕一做就不够好。' }
+          ],
+          evidence: [
+            { title: '第一次承认自己是在拖', text: '看见卡点本身，就是启动改变的开始。', badge: '自我理解 +4' },
+            { title: '愿意把任务缩小', text: '开始接受先动起来比一步到位更重要。', badge: '判断力 +2' },
+            { title: '不再继续找更多方法', text: '把注意力从“搜方案”转向“开工十分钟”。', badge: '行动力 +3' }
+          ],
+          abilities: [
+            { name: '行动力', value: 66, delta: '+3', tone: 'moss', note: '启动阈值被压低，开始更容易发生。' },
+            { name: '自我理解', value: 74, delta: '+4', tone: 'plum', note: '能分辨拖延和不会做的差别。' },
+            { name: '判断力', value: 68, delta: '+2', tone: 'gold', note: '开始接受“小步比完美更重要”。' },
+            { name: '情绪稳定', value: 61, delta: '+1', tone: 'indigo', note: '没再被“做不好怎么办”彻底吞掉。' }
+          ],
+          stories: [
+            { title: '为什么不是再做计划', text: '因为你现在不缺方向，缺的是一个足够小、不会把自己吓跑的起点。' },
+            { title: '为什么要缩小动作', text: '行动能力很多时候不是靠鼓劲，而是靠把门槛设计得更低。' },
+            { title: '这条成长线是什么', text: '从“我怎么总拖延”到“我知道怎样让自己动起来”。' }
+          ],
+          timeline: [
+            { date: '今天 20:35', title: '第一次把“拖延”解释成启动门槛过高', text: '你开始知道卡点不一定是意志薄弱。' },
+            { date: '昨天 18:50', title: '把大任务切成十分钟片段', text: '没有再被完整任务压住。' },
+            { date: '上周三 22:15', title: '停止继续搜方法，改成先开工', text: '从信息收集转成真正行动。' }
+          ],
+          patterns: [
+            { title: '准备越多，越难开始', text: '你会用搜集方法来暂时逃离真正开始。' },
+            { title: '最小动作有效', text: '一旦第一步足够小，你其实很容易接上后面的节奏。' }
+          ],
+          memory: {
+            about: ['你不是没上进心，你是很怕一开始就做差。', '你需要的不是更多规划，而是更低摩擦的起点。', '一旦真正开工，你通常比自己预想得能撑。'],
+            knots: ['开始前会把任务想得很重。', '容易靠继续搜集资料获得“我在努力”的错觉。', '只要第一步不清楚，就会整段拖住。'],
+            training: ['练习把任务压到十分钟可启动。', '练习先做第一步，不先追求完整方案。', '练习在开始前关掉额外输入。'],
+            difference: ['普通工具会催你“赶紧开始”。', 'Mori 会帮你把开始这件事本身设计得更容易发生。', '系统关心的是启动能力，而不是提醒次数。']
+          },
+          chat: [
+            { role: 'assistant', text: '你现在不是不会做，你是在开始之前就先被完整任务压住了。' },
+            { role: 'user', text: '我知道，但我就是启动不了。' },
+            { role: 'assistant', text: '那我们今天不谈完整，只谈第一个十分钟。把门槛压小，动作才会发生。' }
+          ]
+        },
+        voiceBreakthrough: {
+          label: '终于把话说出来', relationship: '关系阶段 · 真正懂你的搭子',
+          sentence: '今天最值得记住的，不是结果有多完美，而是你终于没有继续吞下那句该说的话。',
+          todayTitle: '你今天练到的，是表达自己而不先自我删除。',
+          todaySummary: 'Mori 会把“终于开口”理解成成长证据，因为表达力和判断力很多时候不是在舒适区长出来的，而是在你决定不再躲开的那一刻。',
+          growthSummary: '当用户在关键关系里把该说的话说出来，系统不只记录事件本身，还会解释这代表哪些能力突破：表达力、判断力、关系经营和自我尊重。',
+          practice: { title: '把今天说出口的那句话写下来', body: '复盘不是庆祝一下就结束。把你今天真正说出来的那句核心表达写下来，留成以后再次害怕时的证据。' },
+          events: [
+            { title: '关键对话 · 18m', text: '你终于把一直不舒服的点说出来了。' },
+            { title: '会后状态', text: '紧张还在，但心里轻了很多。' },
+            { title: '关系读数', text: '对方没有因此离开，反而更认真听你说。' },
+            { title: '今天的高光', text: '你没有再把自己从关系里删掉。' }
+          ],
+          evidence: [
+            { title: '把该说的话说出来', text: '这不是情绪发泄，而是更诚实地出现。', badge: '表达力 +5' },
+            { title: '愿意承担关系里的不确定', text: '你没有再靠沉默维持表面和平。', badge: '关系经营 +3' },
+            { title: '开始相信自己的感受值得被说', text: '自我尊重在这里真正长了一步。', badge: '判断力 +2' }
+          ],
+          abilities: [
+            { name: '表达力', value: 82, delta: '+5', tone: 'ember', note: '不是更会说，而是更敢说真实的话。' },
+            { name: '关系经营', value: 73, delta: '+3', tone: 'moss', note: '关系开始承受真实，而不是只承受客气。' },
+            { name: '判断力', value: 72, delta: '+2', tone: 'gold', note: '你开始知道什么时候沉默是在伤自己。' },
+            { name: '自我理解', value: 77, delta: '+2', tone: 'plum', note: '你更清楚自己在关系里真正需要什么。' }
+          ],
+          stories: [
+            { title: '真正上涨的是表达力', text: '因为你说的是自己真正介意的事，而不是安全但无关紧要的话。' },
+            { title: '关系经营也在涨', text: '你不再把“维持表面和谐”当成唯一目标。' },
+            { title: '这是人生证据', text: '你从回避冲突，走向了更诚实地存在。' }
+          ],
+          timeline: [
+            { date: '今天 17:40', title: '终于把那句一直没说的话说出来', text: '表达不再只在脑子里完成，而是在关系里真正出现。' },
+            { date: '三天前 22:00', title: '第一次承认自己其实很在意那件事', text: '开始停止用“算了吧”盖过去。' },
+            { date: '上周日 15:30', title: '记下了最让自己不舒服的那个瞬间', text: '给今天真正开口埋下了前提。' }
+          ],
+          patterns: [
+            { title: '过去的你更擅长吞下去', text: '你会优先维持平静，再独自消化委屈。' },
+            { title: '新的你开始允许自己出现', text: '表达不是制造麻烦，而是更完整地站出来。' }
+          ],
+          memory: {
+            about: ['你其实很敏锐，只是常常先把自己压下去。', '你害怕关系被破坏，但也越来越知道沉默在伤自己。', '一旦真的说出来，你反而更轻。'],
+            knots: ['总担心真实表达会让关系变糟。', '说之前会先做很多内部审查。', '容易把自己的感受排到最后。'],
+            training: ['练习把真实感受说短、说清楚。', '练习在关系里保留自己，而不是先删掉自己。', '练习在表达后继续待在现场。'],
+            difference: ['普通工具不会知道你今天为什么松了一口气。', 'Mori 会记得：你今天没有再把自己藏起来。', '系统关心的是你在关系里是否更完整地出现。']
+          },
+          chat: [
+            { role: 'assistant', text: '你今天最值得被记住的，不是对话结果，而是你终于没有继续吞下那句真正介意的话。' },
+            { role: 'user', text: '我其实说完还是很紧张。' },
+            { role: 'assistant', text: '紧张不说明你做错了。它说明你在练新的自己：一个愿意真实出现的人。' }
+          ]
+        }
+      };
+
+      const viewButtons = [...document.querySelectorAll('.tab')];
+      const views = [...document.querySelectorAll('.view')];
+      const switcher = document.getElementById('scenario-switcher');
+      const toast = document.getElementById('toast');
+      const chatStream = document.getElementById('chat-stream');
+      const composer = document.getElementById('composer');
+      const sendChat = document.getElementById('send-chat');
+      const clearChat = document.getElementById('clear-chat');
+      const quickPromptButtons = [...document.querySelectorAll('[data-prompt]')];
+      const quickNavButtons = [...document.querySelectorAll('[data-quick]')];
+      let currentScenario = 'lateNight';
+      let activeView = 'today';
+      let chatState = [];
+      const meterToneClass = (tone) => tone || 'moss';
+      function showToast(text) {
+        toast.textContent = text;
+        toast.classList.add('is-visible');
+        window.clearTimeout(showToast.timer);
+        showToast.timer = window.setTimeout(() => toast.classList.remove('is-visible'), 2200);
+      }
+      function renderScenarioButtons() {
+        switcher.innerHTML = Object.entries(scenarios).map(([key, scenario]) => `<button class="scenario-btn ${key === currentScenario ? 'is-active' : ''}" data-scenario="${key}">${scenario.label}</button>`).join('');
+        switcher.querySelectorAll('[data-scenario]').forEach((button) => {
+          button.addEventListener('click', () => { currentScenario = button.dataset.scenario; hydrate(); });
+        });
+      }
+      function renderEvents(items) {
+        document.getElementById('event-list').innerHTML = items.map((item) => `<article class="event-card"><strong>${item.title}</strong><span>${item.text}</span></article>`).join('');
+      }
+      function renderEvidence(items) {
+        document.getElementById('evidence-list').innerHTML = items.map((item) => `<article class="evidence-card"><strong>${item.title}</strong><span>${item.text}</span><div style="margin-top:10px;"><span class="metric-chip">${item.badge}</span></div></article>`).join('');
+      }
+      function renderAbilities(items) {
+        document.getElementById('ability-grid').innerHTML = items.map((item) => `<article class="ability-card"><div class="ability-top"><h4>${item.name}</h4><span class="delta ${item.tone}">${item.delta}</span></div><div class="meter ${meterToneClass(item.tone)}"><span style="width:${item.value}%"></span></div><div class="ability-note">${item.value}/100 · ${item.note}</div></article>`).join('');
+      }
+      function renderStories(items) {
+        const markup = items.map((item) => `<article class="story-block"><strong>${item.title}</strong><span>${item.text}</span></article>`).join('');
+        document.getElementById('story-grid').innerHTML = markup;
+        document.getElementById('pattern-list').innerHTML = markup;
+      }
+      function renderTimeline(items) {
+        document.getElementById('timeline').innerHTML = items.map((item) => `<article class="timeline-item"><time>${item.date}</time><strong>${item.title}</strong><p>${item.text}</p></article>`).join('');
+      }
+      function renderMemory(memory) {
+        const set = (id, items) => { document.getElementById(id).innerHTML = items.map((item) => `<li>${item}</li>`).join(''); };
+        set('memory-about', memory.about);
+        set('memory-knots', memory.knots);
+        set('memory-training', memory.training);
+        set('memory-difference', memory.difference);
+      }
+      function renderChat() {
+        chatStream.innerHTML = chatState.map((item) => `<article class="bubble ${item.role}"><small>${item.role === 'assistant' ? 'Mori' : 'You'}</small><p>${item.text}</p></article>`).join('');
+      }
+      function inferReply(text, scenario) {
+        if (/累|困|撑不住|加班/.test(text)) return '你现在最需要的不是再证明自己，而是先把已经推进的那一步认出来。今晚先收，不要再继续加码。';
+        if (/拖|开始不了|启动不了/.test(text)) return '别再跟完整任务硬碰了。把它压到一个十分钟动作，让动作先发生，信心会在后面跟上。';
+        if (/说出来|表达|开口|冲突/.test(text)) return '这不是情绪化，这是你终于没有继续删掉自己。先把那句真正说出口的话记下来，它会成为你下次不再退回去的证据。';
+        return scenario.chat[scenario.chat.length - 1].text;
+      }
+      function sendMessage(text) {
+        const value = text.trim();
+        if (!value) return;
+        chatState.push({ role: 'user', text: value });
+        chatState.push({ role: 'assistant', text: inferReply(value, scenarios[currentScenario]) });
+        renderChat();
+        composer.value = '';
+        showToast('已生成一条成长记录，并更新下一步练习。');
+      }
+      function setView(nextView) {
+        activeView = nextView;
+        viewButtons.forEach((button) => button.classList.toggle('is-active', button.dataset.view === nextView));
+        views.forEach((view) => view.classList.toggle('is-active', view.id === `${nextView}-view`));
+      }
+      function hydrate() {
+        const scenario = scenarios[currentScenario];
+        chatState = scenario.chat.map((item) => ({ ...item }));
+        document.getElementById('scenario-label').textContent = `场景 · ${scenario.label}`;
+        document.getElementById('relationship-chip').textContent = scenario.relationship;
+        document.getElementById('oc-sentence').textContent = scenario.sentence;
+        document.getElementById('today-title').textContent = scenario.todayTitle;
+        document.getElementById('today-summary').textContent = scenario.todaySummary;
+        document.getElementById('growth-summary').textContent = scenario.growthSummary;
+        document.getElementById('practice-callout').innerHTML = `<strong>${scenario.practice.title}</strong><p>${scenario.practice.body}</p>`;
+        renderEvents(scenario.events);
+        renderEvidence(scenario.evidence);
+        renderAbilities(scenario.abilities);
+        renderStories(scenario.stories);
+        renderTimeline(scenario.timeline);
+        renderMemory(scenario.memory);
+        renderChat();
+        renderScenarioButtons();
+        setView(activeView);
+      }
+      viewButtons.forEach((button) => button.addEventListener('click', () => setView(button.dataset.view)));
+      quickPromptButtons.forEach((button) => button.addEventListener('click', () => sendMessage(button.dataset.prompt || '')));
+      quickNavButtons.forEach((button) => button.addEventListener('click', () => {
+        const map = { readme: 'today', growth: 'growth', rewind: 'rewind', practice: 'today' };
+        setView(map[button.dataset.quick] || 'today');
+      }));
+      sendChat.addEventListener('click', () => sendMessage(composer.value));
+      clearChat.addEventListener('click', () => {
+        chatState = scenarios[currentScenario].chat.map((item) => ({ ...item }));
+        renderChat();
+        showToast('已回到当前场景的默认对话。');
+      });
+      composer.addEventListener('keydown', (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') sendMessage(composer.value);
+      });
+      hydrate();
+    </script>
+  </body>
+</html>
