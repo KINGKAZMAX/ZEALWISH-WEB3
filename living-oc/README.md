@@ -26,8 +26,14 @@ npx tsc --noEmit -p tsconfig.app.json
 
 ## 不在 MVP(见 spec 路线图)
 
-远景世界观测台 UI · 多人/互访 · 链上身份钱包(ERC-8004 / AgentKit / x402)· Electron 桌面 · 真 LLM 实接 · 衍生资产交易。
+多人/互访 · 链上身份钱包(ERC-8004 / AgentKit / x402)· Electron 桌面 · 真 LLM 实接(B)· 真链实接(C)· 衍生资产交易。
+(远景「世界」观测台 — 地图 + 实时社交流 + 像素小人 + 人格检查面板 — 已内置,见「世界」标签。)
 
 对应设计与计划:
 - `../docs/superpowers/specs/2026-06-14-zealwish-living-oc-design.md`
 - `../docs/superpowers/plans/2026-06-14-living-oc-mvp.md`
+
+## 素材署名 / Credits
+
+- 地图像素小人精灵 `public/sprites/folk.png` —— 采用 AI 小镇(a16z `ai-town`)同款 `32x32folk.png`(384×256,8 角色 RPGMaker 角色集)。原始美术由 [ansimuz](https://opengameart.org/content/tiny-rpg-forest) / George Bailey([OpenGameArt 16x16 game assets](https://opengameart.org/content/16x16-game-assets),CC0)提供。
+- 生命引擎、记忆/对话、UI 为本项目自研。

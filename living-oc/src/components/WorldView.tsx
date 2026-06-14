@@ -79,6 +79,7 @@ export default function WorldView() {
   const pos = useRef(new Map<string, Pos>());
   const lines = useRef<Line[]>([]);
   const lastEpoch = useRef(-1);
+  const sprite = useRef<HTMLImageElement | null>(null);
   const selRef = useRef<string | null>(null);
   selRef.current = sel ?? ocId ?? null;
 
@@ -87,6 +88,9 @@ export default function WorldView() {
     const iv = setInterval(() => { void tick(); }, 1300 - worldSpeed * 110);
     return () => clearInterval(iv);
   }, [worldRunning, worldSpeed, tick]);
+
+  // 像素小人精灵图(AI 小镇同款 folk 角色集,32×32 网格,8 角色)
+  useEffect(() => { const img = new Image(); img.src = '/sprites/folk.png'; sprite.current = img; }, []);
 
   useEffect(() => {
     const canvas = ref.current; if (!canvas) return;
@@ -131,14 +135,27 @@ export default function WorldView() {
         const tx = loc.x * W + jx, ty = loc.y * H + jy;
         let pp = pos.current.get(id); if (!pp) { pp = { px: tx, py: ty }; pos.current.set(id, pp); }
         pp.px += (tx - pp.px) * 0.08; pp.py += (ty - pp.py) * 0.08;
-        const isOc = id === ocId, isSel = id === selRef.current, r = isSel ? 12 : 8;
-        const halo = a.balance < 0 ? '#ff2d2d' : a.balance > 8 ? '#e3a948' : 'rgba(245,245,247,.35)';
-        if (isSel) { ctx.strokeStyle = '#ff2d2d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(pp.px, pp.py, r + 6, 0, 7); ctx.stroke(); }
-        ctx.fillStyle = `hsl(${hue(id)},42%,52%)`; roundRect(ctx, pp.px - r, pp.py - r, r * 2, r * 2, 3); ctx.fill();
-        ctx.strokeStyle = halo; ctx.lineWidth = 1.4; roundRect(ctx, pp.px - r, pp.py - r, r * 2, r * 2, 3); ctx.stroke();
-        ctx.fillStyle = isSel ? '#ff2d2d' : 'rgba(245,245,247,.72)';
+        const isOc = id === ocId, isSel = id === selRef.current;
+        const dx = tx - pp.px, dy = ty - pp.py, moving = Math.abs(dx) + Math.abs(dy) > 0.6;
+        const ci = hue(id) % 8, bx = (ci % 4) * 96, by = Math.floor(ci / 4) * 128;
+        const rowOff = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 32 : 64) : (dy < 0 ? 96 : 0);
+        const colOff = (moving ? Math.floor(Date.now() / 170) % 3 : 1) * 32;
+        // 影子
+        ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.beginPath(); ctx.ellipse(pp.px, pp.py + 13, 10, 3.5, 0, 0, 7); ctx.fill();
+        // 选中/破产环(ZEALWISH 红)
+        if (isSel) { ctx.strokeStyle = '#ff2d2d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(pp.px, pp.py + 2, 22, 0, 7); ctx.stroke(); }
+        else if (a.balance < 0) { ctx.strokeStyle = 'rgba(255,45,45,.6)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(pp.px, pp.py + 2, 20, 0, 7); ctx.stroke(); }
+        // 像素小人精灵
+        const img = sprite.current;
+        if (img && img.complete && img.naturalWidth) {
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(img, bx + colOff, by + rowOff, 32, 32, pp.px - 20, pp.py - 27, 40, 40);
+        } else {
+          ctx.fillStyle = `hsl(${hue(id)},42%,52%)`; roundRect(ctx, pp.px - 8, pp.py - 8, 16, 16, 3); ctx.fill();
+        }
+        ctx.fillStyle = isSel ? '#ff2d2d' : 'rgba(245,245,247,.78)';
         ctx.font = (isSel ? '600 ' : '') + '10px ui-monospace, monospace'; ctx.textAlign = 'center';
-        ctx.fillText(a.name + (isOc ? ' ★' : ''), pp.px, pp.py + r + 11);
+        ctx.fillText(a.name + (isOc ? ' ★' : ''), pp.px, pp.py + 26);
       }
       } catch { /* 单帧出错不冻结世界 */ }
       raf = requestAnimationFrame(draw);
