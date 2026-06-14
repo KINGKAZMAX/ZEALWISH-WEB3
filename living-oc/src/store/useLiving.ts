@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import type { Archetype, DayResult, MemoryEvent } from '../sim/types';
+import type { Archetype, DayResult, MemoryEvent, WorldState } from '../sim/types';
 import { createOc, sedimentGuidance, type OC } from '../oc/oc';
-import { runDay } from '../sim/step';
+import { runDay, step } from '../sim/step';
+import { createPrivateWorld } from '../sim/world';
 import { reflectToDiary } from '../sim/systems/memory';
 import { ScriptedCognitionProvider } from '../sim/providers/cognition';
 import { openingLine, replyTo } from '../sim/providers/chat';
@@ -14,6 +15,7 @@ function providers() {
     media: { mode: 'stub' as const, imageFor: (s: string) => s },
   };
 }
+const worldP = providers(); // 世界视图用(无状态,可复用)
 
 export function livingActions(seed: string) {
   const p = providers();
@@ -43,26 +45,36 @@ export function livingActions(seed: string) {
   };
 }
 
+type View = 'room' | 'world';
+
 interface LivingState {
   oc: OC | null;
   day: DayResult | null;
   chatLog: { who: 'you' | 'oc'; text: string }[];
   version: number;
   seed: string;
+  view: View;
+  world: WorldState | null;
+  worldRunning: boolean;
   create(input: { name: string; handle: string; bio: string; arche: Archetype }): void;
   liveADay(): Promise<void>;
   send(text: string): void;
   guide(text: string): void;
   load(): void;
+  setView(v: View): void;
+  enterWorld(): void;
+  tickWorld(): Promise<void>;
+  setWorldRunning(b: boolean): void;
 }
 
 export const useLiving = create<LivingState>((set, get) => ({
   oc: null, day: null, chatLog: [], version: 0, seed: 'zealwish',
+  view: 'room', world: null, worldRunning: false,
   create(input) {
     const a = livingActions(get().seed);
     const oc = a.create(input);
     saveOc(oc);
-    set({ oc, day: null, chatLog: [], version: get().version + 1 });
+    set({ oc, day: null, chatLog: [], world: null, worldRunning: false, version: get().version + 1 });
   },
   async liveADay() {
     const oc = get().oc; if (!oc) return;
@@ -85,5 +97,24 @@ export const useLiving = create<LivingState>((set, get) => ({
   },
   load() {
     const oc = loadOc(); if (oc) set({ oc, version: get().version + 1 });
+  },
+  setView(v) {
+    if (v === 'world' && !get().world) get().enterWorld();
+    set({ view: v, version: get().version + 1 });
+  },
+  enterWorld() {
+    const oc = get().oc; if (!oc) return;
+    // 用 OC 的副本进世界:观察世界不会污染你持久化的真 OC
+    const clone = JSON.parse(JSON.stringify(oc)) as OC;
+    const world = createPrivateWorld(clone, get().seed + ':world');
+    set({ world, version: get().version + 1 });
+  },
+  async tickWorld() {
+    const w = get().world; if (!w) return;
+    await step(w, worldP);
+    set({ version: get().version + 1 });
+  },
+  setWorldRunning(b) {
+    set({ worldRunning: b, version: get().version + 1 });
   },
 }));

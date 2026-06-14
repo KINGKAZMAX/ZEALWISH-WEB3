@@ -3,12 +3,15 @@ import { useLiving } from '../store/useLiving';
 import OcHeader from './OcHeader';
 import LifeFeed from './LifeFeed';
 import Chat from './Chat';
+import WorldView from './WorldView';
 
 export default function App() {
   useLiving((s) => s.version);
   const oc = useLiving.getState().oc;
   const create = useLiving((s) => s.create);
   const load = useLiving((s) => s.load);
+  const view = useLiving((s) => s.view);
+  const setView = useLiving((s) => s.setView);
   const [name, setName] = useState('小智');
   useEffect(() => { load(); }, [load]);
 
@@ -25,7 +28,13 @@ export default function App() {
   return (
     <div className="app">
       <OcHeader />
-      <main className="grid2"><Chat /><LifeFeed /></main>
+      <div className="viewtabs">
+        <button className={'tab' + (view === 'room' ? ' on' : '')} onClick={() => setView('room')}>卧室 · 对话 + 生活流</button>
+        <button className={'tab' + (view === 'world' ? ' on' : '')} onClick={() => setView('world')}>世界 · 它生活的地方</button>
+      </div>
+      {view === 'room'
+        ? <main className="grid2"><Chat /><LifeFeed /></main>
+        : <WorldView />}
     </div>
   );
 }
