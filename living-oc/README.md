@@ -27,7 +27,7 @@ npx tsc --noEmit -p tsconfig.app.json
 ## 不在 MVP(见 spec 路线图)
 
 多人/互访 · 链上身份钱包(ERC-8004 / AgentKit / x402)· Electron 桌面 · 真 LLM 实接(B)· 真链实接(C)· 衍生资产交易。
-(远景「世界」观测台 — 地图 + 实时社交流 + 像素小人 + 人格检查面板 — 已内置,见「世界」标签。)
+(远景「世界」观测台 — 宝可梦火红风(GBA JRPG)小镇地图 + 实时社交流 + 训练师像素小人 + 人格检查面板 — 已内置,见「世界」标签。)
 
 对应设计与计划:
 - `../docs/superpowers/specs/2026-06-14-zealwish-living-oc-design.md`
@@ -35,6 +35,8 @@ npx tsc --noEmit -p tsconfig.app.json
 
 ## 素材署名 / Credits
 
-- 地图像素小人精灵 `public/sprites/folk.png` —— 采用 AI 小镇(a16z `ai-town`)同款 `32x32folk.png`(384×256,8 角色 RPGMaker 角色集)。原始美术由 [ansimuz](https://opengameart.org/content/tiny-rpg-forest) / George Bailey([OpenGameArt 16x16 game assets](https://opengameart.org/content/16x16-game-assets),CC0)提供。
-- 小镇地面/房子图块集 `public/sprites/rpg-tileset.png` 与 Tiled 地图 `public/sprites/town.json`(40×40 格、16px)—— 来自 AI 小镇(a16z `ai-town`)的 `environment/rpg-tileset` 与 `tilemap.json`,底层图块为 [OpenGameArt](https://opengameart.org/) 社区 CC0 的 16×16 RPG tileset。运行时由 `WorldView` 把 terrain/bridge/deco 三个图层合成为一张小镇底图。
-- 生命引擎、记忆/对话、UI 为本项目自研。
+远景「世界」观测台为**宝可梦火红(GBA)风格**外观,所用美术均为 **CC0 公共领域**的开源社区素材(并非任天堂/Game Freak 的游戏素材,与之无任何关联):
+
+- 小镇地图块 `public/sprites/pkmn-overworld.png`(640×576,16px)—— ArMM1998 的 “[Zelda-like tilesets and sprites](https://opengameart.org/content/zelda-like-tilesets-and-sprites)”(OpenGameArt,**CC0**)。运行时由 `WorldView` 的 `buildPkmnTown()` 用草地/土路/房子等图块程序化铺成一座 32×32 的小镇(每个地点一栋房子,土路汇向中央广场)。
+- 训练师角色精灵 `public/sprites/pkmn-chars.png`(16px 帧,4 向 × 3 帧行走,6 个变体)—— Corey Archer 的 “[Top-Down Pokémon-esque Sprites](https://opengameart.org/content/top-down-pokemon-esque-sprites)”(OpenGameArt,**CC0**)。
+- 生命引擎、记忆/对话、经济与链上身份、整套观测台 UI 为本项目自研。

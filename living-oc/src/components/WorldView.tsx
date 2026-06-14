@@ -5,27 +5,54 @@ import { actionCN } from '../sim/text';
 import type { Agent } from '../sim/types';
 import WorldGoLive from './WorldGoLive';
 
-interface TownData {
-  tilewidth: number; width: number; height: number;
-  tilesets: { firstgid?: number; columns?: number }[];
-  layers: { type: string; data?: number[] }[];
+// Pokémon-FireRed 风瓦片坐标(pkmn-overworld.png,16px 瓦片,40×36 格)
+const TILE = 16;
+const TOWN_COLS = 32, TOWN_ROWS = 32;
+const T = {
+  grass: [15, 30], wild: [0, 5], bush: [0, 4], flower: [0, 7],
+  path: [13, 3], log: [4, 5], rock: [9, 5],
+};
+const HOUSE = { c: 7, r: 0, w: 4, h: 4 };
+
+function tileHash(c: number, r: number): number {
+  let h = (Math.imul(c, 73856093) ^ Math.imul(r, 19349663)) >>> 0;
+  h = (h ^ (h >>> 13)) >>> 0;
+  return (h % 1000) / 1000;
 }
-// 把 AI 小镇的 Tiled 图层(terrain/bridge/deco)合成为一张缓存小镇底图
-function buildTown(tileset: HTMLImageElement, data: TownData): HTMLCanvasElement {
-  const T = data.tilewidth, cols = data.width, rows = data.height;
-  const tsCols = data.tilesets[0].columns || Math.floor(tileset.naturalWidth / T);
-  const first = data.tilesets[0].firstgid || 1;
-  const cv = document.createElement('canvas'); cv.width = cols * T; cv.height = rows * T;
+
+// 用 Overworld 瓦片程序化铺一张 Pokémon 小镇:草地铺底 + 放射土路 + 每个地点一栋房子 + 散落植被
+function buildPkmnTown(ts: HTMLImageElement, locs: { x: number; y: number }[]): HTMLCanvasElement {
+  const COLS = TOWN_COLS, ROWS = TOWN_ROWS;
+  const cv = document.createElement('canvas'); cv.width = COLS * TILE; cv.height = ROWS * TILE;
   const cx = cv.getContext('2d'); if (!cx) return cv;
   cx.imageSmoothingEnabled = false;
-  for (const layer of data.layers) {
-    if (layer.type !== 'tilelayer' || !layer.data) continue;
-    const d = layer.data;
-    for (let i = 0; i < d.length; i++) {
-      const raw = d[i]; if (!raw) continue;
-      const gid = (raw & 0x1fffffff) - first; if (gid < 0) continue;
-      cx.drawImage(tileset, (gid % tsCols) * T, Math.floor(gid / tsCols) * T, T, T, (i % cols) * T, Math.floor(i / cols) * T, T, T);
-    }
+  const blit = (t: number[], dc: number, dr: number) =>
+    cx.drawImage(ts, t[0] * TILE, t[1] * TILE, TILE, TILE, dc * TILE, dr * TILE, TILE, TILE);
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) blit(T.grass, c, r); // 1. 草地铺底
+  const occ = new Uint8Array(COLS * ROWS);
+  const set = (c: number, r: number, v: number) => { if (c >= 0 && c < COLS && r >= 0 && r < ROWS) occ[r * COLS + c] = v; };
+  const anchors = locs.map((l) => [Math.round(l.x * COLS), Math.round(l.y * ROWS)] as [number, number]);
+  const cc = COLS >> 1, cr = ROWS >> 1;
+  // 2. 土路:每个地点连到中心广场(L 形,2 格宽)
+  for (const [ac, ar] of anchors) {
+    for (let c = Math.min(ac, cc); c <= Math.max(ac, cc); c++) { blit(T.path, c, ar); set(c, ar, 1); blit(T.path, c, ar + 1); set(c, ar + 1, 1); }
+    for (let r = Math.min(ar, cr); r <= Math.max(ar, cr); r++) { blit(T.path, cc, r); set(cc, r, 1); blit(T.path, cc + 1, r); set(cc + 1, r, 1); }
+  }
+  // 3. 房子:每个地点北侧(门朝下,agent 站门前)
+  for (const [ac, ar] of anchors) {
+    const hx = ac - 1, hy = ar - HOUSE.h;
+    cx.drawImage(ts, HOUSE.c * TILE, HOUSE.r * TILE, HOUSE.w * TILE, HOUSE.h * TILE, hx * TILE, hy * TILE, HOUSE.w * TILE, HOUSE.h * TILE);
+    for (let dr = 0; dr < HOUSE.h; dr++) for (let dc = 0; dc < HOUSE.w; dc++) set(hx + dc, hy + dr, 2);
+  }
+  // 4. 散落植被(避开路/房)
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    if (occ[r * COLS + c]) continue;
+    const h = tileHash(c, r);
+    if (h < 0.07) blit(T.wild, c, r);
+    else if (h < 0.115) blit(T.bush, c, r);
+    else if (h < 0.15) blit(T.flower, c, r);
+    else if (h < 0.165) blit(T.rock, c, r);
+    else if (h < 0.173) blit(T.log, c, r);
   }
   return cv;
 }
@@ -110,17 +137,14 @@ export default function WorldView() {
     return () => clearInterval(iv);
   }, [worldRunning, worldSpeed, tick]);
 
-  // 像素小人精灵图(AI 小镇同款 folk 角色集,32×32 网格,8 角色)
-  useEffect(() => { const img = new Image(); img.src = '/sprites/folk.png'; sprite.current = img; }, []);
+  // 角色精灵:Pokémon-FireRed 风训练师(pkmn-chars.png,16px 帧 / 17px 步距,6 变体)
+  useEffect(() => { const img = new Image(); img.src = '/sprites/pkmn-chars.png'; sprite.current = img; }, []);
 
-  // 小镇底图:加载 AI 小镇 tileset + tilemap,合成一张缓存底图(地面/路/房子/装饰)
+  // 小镇底图:加载 Overworld 瓦片,程序化铺一张 Pokémon 小镇(草地/土路/房子/植被)
   useEffect(() => {
     let cancelled = false;
-    const ts = new Image(); ts.src = '/sprites/rpg-tileset.png';
-    Promise.all([
-      new Promise<HTMLImageElement>((res, rej) => { ts.onload = () => res(ts); ts.onerror = rej; }),
-      fetch('/sprites/town.json').then((r) => r.json() as Promise<TownData>),
-    ]).then(([img, data]) => { if (!cancelled) townMap.current = buildTown(img, data); }).catch(() => { /* 降级:无底图 */ });
+    const ts = new Image(); ts.src = '/sprites/pkmn-overworld.png';
+    ts.onload = () => { if (!cancelled) townMap.current = buildPkmnTown(ts, LOCATIONS); };
     return () => { cancelled = true; };
   }, []);
 
@@ -141,7 +165,7 @@ export default function WorldView() {
       else { ctx.fillStyle = '#0c0c0e'; ctx.fillRect(ox, oy, mapSize, mapSize); }
       const MX = (nx: number) => ox + nx * mapSize, MY = (ny: number) => oy + ny * mapSize;
       LOCATIONS.forEach((l) => {
-        const x = MX(l.x), y = MY(l.y) - 26;
+        const x = MX(l.x), y = MY(l.y) - HOUSE.h * (mapSize / TOWN_COLS) - 6;
         ctx.font = '10px ui-monospace, monospace'; ctx.textAlign = 'center';
         ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.85)'; ctx.strokeText(l.name, x, y);
         ctx.fillStyle = 'rgba(245,245,247,.9)'; ctx.fillText(l.name, x, y);
@@ -171,26 +195,34 @@ export default function WorldView() {
         pp.px += (tx - pp.px) * 0.08; pp.py += (ty - pp.py) * 0.08;
         const isOc = id === ocId, isSel = id === selRef.current;
         const dx = tx - pp.px, dy = ty - pp.py, moving = Math.abs(dx) + Math.abs(dy) > 0.6;
-        const ci = hue(id) % 8, bx = (ci % 4) * 96, by = Math.floor(ci / 4) * 128;
-        const rowOff = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 32 : 64) : (dy < 0 ? 96 : 0);
-        const colOff = (moving ? Math.floor(Date.now() / 170) % 3 : 1) * 32;
+        // Pokémon 训练师精灵:方向(下0/左3/上6,右=左翻转)× 3 帧行走;6 变体
+        const tDest = mapSize / TOWN_COLS, charPx = tDest * 1.8;
+        let dirBase = 0, flip = false;
+        if (moving) {
+          if (Math.abs(dx) > Math.abs(dy)) { dirBase = 3; flip = dx > 0; }
+          else dirBase = dy < 0 ? 6 : 0;
+        }
+        const frame = moving ? Math.floor(Date.now() / 180) % 3 : 1;
+        const sxF = (dirBase + frame) * 17, syF = (hue(id) % 6) * 17;
         // 影子
-        ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.beginPath(); ctx.ellipse(pp.px, pp.py + 13, 10, 3.5, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.beginPath(); ctx.ellipse(pp.px, pp.py + 4, charPx * 0.3, charPx * 0.11, 0, 0, 7); ctx.fill();
         // 选中/破产环(ZEALWISH 红)
-        if (isSel) { ctx.strokeStyle = '#ff2d2d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(pp.px, pp.py + 2, 22, 0, 7); ctx.stroke(); }
-        else if (a.balance < 0) { ctx.strokeStyle = 'rgba(255,45,45,.6)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(pp.px, pp.py + 2, 20, 0, 7); ctx.stroke(); }
-        // 像素小人精灵
+        if (isSel) { ctx.strokeStyle = '#ff2d2d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(pp.px, pp.py - charPx * 0.32, charPx * 0.66, 0, 7); ctx.stroke(); }
+        else if (a.balance < 0) { ctx.strokeStyle = 'rgba(255,45,45,.6)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(pp.px, pp.py - charPx * 0.32, charPx * 0.6, 0, 7); ctx.stroke(); }
+        // 精灵(脚底对齐 pp.py)
         const img = sprite.current;
         if (img && img.complete && img.naturalWidth) {
           ctx.imageSmoothingEnabled = false;
-          ctx.drawImage(img, bx + colOff, by + rowOff, 32, 32, pp.px - 20, pp.py - 27, 40, 40);
+          const dy0 = pp.py - charPx + 3;
+          if (flip) { ctx.save(); ctx.translate(pp.px + charPx / 2, dy0); ctx.scale(-1, 1); ctx.drawImage(img, sxF, syF, 16, 16, 0, 0, charPx, charPx); ctx.restore(); }
+          else ctx.drawImage(img, sxF, syF, 16, 16, pp.px - charPx / 2, dy0, charPx, charPx);
         } else {
           ctx.fillStyle = `hsl(${hue(id)},42%,52%)`; roundRect(ctx, pp.px - 8, pp.py - 8, 16, 16, 3); ctx.fill();
         }
         const label = a.name + (isOc ? ' ★' : '');
         ctx.font = (isSel ? '600 ' : '') + '10px ui-monospace, monospace'; ctx.textAlign = 'center';
-        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.8)'; ctx.strokeText(label, pp.px, pp.py + 26);
-        ctx.fillStyle = isSel ? '#ff2d2d' : 'rgba(245,245,247,.92)'; ctx.fillText(label, pp.px, pp.py + 26);
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.8)'; ctx.strokeText(label, pp.px, pp.py + 13);
+        ctx.fillStyle = isSel ? '#ff2d2d' : 'rgba(245,245,247,.92)'; ctx.fillText(label, pp.px, pp.py + 13);
       }
       } catch { /* 单帧出错不冻结世界 */ }
       raf = requestAnimationFrame(draw);
