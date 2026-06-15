@@ -5,7 +5,7 @@ import { actionCN } from '../sim/text';
 import type { Agent } from '../sim/types';
 import WorldGoLive from './WorldGoLive';
 import { liveSay, liveTalk } from '../live/liveProviders';
-import { toggleBgm } from '../live/bgm';
+import { toggleBgm, bgmPlaying } from '../live/bgm';
 
 const BASE = import.meta.env.BASE_URL;
 const MAP_SRC = 'kanto.webp';
@@ -116,6 +116,12 @@ export default function WorldView() {
   const bumpTalk = () => setTalkVer((v) => v + 1);
 
   useEffect(() => { setRun(true); }, [setRun]);
+  // 进世界后首次交互自动轻声播放 BGM(符合浏览器自动播放策略)
+  useEffect(() => {
+    const kick = () => { if (!bgmPlaying()) setBgmOn(toggleBgm()); window.removeEventListener('pointerdown', kick); window.removeEventListener('keydown', kick); };
+    window.addEventListener('pointerdown', kick); window.addEventListener('keydown', kick);
+    return () => { window.removeEventListener('pointerdown', kick); window.removeEventListener('keydown', kick); };
+  }, []);
   useEffect(() => { if (!worldRunning) return; const iv = setInterval(() => { void tick(); }, 900); return () => clearInterval(iv); }, [worldRunning, tick]);
 
   useEffect(() => {
@@ -289,6 +295,27 @@ export default function WorldView() {
           const bline = (liveRef.current && liveLines.current.get(a.name)) || bank[(Math.floor(now / 9000) + hue(id)) % bank.length];
           if (talkRef.current?.withId !== id) bubble(ctx, sx, sy - cH - (isNear ? 18 : 6), bline);
         }
+      }
+      // ── 小地图雷达(右下):黄=伙伴 红=你 ──
+      if (cpp) {
+        const MM = 168, mg = 16, mx0 = VW - MM - mg, my0 = VH - MM - mg, RR = 1500;
+        ctx.save();
+        rrect(ctx, mx0, my0, MM, MM, 10); ctx.fillStyle = 'rgba(8,9,11,.7)'; ctx.fill(); ctx.clip();
+        const tmm = mapImg.current;
+        if (tmm) { ctx.imageSmoothingEnabled = false; ctx.drawImage(tmm, cpp.mx - RR, cpp.my - RR, RR * 2, RR * 2, mx0, my0, MM, MM); }
+        ctx.fillStyle = 'rgba(8,9,11,.32)'; ctx.fillRect(mx0, my0, MM, MM);
+        for (const id of w.order) {
+          const p = apos.current.get(id); if (!p) continue;
+          const ddx = (p.mx - cpp.mx) / RR, ddy = (p.my - cpp.my) / RR;
+          if (Math.abs(ddx) > 1 || Math.abs(ddy) > 1) continue;
+          const px = mx0 + MM / 2 + ddx * MM / 2, py = my0 + MM / 2 + ddy * MM / 2, me = id === ctrl;
+          ctx.fillStyle = me ? '#ff2d2d' : 'rgba(255,210,80,.95)';
+          ctx.beginPath(); ctx.arc(px, py, me ? 4 : 3, 0, 7); ctx.fill();
+          if (me) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke(); }
+        }
+        ctx.restore();
+        ctx.strokeStyle = 'rgba(255,45,45,.5)'; ctx.lineWidth = 1.5; rrect(ctx, mx0, my0, MM, MM, 10); ctx.stroke();
+        ctx.fillStyle = 'rgba(245,245,247,.8)'; ctx.font = '10px ui-monospace, monospace'; ctx.textAlign = 'left'; ctx.fillText('雷达 · 黄=伙伴 红=你', mx0 + 4, my0 - 5);
       }
       } catch { /* 单帧出错不冻结 */ }
       raf = requestAnimationFrame(draw);
