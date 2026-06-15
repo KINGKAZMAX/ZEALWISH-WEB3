@@ -171,6 +171,7 @@ input{background:var(--panel);color:var(--text);border:1px solid var(--line);bor
 .hud-btn{font-family:var(--font-mono);font-size:11px;color:var(--muted);background:rgba(10,10,11,.62);border:1px solid var(--line);border-radius:14px;padding:6px 11px;cursor:pointer;backdrop-filter:blur(8px)}
 .hud-btn:hover{color:var(--text);border-color:var(--red)}
 .hud-btn.live{color:#e3a948;border-color:rgba(227,169,72,.4)}
+.hud-btn.on{color:#7fd06a;border-color:rgba(127,208,106,.55)}
 .hud-feed{left:18px;bottom:16px;width:300px;background:rgba(12,12,15,.8);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(10px);overflow:hidden}
 .hud-feed-head{font-size:11px;letter-spacing:.1em;color:var(--muted);padding:9px 12px;cursor:pointer;display:flex;justify-content:space-between;border-bottom:1px solid var(--line)}
 .hud-feed-body{max-height:240px;overflow-y:auto;padding:6px 12px}

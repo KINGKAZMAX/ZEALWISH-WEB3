@@ -5,6 +5,7 @@ import { actionCN } from '../sim/text';
 import type { Agent } from '../sim/types';
 import WorldGoLive from './WorldGoLive';
 import { liveSay, liveTalk } from '../live/liveProviders';
+import { toggleBgm } from '../live/bgm';
 
 const BASE = import.meta.env.BASE_URL;
 const MAP_SRC = 'kanto.webp';
@@ -93,6 +94,7 @@ export default function WorldView() {
   const [controlId, setControlId] = useState<string | null>(null);
   const [inspId, setInspId] = useState<string | null>(null);
   const [feedOpen, setFeedOpen] = useState(true);
+  const [bgmOn, setBgmOn] = useState(false);
   const [, setTalkVer] = useState(0);
 
   const ref = useRef<HTMLCanvasElement>(null);
@@ -327,6 +329,7 @@ export default function WorldView() {
         <button className="hud-btn" onClick={() => { reseed(); apos.current.clear(); }}>↻ 重置</button>
         <button className="hud-btn" onClick={() => setControlId(ocId)}>回到小智 ★</button>
         <button className="hud-btn live" onClick={() => setLive(true)}>⚡ 真 LLM/链</button>
+        <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="温馨 8-bit 背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
       </div>
 
       <div className={'hud hud-feed' + (feedOpen ? '' : ' min')}>
