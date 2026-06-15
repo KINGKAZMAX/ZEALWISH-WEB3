@@ -4,6 +4,7 @@ import { LOCATIONS, locById, ARCHE_CN } from '../sim/data';
 import { actionCN } from '../sim/text';
 import type { Agent } from '../sim/types';
 import WorldGoLive from './WorldGoLive';
+import { liveSay, liveTalk } from '../live/liveProviders';
 
 const BASE = import.meta.env.BASE_URL;
 const MAP_SRC = 'kanto.webp';
@@ -87,10 +88,12 @@ export default function WorldView() {
   const tick = useLiving((s) => s.tickWorld);
   const addAgent = useLiving((s) => s.addAgentToWorld);
   const reseed = useLiving((s) => s.reseedWorld);
+  const liveMode = useLiving((s) => s.liveMode);
   const [live, setLive] = useState(false);
   const [controlId, setControlId] = useState<string | null>(null);
   const [inspId, setInspId] = useState<string | null>(null);
   const [feedOpen, setFeedOpen] = useState(true);
+  const [, setTalkVer] = useState(0);
 
   const ref = useRef<HTMLCanvasElement>(null);
   const keys = useRef<Set<string>>(new Set());
@@ -105,6 +108,10 @@ export default function WorldView() {
   const ctrlRef = useRef<string | null>(null); ctrlRef.current = controlId ?? ocId;
   const nearRef = useRef<string | null>(null);
   const lastT = useRef(0);
+  const liveLines = useRef<Map<string, string>>(new Map());  // 真 LLM 气泡台词缓存
+  const liveRef = useRef(false); liveRef.current = liveMode.cognition === 'live';
+  const talkRef = useRef<{ withId: string; lines: { name: string; text: string }[]; i: number } | null>(null);
+  const bumpTalk = () => setTalkVer((v) => v + 1);
 
   useEffect(() => { setRun(true); }, [setRun]);
   useEffect(() => { if (!worldRunning) return; const iv = setInterval(() => { void tick(); }, 900); return () => clearInterval(iv); }, [worldRunning, tick]);
@@ -129,11 +136,50 @@ export default function WorldView() {
     for (const nm in NAMED_SPRITE) { const im = new Image(); im.src = BASE + 'sprites/chr-' + NAMED_SPRITE[nm] + '.png'; named.current[nm] = im; }
   }, []);
 
+  // 真 LLM 气泡:开启「真 LLM」后,逐个角色每 ~3s 取一句 Claude 生成的主题台词,缓存覆盖离线库
+  useEffect(() => {
+    if (liveMode.cognition !== 'live') { liveLines.current.clear(); return; }
+    const w0 = useLiving.getState().world; if (!w0) return;
+    const names = Object.keys(LINE_BANKS); let k = 0; let stop = false;
+    const pump = async () => {
+      if (stop) return;
+      const w = useLiving.getState().world;
+      const nm = names[k % names.length]; k++;
+      const a = w && Object.values(w.agents).find((x) => x.name === nm);
+      if (a) { const line = await liveSay(a.name, a.bio); if (line && !stop) { liveLines.current.set(nm, line); } }
+    };
+    const iv = setInterval(pump, 3000); void pump();
+    return () => { stop = true; clearInterval(iv); };
+  }, [liveMode.cognition]);
+
+  // 离线对话(无后端/未开真 LLM 时):用台词库拼一小段小智×伙伴的对话
+  const offlineTalk = (meName: string, fr: Agent): { name: string; text: string }[] => {
+    const fb = LINE_BANKS[fr.name] || ['嗨~'], s = Math.floor(Date.now() / 1000);
+    return [
+      { name: meName, text: `${fr.name},今天过得怎样?` },
+      { name: fr.name, text: fb[s % fb.length] },
+      { name: meName, text: '哈哈,那走啦,一起去恰个饭?' },
+      { name: fr.name, text: fb[(s + 2) % fb.length] },
+    ];
+  };
+  const startTalk = async (friendId: string) => {
+    const w = useLiving.getState().world; if (!w) return;
+    const fr = w.agents[friendId]; const me = (ctrlRef.current && w.agents[ctrlRef.current]) || null; if (!fr || !me) return;
+    talkRef.current = { withId: friendId, lines: [{ name: me.name, text: '…' }], i: 0 }; bumpTalk();
+    let lines: { name: string; text: string }[] | null = null;
+    if (liveRef.current) lines = await liveTalk({ name: me.name, bio: me.bio }, { name: fr.name, bio: fr.bio });
+    if (!lines) lines = offlineTalk(me.name, fr);
+    talkRef.current = { withId: friendId, lines, i: 0 }; bumpTalk();
+  };
+
   useEffect(() => {
     const dn = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
       if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) { keys.current.add(k); e.preventDefault(); }
-      if (k === ' ' && nearRef.current) setInspId(nearRef.current);
+      if (k === ' ') {
+        if (talkRef.current) { talkRef.current.i++; if (talkRef.current.i >= talkRef.current.lines.length) talkRef.current = null; bumpTalk(); }
+        else if (nearRef.current) void startTalk(nearRef.current);
+      }
     };
     const up = (e: KeyboardEvent) => keys.current.delete(e.key.toLowerCase());
     window.addEventListener('keydown', dn); window.addEventListener('keyup', up);
@@ -166,8 +212,10 @@ export default function WorldView() {
         if (!pp) { pp = { mx: anchor[0] * MAP_W, my: anchor[1] * MAP_H, dir: 'down', moving: false }; apos.current.set(id, pp); }
         if (id === ctrl) {
           let vx = 0, vy = 0; const K = keys.current;
-          if (K.has('a') || K.has('arrowleft')) vx -= 1; if (K.has('d') || K.has('arrowright')) vx += 1;
-          if (K.has('w') || K.has('arrowup')) vy -= 1; if (K.has('s') || K.has('arrowdown')) vy += 1;
+          if (!talkRef.current) { // 对话中冻结移动
+            if (K.has('a') || K.has('arrowleft')) vx -= 1; if (K.has('d') || K.has('arrowright')) vx += 1;
+            if (K.has('w') || K.has('arrowup')) vy -= 1; if (K.has('s') || K.has('arrowdown')) vy += 1;
+          }
           const len = Math.hypot(vx, vy) || 1; const nx = pp.mx + (vx / len) * SPEED * dt, ny = pp.my + (vy / len) * SPEED * dt;
           if (walkable(nx, ny)) { pp.mx = nx; pp.my = ny; }
           else { if (walkable(nx, pp.my)) pp.mx = nx; if (walkable(pp.mx, ny)) pp.my = ny; } // 贴墙滑动
@@ -235,7 +283,10 @@ export default function WorldView() {
         if (isNear) { ctx.fillStyle = 'rgba(255,210,80,.95)'; ctx.font = '10px ui-monospace, monospace'; ctx.fillText('空格 · 交互', sx, sy - cH - 4); }
         // 头顶对话气泡(命名角色:小智 + 5 个新加坡留学伙伴)
         const bank = LINE_BANKS[a.name];
-        if (bank && bank.length) bubble(ctx, sx, sy - cH - (isNear ? 18 : 6), bank[(Math.floor(now / 9000) + hue(id)) % bank.length]);
+        if (bank && bank.length) {
+          const bline = (liveRef.current && liveLines.current.get(a.name)) || bank[(Math.floor(now / 9000) + hue(id)) % bank.length];
+          if (talkRef.current?.withId !== id) bubble(ctx, sx, sy - cH - (isNear ? 18 : 6), bline);
+        }
       }
       } catch { /* 单帧出错不冻结 */ }
       raf = requestAnimationFrame(draw);
@@ -297,6 +348,17 @@ export default function WorldView() {
           <Inspector a={inspA} isOc={inspId === ocId} />
         </div>
       )}
+
+      {(() => {
+        const tk = talkRef.current; const ln = tk && tk.lines[tk.i]; if (!tk || !ln) return null;
+        return (
+          <div className="hud hud-talk" onClick={() => { tk.i++; if (tk.i >= tk.lines.length) talkRef.current = null; bumpTalk(); }}>
+            <div className="talk-name">{ln.name}{liveRef.current && ' · ✦ Claude'}</div>
+            <div className="talk-text">{ln.text}</div>
+            <div className="talk-hint">空格 / 点击 继续 ▸</div>
+          </div>
+        );
+      })()}
 
       {live && <WorldGoLive onClose={() => setLive(false)} />}
     </section>

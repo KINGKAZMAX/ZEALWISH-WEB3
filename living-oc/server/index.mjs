@@ -129,6 +129,41 @@ app.post('/api/chain/mint', async (req, res) => {
   }
 });
 
+// ── B · 头顶气泡:为单个角色生成一句主题台词 ──
+const SG_THEME = '内容围绕在新加坡留学的日常(NUS/NTU/SMU、食阁海南鸡饭/叻沙、MRT、Kaya toast、滨海湾/擎天树)或夜间动物园(夜游 tram、马来貘、穿山甲、水獭、果蝠、Creatures of the Night),口语、可爱、有梗,可夹少量 Singlish(lah/lor/shiok/can/paiseh)。';
+app.post('/api/say', async (req, res) => {
+  const client = await getAnthropic();
+  if (!client) return res.status(503).json({ error: 'no ANTHROPIC_API_KEY' });
+  const { name = '', bio = '' } = req.body || {};
+  try {
+    const msg = await client.messages.create({
+      model: process.env.CROWD_MODEL || 'claude-haiku-4-5', max_tokens: 60,
+      system: `你为一个像素小游戏角色生成头顶气泡台词。只输出一句中文台词,≤24 字,不要引号、不要解释。${SG_THEME}`,
+      messages: [{ role: 'user', content: `角色:${name} —— ${bio}\n给一句此刻的台词。` }],
+    });
+    const t = (msg.content.find((b) => b.type === 'text')?.text || '').trim().replace(/^["「'’]+|["」'’]+$/g, '').slice(0, 30);
+    res.json({ text: t });
+  } catch (e) { res.status(502).json({ error: String(e?.message || e) }); }
+});
+
+// ── B · 走近触发:两个角色的一小段对话 ──
+app.post('/api/talk', async (req, res) => {
+  const client = await getAnthropic();
+  if (!client) return res.status(503).json({ error: 'no ANTHROPIC_API_KEY' });
+  const { a, b } = req.body || {};
+  if (!a || !b) return res.status(400).json({ error: 'missing a/b' });
+  try {
+    const msg = await client.messages.create({
+      model: process.env.CROWD_MODEL || 'claude-haiku-4-5', max_tokens: 400,
+      system: `生成两个角色偶遇时的一小段有趣中文对话。${SG_THEME}\n只输出 JSON 数组,4-6 个元素,每个 {"speaker","text"},speaker 用角色名,text ≤24 字,两人轮流,A 先开口。不要多余文字。`,
+      messages: [{ role: 'user', content: `角色A:${a.name}(${a.bio || ''})\n角色B:${b.name}(${b.bio || ''})` }],
+    });
+    const txt = (msg.content.find((x) => x.type === 'text')?.text || '').trim();
+    const arr = JSON.parse(txt.slice(txt.indexOf('['), txt.lastIndexOf(']') + 1));
+    res.json({ lines: arr.slice(0, 6).map((t) => ({ name: String(t.speaker || t.name || '').slice(0, 10), text: String(t.text || '').slice(0, 40) })) });
+  } catch (e) { res.status(502).json({ error: String(e?.message || e) }); }
+});
+
 app.listen(PORT, () => {
   console.log(`[living-oc] 轻后端 :${PORT}  B(Claude)=${!!process.env.ANTHROPIC_API_KEY}  C(Base)=${!!process.env.DEPLOYER_PRIVATE_KEY}`);
 });

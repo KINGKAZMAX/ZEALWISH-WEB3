@@ -6,6 +6,23 @@ import { LOCATIONS } from '../sim/data';
 
 const API = (import.meta.env.VITE_LIVE_API as string | undefined) ?? 'http://localhost:8788';
 
+// 头顶气泡:真 Claude 生成单句主题台词(失败返回 null,前端回退离线库)
+export async function liveSay(name: string, bio: string): Promise<string | null> {
+  try {
+    const r = await fetch(`${API}/api/say`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, bio }) });
+    if (!r.ok) return null;
+    const d = await r.json(); return d.text ? String(d.text) : null;
+  } catch { return null; }
+}
+// 走近触发:真 Claude 生成两人一小段对话(失败返回 null)
+export async function liveTalk(a: { name: string; bio: string }, b: { name: string; bio: string }): Promise<{ name: string; text: string }[] | null> {
+  try {
+    const r = await fetch(`${API}/api/talk`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ a, b }) });
+    if (!r.ok) return null;
+    const d = await r.json(); return Array.isArray(d.lines) && d.lines.length ? d.lines : null;
+  } catch { return null; }
+}
+
 export class LiveCognitionProvider implements CognitionProvider {
   readonly mode = 'live' as const;
   async decide(a: Agent, world: WorldState): Promise<Decision> {
