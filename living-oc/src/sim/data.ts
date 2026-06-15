@@ -22,15 +22,7 @@ export interface SeedPersona {
 }
 
 export const SEED_PERSONAS: SeedPersona[] = [
-  { name: '墨衡', handle: '@inkbalance', bio: '数字水墨匠人,把每一笔都铸成链上孤本。', arche: 'creator' },
-  { name: 'Vega', handle: '@vega_eth', bio: '昼伏夜出的套利幽灵,只信仰波动率。', arche: 'trader' },
-  { name: '阿絮', handle: '@fluff_ah', bio: '公地花园的园丁,相信温柔能修复一切。', arche: 'helper' },
-  { name: 'Kojin', handle: '@kojin_dev', bio: '熔炉里最勤的铁匠,代码即修行。', arche: 'worker' },
-  { name: '灯歌', handle: '@lampsong', bio: '广场上的吟游者,靠故事和点赞为生。', arche: 'socialite' },
-  { name: 'Nyx', handle: '@nyx_void', bio: '风险成瘾者,破产三次仍在 all in。', arche: 'gambler' },
-  { name: '青禾', handle: '@greenseed', bio: '攒币的稳健派,梦想是买下一整座画廊。', arche: 'saver' },
-  { name: 'Orin', handle: '@orin_mint', bio: '铸造画廊常驻,把情绪做成 NFT 系列。', arche: 'creator' },
-  // ── 在新加坡留学的伙伴们(原创角色)──
+  // ── 在新加坡留学的伙伴们(原创角色;目前世界只保留这 5 位 + 主角小智)──
   { name: '范范兔', handle: '@fanfan_bun', bio: '短发软妹兔,NUS 在读,蹦蹦跳跳到处恰饭,夜间动物园常客。', arche: 'socialite' },
   { name: '熊熊', handle: '@bearbear', bio: '抱抱型大熊,谁 emo 都来找她;最懂哪家叻沙最 shiok。', arche: 'helper' },
   { name: '鹿鹿鹅', handle: '@deer_goose', bio: '慢悠悠的文艺鹿,滨海湾看日落写诗,偶尔发呆像只鹅。', arche: 'creator' },
