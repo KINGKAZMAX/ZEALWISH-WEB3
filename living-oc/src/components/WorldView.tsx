@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLiving } from '../store/useLiving';
 import { LOCATIONS, locById, ARCHE_CN } from '../sim/data';
 import { actionCN } from '../sim/text';
-import type { Agent } from '../sim/types';
+import type { Agent, ActionKind } from '../sim/types';
 import WorldGoLive from './WorldGoLive';
 
 // Pokémon-FireRed 风瓦片坐标(pkmn-overworld.png,16px 瓦片,40×36 格)
@@ -33,6 +33,17 @@ function buildPkmnTown(ts: HTMLImageElement, locs: { x: number; y: number }[]): 
   const set = (c: number, r: number, v: number) => { if (c >= 0 && c < COLS && r >= 0 && r < ROWS) occ[r * COLS + c] = v; };
   const anchors = locs.map((l) => [Math.round(l.x * COLS), Math.round(l.y * ROWS)] as [number, number]);
   const cc = COLS >> 1, cr = ROWS >> 1;
+  // 1b. 湖泊:草地内矩形水域,3×3 岸线瓦片自动拼接(角/边/中心)
+  const WATER: Record<string, number[]> = { c: [3, 7], n: [3, 6], s: [3, 8], w: [2, 7], e: [4, 7], nw: [2, 6], ne: [4, 6], sw: [2, 8], se: [4, 8] };
+  const lake = (x0: number, y0: number, x1: number, y1: number) => {
+    for (let r = y0; r <= y1; r++) for (let c = x0; c <= x1; c++) {
+      const top = r === y0, bot = r === y1, lf = c === x0, rt = c === x1;
+      const t = top && lf ? WATER.nw : top && rt ? WATER.ne : bot && lf ? WATER.sw : bot && rt ? WATER.se
+        : top ? WATER.n : bot ? WATER.s : lf ? WATER.w : rt ? WATER.e : WATER.c;
+      blit(t, c, r); set(c, r, 3);
+    }
+  };
+  lake(2, 25, 10, 31); // 左下角一片湖
   // 2. 土路:每个地点连到中心广场(L 形,2 格宽)
   for (const [ac, ar] of anchors) {
     for (let c = Math.min(ac, cc); c <= Math.max(ac, cc); c++) { blit(T.path, c, ar); set(c, ar, 1); blit(T.path, c, ar + 1); set(c, ar + 1, 1); }
@@ -164,6 +175,29 @@ export default function WorldView() {
       if (tm) { ctx.imageSmoothingEnabled = false; ctx.drawImage(tm, 0, 0, src, src, ox, oy, mapSize, mapSize); }
       else { ctx.fillStyle = '#0c0c0e'; ctx.fillRect(ox, oy, mapSize, mapSize); }
       const MX = (nx: number) => ox + nx * mapSize, MY = (ny: number) => oy + ny * mapSize;
+      const tDest = mapSize / TOWN_COLS;
+      // ── 昼夜光照:按 epoch 推进(每 24 epoch 一天)叠夜色 + 黄昏暖光 + 夜里窗户红光 ──
+      const epoch = w ? w.epoch : 12;
+      const ph = (((epoch % 24) + 24) % 24) / 24;        // 0..1,0=子夜
+      const sun = Math.max(0, Math.sin(ph * Math.PI));   // 0=夜 1=正午
+      const night = Math.max(0, 1 - sun * 1.15);
+      const golden = sun > 0.02 ? Math.max(0, 1 - Math.abs(sun - 0.25) / 0.25) : 0;
+      if (night > 0.01) { ctx.fillStyle = `rgba(14,18,54,${(night * 0.6).toFixed(3)})`; ctx.fillRect(ox, oy, mapSize, mapSize); }
+      if (golden > 0.01) { ctx.fillStyle = `rgba(255,150,60,${(golden * 0.16).toFixed(3)})`; ctx.fillRect(ox, oy, mapSize, mapSize); }
+      if (night > 0.22) {
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        const ga = (night - 0.22) / 0.78;
+        for (const l of LOCATIONS) {
+          const ac = Math.round(l.x * TOWN_COLS), ar = Math.round(l.y * TOWN_ROWS);
+          for (const [wc, wr] of [[ac - 1, ar - 2], [ac + 2, ar - 2]] as [number, number][]) {
+            const gx = ox + ((wc + 0.5) / TOWN_COLS) * mapSize, gy = oy + ((wr + 0.5) / TOWN_ROWS) * mapSize, rad = tDest * 1.2;
+            const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, rad);
+            g.addColorStop(0, `rgba(255,72,48,${(ga * 0.8).toFixed(3)})`); g.addColorStop(1, 'rgba(255,72,48,0)');
+            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(gx, gy, rad, 0, 7); ctx.fill();
+          }
+        }
+        ctx.restore();
+      }
       LOCATIONS.forEach((l) => {
         const x = MX(l.x), y = MY(l.y) - HOUSE.h * (mapSize / TOWN_COLS) - 6;
         ctx.font = '10px ui-monospace, monospace'; ctx.textAlign = 'center';
@@ -187,16 +221,22 @@ export default function WorldView() {
         ctx.beginPath(); ctx.moveTo(L.ax, L.ay); ctx.lineTo(L.bx, L.by); ctx.stroke();
         L.life -= 0.02; if (L.life <= 0) lines.current.splice(i, 1);
       }
+      // 每个 agent 最近动作 → 是否在室内(work/mint/reflect = 进屋)
+      const lastAct = new Map<string, { a: ActionKind; e: number }>();
+      for (const p of w.feed) { const cur = lastAct.get(p.agentId); if (!cur || p.epoch >= cur.e) lastAct.set(p.agentId, { a: p.action, e: p.epoch }); }
       for (const id of w.order) {
         const a = w.agents[id]; if (!a) continue; const loc = locById[a.loc]; if (!loc) continue;
+        const act = lastAct.get(id)?.a;
+        const indoor = act === 'work' || act === 'mint' || act === 'reflect';
         const jx = (hue('x' + id) / 360 - 0.5) * 56, jy = (hue('y' + id) / 360 - 0.5) * 56;
-        const tx = MX(loc.x) + jx, ty = MY(loc.y) + jy;
+        const tx = indoor ? MX(loc.x) + jx * 0.22 : MX(loc.x) + jx;
+        const ty = indoor ? MY(loc.y) - tDest * 1.15 : MY(loc.y) + jy;
         let pp = pos.current.get(id); if (!pp) { pp = { px: tx, py: ty }; pos.current.set(id, pp); }
         pp.px += (tx - pp.px) * 0.08; pp.py += (ty - pp.py) * 0.08;
         const isOc = id === ocId, isSel = id === selRef.current;
         const dx = tx - pp.px, dy = ty - pp.py, moving = Math.abs(dx) + Math.abs(dy) > 0.6;
         // Pokémon 训练师精灵:方向(下0/左3/上6,右=左翻转)× 3 帧行走;6 变体
-        const tDest = mapSize / TOWN_COLS, charPx = tDest * 1.8;
+        const charPx = tDest * 1.8;
         let dirBase = 0, flip = false;
         if (moving) {
           if (Math.abs(dx) > Math.abs(dy)) { dirBase = 3; flip = dx > 0; }
@@ -209,8 +249,9 @@ export default function WorldView() {
         // 选中/破产环(ZEALWISH 红)
         if (isSel) { ctx.strokeStyle = '#ff2d2d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(pp.px, pp.py - charPx * 0.32, charPx * 0.66, 0, 7); ctx.stroke(); }
         else if (a.balance < 0) { ctx.strokeStyle = 'rgba(255,45,45,.6)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(pp.px, pp.py - charPx * 0.32, charPx * 0.6, 0, 7); ctx.stroke(); }
-        // 精灵(脚底对齐 pp.py)
+        // 精灵(脚底对齐 pp.py;进屋则半透明,如同走进门内)
         const img = sprite.current;
+        if (indoor) ctx.globalAlpha = moving ? 0.62 : 0.34;
         if (img && img.complete && img.naturalWidth) {
           ctx.imageSmoothingEnabled = false;
           const dy0 = pp.py - charPx + 3;
@@ -219,6 +260,7 @@ export default function WorldView() {
         } else {
           ctx.fillStyle = `hsl(${hue(id)},42%,52%)`; roundRect(ctx, pp.px - 8, pp.py - 8, 16, 16, 3); ctx.fill();
         }
+        ctx.globalAlpha = 1;
         const label = a.name + (isOc ? ' ★' : '');
         ctx.font = (isSel ? '600 ' : '') + '10px ui-monospace, monospace'; ctx.textAlign = 'center';
         ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.8)'; ctx.strokeText(label, pp.px, pp.py + 13);
