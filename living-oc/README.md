@@ -51,8 +51,8 @@ npm start                                              # http://localhost:8788
 
 远景「世界」观测台采用 **Pokémon FireRed/LeafGreen(GBA)原版画风**:
 
-- 小镇底图 `public/sprites/frlg-town.png` —— FireRed/LeafGreen「真新镇 / Pallet Town」游戏内地图(社区精灵 rip,作者 Bob799)。运行时由 `WorldView` 等比铺进观测台,6 个 ZEALWISH 地点叠在其上。
-- 训练师/居民精灵 `public/sprites/chr-*.png` —— FRLG 主角 Red、对手与各类 NPC 的行走精灵(16×32 帧条),取自 FRLG 反汇编工程 [`pret/pokefirered`](https://github.com/pret/pokefirered)。
+- 世界地图 `public/sprites/kanto.webp` —— FireRed/LeafGreen 关都(Kanto)全区地表拼接图(VGMaps,拼图作者 Anthony Lin & Samuel Harbord)。`WorldView` 以相机源切片渲染,玩家用 WASD 自由漫游、可接管任一居民、靠近交互;6 个 ZEALWISH 地点叠在其上。
+- 训练师/居民精灵 `public/sprites/chr-*.png` —— FRLG 主角 Red(小智)、对手与各类 NPC 的行走精灵(16×32 帧条),取自 FRLG 反汇编工程 [`pret/pokefirered`](https://github.com/pret/pokefirered)。
 - 生命引擎、记忆/对话、经济与链上身份、整套观测台 UI 为本项目自研。
 
 > ⚠ **版权与用途声明**:`frlg-town.png` 与 `chr-*.png` 为 Pokémon FireRed/LeafGreen 的游戏美术,版权归 **任天堂 / Game Freak / Creatures Inc.** 所有。本仓库仅作 **非商用粉丝/学习项目** 使用(类似 PokeMMO 等粉丝项目的精神),与任天堂无任何关联、不获其授权或背书,**不得用于任何商业用途**。如版权方提出异议,将立即移除相关素材。详见 [`public/sprites/ASSETS-NOTICE.md`](public/sprites/ASSETS-NOTICE.md)。

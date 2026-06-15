@@ -35,11 +35,9 @@ export default function App() {
   return (
     <>
       <ZealwishTopbar view={view} setView={setView} />
-      <div className={'app' + (view === 'world' ? ' wide' : '')}>
-        {view === 'room'
-          ? <main className="grid2"><Chat /><LifeFeed /></main>
-          : <WorldView />}
-      </div>
+      {view === 'room'
+        ? <div className="app"><main className="grid2"><Chat /><LifeFeed /></main></div>
+        : <WorldView />}
     </>
   );
 }

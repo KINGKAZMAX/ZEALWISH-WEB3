@@ -2,7 +2,7 @@
 
 本目录下的以下美术素材来自 **Pokémon FireRed / LeafGreen**(Game Boy Advance):
 
-- `frlg-town.png` —— FRLG「真新镇 / Pallet Town」游戏内地图(社区精灵 rip,作者 Bob799)。
+- `kanto.webp` —— FRLG 关都(Kanto)全区地表拼接地图(VGMaps,拼图作者 Anthony Lin & Samuel Harbord)。
 - `chr-red_normal.png` / `chr-green_normal.png` / `chr-boy.png` / `chr-lass.png` /
   `chr-youngster.png` / `chr-fat_man.png` / `chr-beauty.png` / `chr-gentleman.png`
   —— FRLG 主角、对手与 NPC 的行走精灵,取自反汇编工程 `pret/pokefirered`
