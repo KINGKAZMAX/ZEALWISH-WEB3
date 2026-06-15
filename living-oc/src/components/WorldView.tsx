@@ -33,7 +33,7 @@ const NAMED_SPRITE: Record<string, string> = {
 const LINE_BANKS: Record<string, string[]> = {
   // 小智:话少、字短、内敛
   '小智': ['…嗯。(･ω･)', '看着你们,挺好。', '我也想…更用力点。', '今天也在。✦', '不太会说…但都记得。', '你们笑,我就安心 (˘ ˘)', '……(◞‸◟)', '走走看看就好。', '嗯,我在。', '别怕,有我。'],
-  '范范兔': ['今天也要元气满满地搬砖鸭 ٩(•̀ω•́)و', '刚上班就被会议轰炸,还是笑嘻嘻 (≧▽≦)', '同事别 emo,抱抱,你超棒的!(っ´ω`)ﻭ', '午饭去食阁,海南鸡饭 shiok 飞起 (＞ڡ＜)', 'OT 到深夜?那就去夜间动物园回血 (｡･ω･｡)', '发薪日!请大家喝 teh tarik ♪(´▽`)', '马来貘黑白两截,可爱到尖叫 (✿◡‿◡)', '加油哦~你今天已经很努力啦 (◍•ᴗ•◍)', 'MRT 挤归挤,微笑不能少 (・∀・)', '紫发配小帽,今天也很可爱吧?(ฅ•ω•ฅ)', '笑一个嘛!烦恼都会跑掉的 (◕ᴗ◕✿)', '下班冲去看 Supertree 灯光秀 ✧*。'],
+  '范范兔': ['No bone, no blood, no ash (｀∀´)Ψ', '阿姆斯特朗回旋加速喷气式阿姆斯特朗炮!', '封印在我右手的黑炎之龙…又躁动了', '哼,这点 deadline,在我「绝对领域」前不值一提', '吾乃黑暗中沉睡的紫焰使徒·范范兔 (・`ω´・)', '食阁辣椒蟹,是唤醒我封印之力的祭品!', '夜间动物园,是我与夜之眷属的契约之地', '别看我笑嘻嘻,体内住着混沌的另一个我', '上班只是我潜伏人间界的伪装 (¬‿¬)', '苏醒吧,我的「叻沙圣剑」!shiok!', '紫发是力量觉醒的证明,凡人勿视 ✧', '今日运势:黑暗终将吞噬一切…但先恰饭 (≧▽≦)'],
   '熊熊': ['谁 emo 都来抱抱,熊熊在 (っ◔◡◔)っ', '加东叻沙椰浆汤底,暖暖的 (´︶`)', '冷气太冻啦,披我外套吧 (｡•ᴗ•｡)', 'Deadline 别怕,先喝口 teh tarik (´▽`)', '夜间动物园水獭一家好吵好萌 (＾• ω •＾)', '组屋楼下巴刹,auntie 都认得我 (◕‿◕)', '抱一个,烦恼都会变小 (つ≧▽≦)つ', '今天也要好好吃饭哦 (｡♡‿♡｡)', '困了就靠着我睡 (´-ω-`)zzZ', '熊抱治百病,试试看?(ﾉ´ヮ`)ﾉ'],
   '鹿鹿鹅': ['滨海湾日落…又发呆成鹅了 (´-ω-`)', '擎天树灯光秀,想写首诗 ✧', '夜里靠月光找动物,好诗意 (˘︶˘)', '果蝠倒挂啃水果,近到数牙齿 (・о・)', '炒粿条要够镬气 wok hei~ (´ ▽ `)', '风把我吹成另一个我了…(꒦ິ⌓꒦ີ)', '发呆也是一种创作嘛 (´｡• ᵕ •｡`)', '云好软,想躺上去 (｡-ω-)zzz', '今天的灵感,藏在叻沙里 (｡•̀ᴗ-)✧', '慢一点…世界更好看 (˶˘ ³˘)'],
   '猪猪仔': ['食阁一餐才 3 块,太香了 (๑´ڡ`๑)', '辣椒蟹满手酱,再来一份!(＞ڡ＜)', '沙爹配花生酱,绝了 (｡◕‿◕｡)', '佛系攒钱…美食面前破功 (´∀`)', '夜间动物园穿山甲太可爱 (♡˙︶˙♡)', '小贩中心是非遗,骄傲 ✧', '吃饱才有力气省钱 (ง•̀_•́)ง', '快乐由海南鸡饭赞助 (˶ᵔ ᵕ ᵔ˶)', 'teh tarik 拉得越高越甜 (ᵔᴥᵔ)', '今天恰三餐,一顿都不少 (๑˃̵ᴗ˂̵)'],
@@ -57,6 +57,24 @@ function bubble(c: CanvasRenderingContext2D, cx: number, by: number, text: strin
   c.beginPath(); c.moveTo(cx - 5, by - 1); c.lineTo(cx + 5, by - 1); c.lineTo(cx, by + 5); c.closePath(); c.fillStyle = 'rgba(255,255,255,.95)'; c.fill();
   c.fillStyle = '#17171c'; c.textAlign = 'center'; lines.forEach((l, i) => c.fillText(l, cx, y + 4 + i * lh));
   c.textBaseline = 'alphabetic';
+}
+// 运行时把金棕发染成紫色(给范范兔=主角女生);返回新 Image,避免文件 base64 round-trip 损坏
+function recolorHairPurple(img: HTMLImageElement): HTMLImageElement {
+  const out = new Image();
+  const c = document.createElement('canvas'); c.width = img.naturalWidth || 144; c.height = img.naturalHeight || 32;
+  const cx = c.getContext('2d'); if (!cx) { out.src = img.src; return out; }
+  cx.imageSmoothingEnabled = false; cx.drawImage(img, 0, 0);
+  try {
+    const id = cx.getImageData(0, 0, c.width, c.height), d = id.data;
+    const HAIR = [[57, 57, 24], [123, 115, 65], [205, 172, 98], [156, 140, 90]];
+    const PURP = [[74, 44, 104], [138, 84, 176], [198, 154, 232], [168, 118, 205]];
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 40) continue; const r = d[i], g = d[i + 1], b = d[i + 2];
+      for (let h = 0; h < HAIR.length; h++) { if (Math.hypot(r - HAIR[h][0], g - HAIR[h][1], b - HAIR[h][2]) < 26) { d[i] = PURP[h][0]; d[i + 1] = PURP[h][1]; d[i + 2] = PURP[h][2]; break; } }
+    }
+    cx.putImageData(id, 0, 0); out.src = c.toDataURL('image/png');
+  } catch { out.src = img.src; }
+  return out;
 }
 
 interface PP { mx: number; my: number; dir: string; moving: boolean; flip?: boolean }
@@ -142,7 +160,11 @@ export default function WorldView() {
     };
     const r = new Image(); r.src = BASE + 'sprites/chr-red_normal.png'; ocSprite.current = r;
     npcSprites.current = NPC_CHARS.map((n) => { const im = new Image(); im.src = BASE + 'sprites/chr-' + n + '.png'; return im; });
-    for (const nm in NAMED_SPRITE) { const im = new Image(); im.src = BASE + 'sprites/chr-' + NAMED_SPRITE[nm] + '.png'; named.current[nm] = im; }
+    for (const nm in NAMED_SPRITE) {
+      const im = new Image(); im.src = BASE + 'sprites/chr-' + NAMED_SPRITE[nm] + '.png';
+      if (nm === '范范兔') { im.onload = () => { named.current[nm] = recolorHairPurple(im); }; named.current[nm] = im; } // 主角女生:运行时把头发染紫
+      else named.current[nm] = im;
+    }
   }, []);
 
   // 真 LLM 气泡:开启「真 LLM」后,逐个角色每 ~3s 取一句 Claude 生成的主题台词,缓存覆盖离线库

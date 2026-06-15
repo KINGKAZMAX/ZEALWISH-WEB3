@@ -23,7 +23,7 @@ export interface SeedPersona {
 
 export const SEED_PERSONAS: SeedPersona[] = [
   // ── 在新加坡留学的伙伴们(原创角色;目前世界只保留这 5 位 + 主角小智)──
-  { name: '范范兔', handle: '@fanfan_bun', bio: '紫发主角造型(红白帽)的元气女生,ENFJ;刚入职的上班族,超爱笑、爱鼓励人,夜间动物园常客。', arche: 'socialite' },
+  { name: '范范兔', handle: '@fanfan_bun', bio: '紫发主角造型(红白帽)的超中二少女,自称黑暗紫焰使徒;白天是元气上班族,夜间动物园是她的「契约之地」,爱笑也爱演。', arche: 'socialite' },
   { name: '熊熊', handle: '@bearbear', bio: '抱抱型大熊,谁 emo 都来找她;最懂哪家叻沙最 shiok。', arche: 'helper' },
   { name: '鹿鹿鹅', handle: '@deer_goose', bio: '慢悠悠的文艺鹿,滨海湾看日落写诗,偶尔发呆像只鹅。', arche: 'creator' },
   { name: '猪猪仔', handle: '@piggy_makan', bio: '小贩中心活地图,海南鸡饭辣椒蟹一个不放过,佛系攒钱党。', arche: 'saver' },
