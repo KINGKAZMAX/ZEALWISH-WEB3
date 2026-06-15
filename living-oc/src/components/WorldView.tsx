@@ -23,11 +23,38 @@ const KANTO_POS: Record<string, [number, number]> = {
 const posOf = (id: string): [number, number] => KANTO_POS[id] || [0.5, 0.5];
 
 const NPC_CHARS = ['green_normal', 'boy', 'lass', 'youngster', 'fat_man', 'beauty', 'gentleman'];
+// 命名角色专属精灵(小智=Red 另外处理;5 个新加坡留学伙伴用对应 chr-*.png)
+const NAMED_SPRITE: Record<string, string> = {
+  '范范兔': 'fanfan', '熊熊': 'xiongxiong', '鹿鹿鹅': 'lulu', '猪猪仔': 'zhuzhu', '冰冰雁': 'bingbing',
+};
+// 头顶气泡台词库(联网研究:新加坡留学日常 + 夜间动物园)。LLM 接入后由后端实时生成替换。
+const LINE_BANKS: Record<string, string[]> = {
+  '小智': ['我的世界醒了…每个人都在好好过日子', '看着你们活起来,我也想活得更用力些', '在新加坡的她们,把日常过成了发光的样子', '今天也要创作、成长、拥有自己 ✦'],
+  '范范兔': ['今天又赶 A1 巴士赶到飞起,NUS 大到会迷路 lah', '海南鸡饭加辣椒酱…shiok 到流泪!', 'Kaya toast 配半生熟蛋,我原地满血复活~', '周末去看 Supertree 灯光秀,免费的快乐最甜 can', '夜间动物园的马来貘,黑白两截像系了围裙!', '占位用纸巾 chope 一下,这桌我的咯', 'Eh 你吃了没?走啦食阁见!'],
+  '熊熊': ['谁 emo 都来抱抱,熊熊在的 lah', '加东叻沙剪短米粉用勺子喝,最 shiok', '室内冷气冻到发抖,披我外套吧~', 'Deadline 别怕,先喝杯 teh tarik 压压惊', '夜间动物园水獭一家在吵架,可爱炸了', '组屋楼下就是巴刹,我跟卖鸡饭 auntie 都熟了'],
+  '鹿鹿鹅': ['滨海湾日落太美,我又发呆成一只鹅了…', '擎天树灯光秀 8:45 那场,想为它写首诗', '夜里靠月光找动物,黑暗里也有诗意 leh', '果蝠倒挂着啃水果,近到能数牙齿,绝了', '炒粿条要够镬气 wok hei,焦香才入魂'],
+  '猪猪仔': ['食阁一餐才 3 块钱,比自己煮还便宜 can!', '辣椒蟹满手酱,馒头蘸完我又点一份,paiseh', '沙爹配花生酱,晚上烤串最香 lah', '佛系攒钱党,但美食面前钱包自动打开 lor', '夜间动物园穿山甲一卷成球,可爱到犯规', '小贩中心是 UNESCO 非遗,我替它骄傲(继续恰)'],
+  '冰冰雁': ['图书馆通宵 mugging,bell curve 我必须赢', '高冷如我,只在夜行动物面前破功微笑', 'MRT 早高峰挤成沙丁鱼,我被压成 2D 了 lor', 'Creatures of the Night 表演,水獭比我会演', '闪光灯不要开啦!会吓到夜行动物 sia', '波动率万岁,但叻沙的性价比更稳 lah'],
+};
 const FRAME: Record<string, { idle: number; walk: [number, number] }> = {
   down: { idle: 0, walk: [3, 4] }, up: { idle: 5, walk: [6, 5] }, side: { idle: 2, walk: [7, 8] },
 };
 
 function hue(s: string): number { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h % 360; }
+function rrect(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+// 头顶对话气泡(cx=中心,by=气泡底部 y)
+function bubble(c: CanvasRenderingContext2D, cx: number, by: number, text: string) {
+  c.font = '11px "Noto Sans SC", ui-monospace, monospace'; c.textBaseline = 'top';
+  const per = 13, lines: string[] = []; for (let i = 0; i < text.length; i += per) lines.push(text.slice(i, i + per));
+  const lh = 15, w = Math.max(...lines.map((l) => c.measureText(l).width)) + 16, h = lines.length * lh + 8, x = cx - w / 2, y = by - h;
+  c.fillStyle = 'rgba(255,255,255,.95)'; c.strokeStyle = 'rgba(255,45,45,.45)'; c.lineWidth = 1.2;
+  rrect(c, x, y, w, h, 7); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(cx - 5, by - 1); c.lineTo(cx + 5, by - 1); c.lineTo(cx, by + 5); c.closePath(); c.fillStyle = 'rgba(255,255,255,.95)'; c.fill();
+  c.fillStyle = '#17171c'; c.textAlign = 'center'; lines.forEach((l, i) => c.fillText(l, cx, y + 4 + i * lh));
+  c.textBaseline = 'alphabetic';
+}
 
 interface PP { mx: number; my: number; dir: string; moving: boolean; flip?: boolean }
 
@@ -70,10 +97,11 @@ export default function WorldView() {
   const apos = useRef(new Map<string, PP>());
   const cam = useRef({ cx: MAP_W * 0.55, cy: MAP_H * 0.15 });
   const view = useRef({ sx: 0, sy: 0 });
-  const mapImg = useRef<HTMLImageElement | null>(null);
+  const mapImg = useRef<CanvasImageSource | null>(null);
   const collide = useRef<{ d: Uint8ClampedArray; cw: number; ch: number; cs: number } | null>(null);
   const ocSprite = useRef<HTMLImageElement | null>(null);
   const npcSprites = useRef<HTMLImageElement[]>([]);
+  const named = useRef<Record<string, HTMLImageElement>>({});
   const ctrlRef = useRef<string | null>(null); ctrlRef.current = controlId ?? ocId;
   const nearRef = useRef<string | null>(null);
   const lastT = useRef(0);
@@ -83,13 +111,22 @@ export default function WorldView() {
 
   useEffect(() => {
     const t = new Image(); t.src = BASE + 'sprites/' + MAP_SRC; t.onload = () => {
-      mapImg.current = t;
+      // 碰撞图:原图降采样(白/透明 = 阻挡,玩家只在真实陆地走)
       const cs = 8, cw = Math.ceil(MAP_W / cs), ch = Math.ceil(MAP_H / cs);
       const cc = document.createElement('canvas'); cc.width = cw; cc.height = ch;
       const cx2 = cc.getContext('2d'); if (cx2) { cx2.drawImage(t, 0, 0, MAP_W, MAP_H, 0, 0, cw, ch); collide.current = { d: cx2.getImageData(0, 0, cw, ch).data, cw, ch, cs }; }
+      // 渲染源:把白/透明填成草绿 → 去掉白色、合并成无缝大地图
+      const fc = document.createElement('canvas'); fc.width = MAP_W; fc.height = MAP_H;
+      const fx = fc.getContext('2d');
+      if (fx) {
+        fx.fillStyle = '#5b9c4a'; fx.fillRect(0, 0, MAP_W, MAP_H); fx.drawImage(t, 0, 0);
+        try { const id = fx.getImageData(0, 0, MAP_W, MAP_H), d = id.data; for (let i = 0; i < d.length; i += 4) if (d[i] > 228 && d[i + 1] > 228 && d[i + 2] > 228) { d[i] = 91; d[i + 1] = 156; d[i + 2] = 74; } fx.putImageData(id, 0, 0); } catch { /* taint 等异常则用原绿底图 */ }
+        mapImg.current = fc;
+      } else mapImg.current = t;
     };
     const r = new Image(); r.src = BASE + 'sprites/chr-red_normal.png'; ocSprite.current = r;
     npcSprites.current = NPC_CHARS.map((n) => { const im = new Image(); im.src = BASE + 'sprites/chr-' + n + '.png'; return im; });
+    for (const nm in NAMED_SPRITE) { const im = new Image(); im.src = BASE + 'sprites/chr-' + NAMED_SPRITE[nm] + '.png'; named.current[nm] = im; }
   }, []);
 
   useEffect(() => {
@@ -181,7 +218,7 @@ export default function WorldView() {
         const isOc = id === ocId, isCtrl = id === ctrl, isNear = id === near;
         const cW = TILE * 1.05, cH = cW * 2;
         const fr = FRAME[pp.dir] || FRAME.down; const fi = pp.moving ? fr.walk[t % 2] : fr.idle;
-        const img = isOc ? ocSprite.current : npcSprites.current[hue(id) % npcSprites.current.length];
+        const img = isOc ? ocSprite.current : (named.current[a.name] || npcSprites.current[hue(id) % npcSprites.current.length]);
         const flip = pp.flip && pp.dir === 'side';
         ctx.fillStyle = 'rgba(0,0,0,.34)'; ctx.beginPath(); ctx.ellipse(sx, sy + 1, cW * 0.34, cW * 0.13, 0, 0, 7); ctx.fill();
         if (isCtrl) { ctx.strokeStyle = '#ff2d2d'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(sx, sy - cH * 0.36, cW * 0.85, 0, 7); ctx.stroke(); }
@@ -196,6 +233,9 @@ export default function WorldView() {
         ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.85)'; ctx.strokeText(label, sx, sy + 14);
         ctx.fillStyle = isCtrl ? '#ff2d2d' : 'rgba(245,245,247,.95)'; ctx.fillText(label, sx, sy + 14);
         if (isNear) { ctx.fillStyle = 'rgba(255,210,80,.95)'; ctx.font = '10px ui-monospace, monospace'; ctx.fillText('空格 · 交互', sx, sy - cH - 4); }
+        // 头顶对话气泡(命名角色:小智 + 5 个新加坡留学伙伴)
+        const bank = LINE_BANKS[a.name];
+        if (bank && bank.length) bubble(ctx, sx, sy - cH - (isNear ? 18 : 6), bank[(Math.floor(now / 9000) + hue(id)) % bank.length]);
       }
       } catch { /* 单帧出错不冻结 */ }
       raf = requestAnimationFrame(draw);

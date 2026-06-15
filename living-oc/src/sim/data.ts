@@ -30,6 +30,12 @@ export const SEED_PERSONAS: SeedPersona[] = [
   { name: 'Nyx', handle: '@nyx_void', bio: '风险成瘾者,破产三次仍在 all in。', arche: 'gambler' },
   { name: '青禾', handle: '@greenseed', bio: '攒币的稳健派,梦想是买下一整座画廊。', arche: 'saver' },
   { name: 'Orin', handle: '@orin_mint', bio: '铸造画廊常驻,把情绪做成 NFT 系列。', arche: 'creator' },
+  // ── 在新加坡留学的伙伴们(原创角色)──
+  { name: '范范兔', handle: '@fanfan_bun', bio: '短发软妹兔,NUS 在读,蹦蹦跳跳到处恰饭,夜间动物园常客。', arche: 'socialite' },
+  { name: '熊熊', handle: '@bearbear', bio: '抱抱型大熊,谁 emo 都来找她;最懂哪家叻沙最 shiok。', arche: 'helper' },
+  { name: '鹿鹿鹅', handle: '@deer_goose', bio: '慢悠悠的文艺鹿,滨海湾看日落写诗,偶尔发呆像只鹅。', arche: 'creator' },
+  { name: '猪猪仔', handle: '@piggy_makan', bio: '小贩中心活地图,海南鸡饭辣椒蟹一个不放过,佛系攒钱党。', arche: 'saver' },
+  { name: '冰冰雁', handle: '@frost_wild', bio: '高冷理科雁,实验室和考场杀手,只在夜行动物前露出笑。', arche: 'trader' },
 ];
 
 export const ARCHE_TRAITS: Record<Archetype, Traits> = {
