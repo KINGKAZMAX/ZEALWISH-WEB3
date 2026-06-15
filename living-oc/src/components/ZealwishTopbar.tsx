@@ -16,7 +16,7 @@ export default function ZealwishTopbar({ view, setView }: { view: View; setView:
     <header className="zw-topbar">
       <div className="zw-left">
         <span className="zw-brand">ZEALWISH</span>
-        <span className="zw-product">活世界 · LIVING OC</span>
+        <span className="zw-product">LIVING OC</span>
       </div>
       {oc && (
         <nav className="zw-nav">
