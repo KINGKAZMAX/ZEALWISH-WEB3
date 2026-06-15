@@ -24,13 +24,13 @@ export default function WorldGoLive({ onClose }: { onClose: () => void }) {
           <div className="gl-toggle">
             <div className="gl-d"><b>B · 真 Claude 大脑</b><br />群演 <code>claude-haiku-4-5</code> 逐 tick,导演 <code>claude-opus-4-8</code> 反思。人格台词由模型实时生成。</div>
             <button className={'btn' + (liveMode.cognition === 'live' ? ' primary' : '')} onClick={() => setLiveMode({ cognition: liveMode.cognition === 'live' ? 'scripted' : 'live' })}>
-              {liveMode.cognition === 'live' ? '● 已开(待后端)' : '○ 切到真 Claude'}
+              {liveMode.cognition === 'live' ? '● 已切真(连后端)' : '○ 切到真 Claude'}
             </button>
           </div>
           <div className="gl-toggle">
             <div className="gl-d"><b>C · 真 Base Sepolia 链</b><br />viem + AgentKit:每个 OC 一个 ERC-4337 智能账户,转账/铸 NFT 真实上链。</div>
             <button className={'btn' + (liveMode.chain === 'live' ? ' primary' : '')} onClick={() => setLiveMode({ chain: liveMode.chain === 'live' ? 'mock' : 'live' })}>
-              {liveMode.chain === 'live' ? '● 已开(待后端)' : '○ 切到真 Base'}
+              {liveMode.chain === 'live' ? '● 已切真(连后端)' : '○ 切到真 Base'}
             </button>
           </div>
 
@@ -44,7 +44,7 @@ export default function WorldGoLive({ onClose }: { onClose: () => void }) {
             ))}
           </div>
 
-          <p className="gl-note">⚠ B/C 的"真接"需要一个服务端(把 key 留在后端、签链上交易);浏览器直连会泄露 key。当前 living-oc 是纯前端,所以这两档是<b>接缝预留</b>——离线引擎(A)持续运行不受影响。下一步可加一个轻后端(Next.js API / 小 Express)来真正点亮 B/C(需 Anthropic key + Base Sepolia 测试币)。</p>
+          <p className="gl-note">⚠ B/C 的"真接"由 <code>living-oc/server</code> 轻后端承载(key 只留后端、链上交易在后端签;浏览器直连会泄露 key)。点亮步骤:<code>cd living-oc/server && npm i</code>,把 <code>.env.example</code> 复制为 <code>.env</code> 填入 <b>ANTHROPIC_API_KEY</b>(B)与有测试币的 <b>DEPLOYER_PRIVATE_KEY</b>(C,Base Sepolia 水龙头领币),<code>npm start</code>。未配/未启时这里切真也会自动回退离线引擎(A),世界不受影响。</p>
         </div>
       </div>
     </div>

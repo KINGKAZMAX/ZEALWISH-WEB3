@@ -17,6 +17,20 @@ npx vitest run                       # 12 tests
 npx tsc --noEmit -p tsconfig.app.json
 ```
 
+## 切真 LLM / 真链(B / C,可选)
+
+世界视图右上「⚡ 切换真 LLM / 真链」可把两条接缝换成真实实现,由 `living-oc/server` 轻后端承载(密钥只留后端):
+
+```bash
+cd living-oc/server && npm i && cp .env.example .env   # 填 ANTHROPIC_API_KEY(B)/ DEPLOYER_PRIVATE_KEY(C)
+npm start                                              # http://localhost:8788
+```
+
+- **B · 真 Claude 大脑**:群演逐 tick 用 `claude-haiku-4-5` 决策,导演用 `claude-opus-4-8` 反思,台词实时生成。
+- **C · 真 Base Sepolia 链**:`viem` 在 Base Sepolia 测试网产生可验证的真实 `txHash`。
+
+未配密钥/未启后端时,切真会自动回退离线引擎(A),世界不受影响。详见 [`server/README.md`](server/README.md)。
+
 ## 架构
 
 - `src/sim/` — 确定性生命引擎(单主角私有世界:`createPrivateWorld`/`runDay`)+ 记忆沉淀(`scoreImportance`/`retrieve`)+ 反思日记(`reflectToDiary`)+ 记忆驱动对话(`openingLine`/`replyTo`)。认知默认离线脚本,留有 ✦ Claude 切换缝。

@@ -1,21 +1,25 @@
 import { create } from 'zustand';
-import type { Archetype, DayResult, MemoryEvent, WorldState } from '../sim/types';
+import type { Archetype, DayResult, MemoryEvent, WorldState, Providers } from '../sim/types';
 import { createOc, sedimentGuidance, type OC } from '../oc/oc';
 import { runDay, step, flushInputs } from '../sim/step';
 import { createPrivateWorld } from '../sim/world';
 import { reflectToDiary } from '../sim/systems/memory';
 import { ScriptedCognitionProvider } from '../sim/providers/cognition';
+import { LiveCognitionProvider, LiveChainProvider } from '../live/liveProviders';
 import { openingLine, replyTo } from '../sim/providers/chat';
 import { saveOc, loadOc } from '../oc/persist';
 
-function providers() {
+const mockChain = { mode: 'mock' as const, async transfer() { return { ok: true }; }, async mintNFT() { return { ok: true }; } };
+const media = { mode: 'stub' as const, imageFor: (s: string) => s };
+function buildProviders(lm: { cognition: 'scripted' | 'live'; chain: 'mock' | 'live' }): Providers {
   return {
-    cognition: new ScriptedCognitionProvider(),
-    chain: { mode: 'mock' as const, async transfer() { return { ok: true }; }, async mintNFT() { return { ok: true }; } },
-    media: { mode: 'stub' as const, imageFor: (s: string) => s },
+    cognition: lm.cognition === 'live' ? new LiveCognitionProvider() : new ScriptedCognitionProvider(),
+    chain: lm.chain === 'live' ? new LiveChainProvider() : mockChain,
+    media,
   };
 }
-const worldP = providers(); // 世界视图用(无状态,可复用)
+function providers(): Providers { return buildProviders({ cognition: 'scripted', chain: 'mock' }); }
+let worldP = providers(); // 世界视图用;切真 LLM/链时由 setLiveMode 重建
 
 export function livingActions(seed: string) {
   const p = providers();
@@ -138,5 +142,5 @@ export const useLiving = create<LivingState>((set, get) => ({
     const world = createPrivateWorld(clone, get().seed + ':world' + worldSeq);
     set({ world, worldRunning: false, version: get().version + 1 });
   },
-  setLiveMode(m) { set({ liveMode: { ...get().liveMode, ...m }, version: get().version + 1 }); },
+  setLiveMode(m) { const lm = { ...get().liveMode, ...m }; worldP = buildProviders(lm); set({ liveMode: lm, version: get().version + 1 }); },
 }));

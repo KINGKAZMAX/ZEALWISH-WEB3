@@ -1,0 +1,18 @@
+{
+  "name": "living-oc-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ZEALWISH 活世界 — 轻后端:B(真 Claude 群演/导演)+ C(Base Sepolia 真链)。前端纯静态,密钥只留后端。",
+  "scripts": {
+    "start": "node index.mjs",
+    "dev": "node --watch index.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "viem": "^2.21.0"
+  }
+}
