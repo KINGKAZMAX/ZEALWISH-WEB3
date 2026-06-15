@@ -1,10 +1,24 @@
-:root{--ink:#0a0a0b;--panel:#16161a;--line:rgba(245,245,247,.1);--text:#f5f5f7;--muted:#a0a0a8;--red:#ff2d2d;}
+:root{
+  --ink:#0a0a0b;--panel:#16161a;--surface3:#1d1d23;--line:rgba(245,245,247,.1);--line-strong:rgba(245,245,247,.16);
+  --text:#f5f5f7;--muted:rgba(245,245,247,.64);--faint:rgba(245,245,247,.4);
+  --red:#ff2d2d;--red-deep:#c81e1e;--red-glow:rgba(255,45,45,.35);--red-soft:rgba(255,45,45,.12);
+  --font-display:'Teko','Archivo','Noto Sans SC',system-ui,sans-serif;
+  --font-body:'Archivo','Noto Sans SC',system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--ink);color:var(--text);font-family:system-ui,'Noto Sans SC',sans-serif}
+body{background:var(--ink);color:var(--text);font-family:var(--font-body);-webkit-font-smoothing:antialiased}
 .app{max-width:1000px;margin:0 auto;padding:20px}
-.app.create{max-width:480px;text-align:center;padding-top:18vh}
-.app.create p{color:var(--muted);margin:10px 0 18px}
-h1{font-size:28px;letter-spacing:1px}
+.app.create{max-width:520px;text-align:center;padding-top:13vh}
+.create-kicker{font-family:var(--font-mono);font-size:11px;letter-spacing:.3em;color:var(--red);margin-bottom:12px}
+.app.create h1{font-size:66px}
+.app.create h1 span{color:var(--muted);font-size:30px;letter-spacing:.05em}
+.app.create p{color:var(--muted);margin:12px auto 20px;max-width:430px;line-height:1.65}
+.create-row{display:flex;gap:10px;max-width:390px;margin:0 auto}
+.create-row input{flex:1}
+.create-tag{margin-top:28px;color:var(--faint);font-size:13px}
+.create-tag b{color:var(--text)}
+h1{font-family:var(--font-display);font-weight:700;letter-spacing:.02em;line-height:.9}
 .oc-header{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}
 .oc-header .nm{font-size:20px} .oc-header .hd{color:var(--muted);font-size:13px}
 .oc-header .meta{color:var(--muted);font-size:12px;margin-top:4px}
@@ -121,3 +135,23 @@ input{background:var(--panel);color:var(--text);border:1px solid var(--line);bor
 .gl-old{color:var(--muted);text-decoration:line-through;font-size:11px}
 .gl-new{color:#e3a948;font-size:12px}
 .gl-note{font-size:12px;color:var(--muted);background:rgba(255,45,45,.06);border:1px solid rgba(255,45,45,.25);border-radius:8px;padding:10px 12px;line-height:1.7}
+
+/* ── ZEALWISH 产品外壳:顶栏(字标 + 导航 + 钱包 chip)── */
+.zw-topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:18px;height:62px;padding:0 clamp(16px,4vw,40px);
+  background:linear-gradient(180deg,rgba(10,10,11,.97),rgba(10,10,11,.8));border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
+.zw-left{display:flex;align-items:baseline;gap:12px}
+.zw-brand{font-family:var(--font-display);font-size:36px;font-weight:700;letter-spacing:.05em;line-height:1}
+.zw-product{font-size:10px;letter-spacing:.24em;color:var(--muted);text-transform:uppercase}
+.zw-nav{display:flex;gap:6px;margin-left:6px}
+.zw-nav button{background:transparent;border:1px solid transparent;color:var(--muted);font-family:var(--font-mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;padding:7px 16px;border-radius:22px;cursor:pointer}
+.zw-nav button:hover{color:var(--text);border-color:var(--line)}
+.zw-nav button.on{color:#0a0a0b;background:var(--red);border-color:var(--red);font-weight:700}
+.zw-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.zw-chip{display:flex;align-items:center;gap:9px;padding:5px 14px 5px 6px;border:1px solid var(--line);border-radius:24px;background:var(--panel)}
+.zw-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;border:1px solid var(--line-strong)}
+.zw-id{display:flex;flex-direction:column;line-height:1.2}
+.zw-id b{font-size:13px;font-weight:600}.zw-star{color:var(--red);font-size:11px}
+.zw-id i{font-style:normal;font-size:10px;color:var(--muted);font-family:var(--font-mono);letter-spacing:.02em}
+.zw-export{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:22px;padding:8px 14px;font-size:11px;cursor:pointer;letter-spacing:.05em}
+.zw-export:hover{border-color:var(--red);color:var(--red)}
+@media(max-width:760px){.zw-product{display:none}.zw-id{display:none}.zw-brand{font-size:30px}.zw-chip{padding:5px}.zw-nav button{padding:7px 11px}}
