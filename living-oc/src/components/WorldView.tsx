@@ -17,10 +17,11 @@ const TILE = 16 * MAP_SCALE;           // 屏上一格 = 32
 const SPEED = 150;                     // 手控速度(地图 px/秒)
 const NPC_SPEED = 78;                  // 自治居民速度
 const INTERACT_R = 30;                 // 交互半径(地图 px)
-// 6 个 ZEALWISH 地点在关都地图上的位置(归一化;散布在各镇)
+// 6 个 ZEALWISH 地点 = 初始海边据点:东海岸一处海景小屋绿地小岬
+// (四面环海 + 木码头 + 花园),角色在海边草坪聚会。坐标由地图像素扫描定位。
 const KANTO_POS: Record<string, [number, number]> = {
-  gallery: [0.45, 0.15], harbor: [0.49, 0.15], plaza: [0.53, 0.15],
-  bazaar: [0.57, 0.15], commons: [0.61, 0.15], forge: [0.65, 0.15],
+  gallery: [0.9802, 0.5853], harbor: [0.9692, 0.5853], plaza: [0.9784, 0.5916],
+  bazaar:  [0.9643, 0.5934], commons: [0.9612, 0.5859], forge: [0.9612, 0.6022],
 };
 const posOf = (id: string): [number, number] => KANTO_POS[id] || [0.5, 0.5];
 
@@ -119,7 +120,7 @@ export default function WorldView() {
   const ref = useRef<HTMLCanvasElement>(null);
   const keys = useRef<Set<string>>(new Set());
   const apos = useRef(new Map<string, PP>());
-  const cam = useRef({ cx: MAP_W * 0.55, cy: MAP_H * 0.15 });
+  const cam = useRef({ cx: MAP_W * 0.9731, cy: MAP_H * 0.5966 });
   const view = useRef({ sx: 0, sy: 0 });
   const mapImg = useRef<CanvasImageSource | null>(null);
   const collide = useRef<{ d: Uint8ClampedArray; cw: number; ch: number; cs: number } | null>(null);
