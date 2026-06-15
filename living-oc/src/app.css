@@ -55,7 +55,7 @@ input{background:var(--panel);color:var(--text);border:1px solid var(--line);bor
   background:radial-gradient(circle at 50% 118%,rgba(255,45,45,.07),transparent 55%),#0b0b0d}
 .worldcanvas{width:100%;height:100%;display:block}
 .world-feed{height:440px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel)}
-.wpost{padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.5}
+.wpost{padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.5;font-family:var(--world-font)}
 .wpost b{color:var(--text);font-weight:600;margin-right:6px}
 .wpost .wtext{color:#d9d4c6}
 .wpost.ev-transfer{background:linear-gradient(90deg,rgba(227,169,72,.06),transparent)}
@@ -157,7 +157,7 @@ input{background:var(--panel);color:var(--text);border:1px solid var(--line);bor
 @media(max-width:760px){.zw-product{display:none}.zw-id{display:none}.zw-brand{font-size:30px}.zw-chip{padding:5px}.zw-nav button{padding:7px 11px}}
 
 /* ── 全屏沉浸世界 + 浮层 HUD ── */
-.world-fs{position:relative;width:100%;height:calc(100vh - 62px);overflow:hidden;background:#0b0b0d}
+.world-fs{position:relative;width:100%;height:calc(100vh - 62px);overflow:hidden;background:#0b0b0d;--world-font:var(--font-body)}
 .world-canvas2{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none;cursor:pointer}
 .hud{position:absolute;z-index:5;font-family:var(--font-mono)}
 .hud-tl{left:18px;top:14px}
@@ -179,6 +179,16 @@ input{background:var(--panel);color:var(--text);border:1px solid var(--line);bor
 .hud-x{position:absolute;right:8px;top:8px;background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;z-index:2}
 .hud-talk{left:50%;transform:translateX(-50%);bottom:24px;width:min(660px,82vw);background:rgba(12,12,15,.95);border:2px solid var(--red);border-radius:12px;padding:13px 18px 11px;cursor:pointer;box-shadow:0 10px 44px rgba(0,0,0,.55);backdrop-filter:blur(10px);z-index:8}
 .talk-name{font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;color:var(--red);margin-bottom:5px}
-.talk-text{font-size:17px;line-height:1.5;color:var(--text);min-height:26px}
+.talk-text{font-size:17px;line-height:1.5;color:var(--text);min-height:26px;font-family:var(--world-font)}
 .talk-hint{margin-top:8px;font-size:10px;color:var(--muted);text-align:right}
+/* 字体选择器(世界 HUD) */
+.hud-sel{font-family:var(--font-mono);font-size:11px;color:var(--muted);background:rgba(10,10,11,.62);border:1px solid var(--line);border-radius:14px;padding:6px 9px;cursor:pointer;backdrop-filter:blur(8px);outline:none}
+.hud-sel:hover{color:var(--text);border-color:var(--red)}
+.hud-sel option{background:#16161a;color:var(--text)}
+/* 交互动作菜单 */
+.talk-menu{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.talk-act{flex:1 1 auto;min-width:88px;font-family:var(--world-font);font-size:15px;color:var(--text);background:rgba(255,255,255,.06);border:1px solid var(--line-strong);border-radius:10px;padding:9px 12px;cursor:pointer;transition:all .12s;text-align:center}
+.talk-act:hover{background:var(--red-soft);border-color:var(--red);transform:translateY(-1px)}
+.talk-act small{display:block;font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--font-mono)}
+.talk-prompt{font-family:var(--world-font);font-size:13px;color:var(--muted);margin-bottom:9px}
 @media(max-width:760px){.hud-feed,.hud-insp{width:min(48vw,260px)}.hud-keys{display:none}.hud-tr{max-width:54vw}}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLiving } from '../store/useLiving';
 import { LOCATIONS, locById, ARCHE_CN } from '../sim/data';
 import { actionCN } from '../sim/text';
@@ -43,14 +43,42 @@ const LINE_BANKS: Record<string, string[]> = {
 const FRAME: Record<string, { idle: number; walk: [number, number] }> = {
   down: { idle: 0, walk: [3, 4] }, up: { idle: 5, walk: [6, 5] }, side: { idle: 2, walk: [7, 8] },
 };
+// 可自由选择的世界字体(系统中文字体栈,无需联网加载;同时作用于 canvas 文字与 HTML HUD)
+const FONTS: { id: string; name: string; css: string }[] = [
+  { id: 'rounded', name: '圆体', css: '"Yuanti SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif' },
+  { id: 'sans', name: '黑体', css: '"PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif' },
+  { id: 'kai', name: '楷体', css: '"Kaiti SC","STKaiti",KaiTi,"Noto Serif SC",serif' },
+  { id: 'song', name: '宋体', css: '"Songti SC","Noto Serif SC",SimSun,serif' },
+  { id: 'mono', name: '像素等宽', css: 'ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace' },
+];
+const FONT_DEFAULT = FONTS[0].css;
+// 角色之间的亲密相会:成对的「呼应」台词(a 说上句,b 接下句)
+const PAIR_LINES: [string, string][] = [
+  ['一起去恰叻沙好不好~ (´▽`)', '好呀好呀,今天我请客!(つ≧▽≦)つ'],
+  ['今晚夜间动物园,约吗?', '约!带上我的小水獭表情包 (＾• ω •＾)'],
+  ['你最近好辛苦,抱一个 (つ´∀`)つ', '呜…有你在真好 (｡•́︿•̀｡)'],
+  ['滨海湾看日落?我写诗你拍照 ✧', '成交~ 你的诗最好看了 (˘︶˘)'],
+  ['偷偷说,布丁我留给你啦 (¬‿¬)', '哇!你对我最好了 ♥'],
+  ['周末一起去小贩中心扫街?', '走!海南鸡饭辣椒蟹全都要 (๑´ڡ`๑)'],
+  ['手给我,人太多别走丢 (´｡• ᵕ •｡`)', '嗯!牵紧紧的 (//ω//)'],
+  ['考完试啦?抱抱奖励你 (づ｡◕‿‿◕｡)づ', '嘿嘿…再抱一会儿 (˶′◡‵˶)'],
+];
+// 玩家走近伙伴后的互动动作菜单
+const ACTIONS: { id: string; label: string; sub: string; glyph: string }[] = [
+  { id: 'chat',   label: '闲聊', sub: '唠唠日常', glyph: '♪' },
+  { id: 'praise', label: '夸夸', sub: '+好感',   glyph: '✦' },
+  { id: 'meal',   label: '约饭', sub: '去恰美食', glyph: '✿' },
+  { id: 'hug',    label: '抱抱', sub: '+亲密',   glyph: '♥' },
+  { id: 'follow', label: '陪走', sub: '一起散步', glyph: '🚶' },
+];
 
 function hue(s: string): number { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h % 360; }
 function rrect(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
 }
 // 头顶对话气泡(cx=中心,by=气泡底部 y)
-function bubble(c: CanvasRenderingContext2D, cx: number, by: number, text: string) {
-  c.font = '11px "Noto Sans SC", ui-monospace, monospace'; c.textBaseline = 'top';
+function bubble(c: CanvasRenderingContext2D, cx: number, by: number, text: string, fam: string) {
+  c.font = '12px ' + fam; c.textBaseline = 'top';
   const per = 13, lines: string[] = []; for (let i = 0; i < text.length; i += per) lines.push(text.slice(i, i + per));
   const lh = 15, w = Math.max(...lines.map((l) => c.measureText(l).width)) + 16, h = lines.length * lh + 8, x = cx - w / 2, y = by - h;
   c.fillStyle = 'rgba(255,255,255,.95)'; c.strokeStyle = 'rgba(255,45,45,.45)'; c.lineWidth = 1.2;
@@ -115,6 +143,9 @@ export default function WorldView() {
   const [inspId, setInspId] = useState<string | null>(null);
   const [feedOpen, setFeedOpen] = useState(true);
   const [bgmOn, setBgmOn] = useState(false);
+  const [font, setFont] = useState<string>(() => {
+    try { return localStorage.getItem('oc-world-font') || FONT_DEFAULT; } catch { return FONT_DEFAULT; }
+  });
   const [, setTalkVer] = useState(0);
 
   const ref = useRef<HTMLCanvasElement>(null);
@@ -132,8 +163,18 @@ export default function WorldView() {
   const lastT = useRef(0);
   const liveLines = useRef<Map<string, string>>(new Map());  // 真 LLM 气泡台词缓存
   const liveRef = useRef(false); liveRef.current = liveMode.cognition === 'live';
-  const talkRef = useRef<{ withId: string; lines: { name: string; text: string }[]; i: number } | null>(null);
+  const fontRef = useRef(font); fontRef.current = font;
+  const talkRef = useRef<{ withId: string; lines?: { name: string; text: string }[]; i: number; menu?: boolean } | null>(null);
   const bumpTalk = () => setTalkVer((v) => v + 1);
+  // ── 互动:飘心表情 / 好感度 / 陪走 / NPC 亲密相会 ──
+  const emotes = useRef<{ mx: number; my: number; glyph: string; born: number }[]>([]);
+  const affinity = useRef<Map<string, number>>(new Map());
+  const companionRef = useRef<string | null>(null);
+  const meetRef = useRef<{ a: string; b: string; until: number; met: boolean; lastHeart: number } | null>(null);
+  const nextMeetAt = useRef(0);
+  const meetLines = useRef<Map<string, string>>(new Map());
+  const popEmote = (mx: number, my: number, glyph: string) => { emotes.current.push({ mx, my, glyph, born: performance.now() }); if (emotes.current.length > 48) emotes.current.shift(); };
+  const pairKey = (a: string, b: string) => [a, b].sort().join('|');
 
   useEffect(() => { setRun(true); }, [setRun]);
   // 进世界后首次交互自动轻声播放 BGM(符合浏览器自动播放策略)
@@ -203,14 +244,40 @@ export default function WorldView() {
     if (!lines) lines = offlineTalk(me.name, fr);
     talkRef.current = { withId: friendId, lines, i: 0 }; bumpTalk();
   };
+  // 走近伙伴 → 打开互动动作菜单
+  const openMenu = (friendId: string) => { talkRef.current = { withId: friendId, i: 0, menu: true }; bumpTalk(); };
+  // 执行一个互动动作:闲聊(可接 LLM)/ 夸夸 / 约饭 / 抱抱 / 陪走
+  const doAction = (friendId: string, action: string) => {
+    const w = useLiving.getState().world; if (!w) return;
+    const fr = w.agents[friendId]; const meId = ctrlRef.current; const me = (meId && w.agents[meId]) || null; if (!fr || !me || !meId) return;
+    if (action === 'chat') { void startTalk(friendId); return; }
+    if (action === 'follow') {
+      const on = companionRef.current === friendId; companionRef.current = on ? null : friendId;
+      const fp = apos.current.get(friendId); if (fp) popEmote(fp.mx, fp.my - 36, on ? '✦' : '♥');
+      talkRef.current = null; bumpTalk(); return;
+    }
+    const fb = LINE_BANKS[fr.name] || ['嗨~']; const s = Math.floor(Date.now() / 1000);
+    let lines: { name: string; text: string }[];
+    let glyph = '♪', gain = 1;
+    if (action === 'praise') { glyph = '✦'; gain = 2; lines = [{ name: me.name, text: `${fr.name},你今天也超棒的!` }, { name: fr.name, text: fb[s % fb.length] }, { name: me.name, text: '嘿嘿…真心的。' }]; }
+    else if (action === 'meal') { glyph = '✿'; gain = 2; lines = [{ name: me.name, text: `${fr.name},一起去恰个饭?` }, { name: fr.name, text: fb[(s + 1) % fb.length] }, { name: me.name, text: '走!我跟你去。' }]; }
+    else { glyph = '♥'; gain = 3; lines = [{ name: me.name, text: `${fr.name},来抱一个 (つ´∀\`)つ` }, { name: fr.name, text: fb[(s + 2) % fb.length] }]; } // hug
+    const fp = apos.current.get(friendId), mp = apos.current.get(meId);
+    if (fp) popEmote(fp.mx, fp.my - 36, glyph); if (mp) popEmote(mp.mx, mp.my - 36, glyph);
+    const key = pairKey(meId, friendId); affinity.current.set(key, (affinity.current.get(key) || 0) + gain);
+    talkRef.current = { withId: friendId, lines, i: 0 }; bumpTalk();
+  };
 
   useEffect(() => {
     const dn = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
       if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) { keys.current.add(k); e.preventDefault(); }
       if (k === ' ') {
-        if (talkRef.current) { talkRef.current.i++; if (talkRef.current.i >= talkRef.current.lines.length) talkRef.current = null; bumpTalk(); }
-        else if (nearRef.current) void startTalk(nearRef.current);
+        const tk = talkRef.current;
+        if (tk) {
+          if (tk.menu) { talkRef.current = null; bumpTalk(); }           // 菜单中按空格 = 关闭
+          else { tk.i++; if (!tk.lines || tk.i >= tk.lines.length) talkRef.current = null; bumpTalk(); }
+        } else if (nearRef.current) openMenu(nearRef.current);           // 走近按空格 = 打开互动菜单
       }
     };
     const up = (e: KeyboardEvent) => keys.current.delete(e.key.toLowerCase());
@@ -256,9 +323,43 @@ export default function WorldView() {
           if (pp.moving) { pp.dir = Math.abs(vx) > Math.abs(vy) ? 'side' : (vy < 0 ? 'up' : 'down'); pp.flip = vx > 0; }
         } else {
           const jx = (hue('x' + id) / 360 - 0.5) * 44, jy = (hue('y' + id) / 360 - 0.5) * 44;
-          const tx = anchor[0] * MAP_W + jx, ty = anchor[1] * MAP_H + jy, ddx = tx - pp.mx, ddy = ty - pp.my, dist = Math.hypot(ddx, ddy);
+          let tx = anchor[0] * MAP_W + jx, ty = anchor[1] * MAP_H + jy;
+          const m = meetRef.current;
+          if (companionRef.current === id && ctrl) {
+            const cp = apos.current.get(ctrl); if (cp) { tx = cp.mx - 30 + jx * 0.35; ty = cp.my + 6 + jy * 0.35; } // 陪走:跟在玩家身后
+          } else if (m && (id === m.a || id === m.b)) {
+            const op = apos.current.get(id === m.a ? m.b : m.a);                                                   // 相会:走向对方,留间距
+            if (op) { const ang = Math.atan2(op.my - pp.my, op.mx - pp.mx); tx = op.mx - Math.cos(ang) * 22; ty = op.my - Math.sin(ang) * 22; }
+          }
+          const ddx = tx - pp.mx, ddy = ty - pp.my, dist = Math.hypot(ddx, ddy);
           if (dist > 2) { const step = Math.min(dist, NPC_SPEED * dt); pp.mx += (ddx / dist) * step; pp.my += (ddy / dist) * step; pp.moving = dist > 3; pp.dir = Math.abs(ddx) > Math.abs(ddy) ? 'side' : (ddy < 0 ? 'up' : 'down'); pp.flip = ddx > 0; }
           else pp.moving = false;
+        }
+      }
+      // 1b. 伙伴亲密相会调度:每隔一会儿,两位伙伴自己凑到一起说悄悄话、头顶飘心
+      if (w) {
+        const m = meetRef.current;
+        if (m) {
+          const pa = apos.current.get(m.a), pb = apos.current.get(m.b);
+          if (now > m.until || !pa || !pb) { meetRef.current = null; meetLines.current.clear(); }
+          else if (Math.hypot(pa.mx - pb.mx, pa.my - pb.my) < 30) {
+            m.met = true;
+            if (now - m.lastHeart > 650) { m.lastHeart = now; popEmote((pa.mx + pb.mx) / 2, (pa.my + pb.my) / 2 - 26, '♥'); }
+            const k = pairKey(m.a, m.b); affinity.current.set(k, (affinity.current.get(k) || 0) + 0.02);
+          }
+        } else if (now > nextMeetAt.current) {
+          const friends = w.order.filter((id) => w.agents[id] && NAMED_SPRITE[w.agents[id].name] && id !== ctrl && id !== companionRef.current);
+          if (friends.length >= 2) {
+            const a = friends[Math.floor(Math.random() * friends.length)];
+            let b = friends[Math.floor(Math.random() * friends.length)], guard = 0;
+            while (b === a && guard++ < 8) b = friends[Math.floor(Math.random() * friends.length)];
+            if (b !== a) {
+              const pl = PAIR_LINES[Math.floor(Math.random() * PAIR_LINES.length)];
+              meetRef.current = { a, b, until: now + 11000, met: false, lastHeart: 0 };
+              meetLines.current.clear(); meetLines.current.set(a, pl[0]); meetLines.current.set(b, pl[1]);
+            }
+            nextMeetAt.current = now + 12000 + Math.random() * 7000;
+          } else nextMeetAt.current = now + 6000;
         }
       }
       // 2. 相机跟随 + 源切片
@@ -279,7 +380,8 @@ export default function WorldView() {
       if (night > 0.01) { ctx.fillStyle = `rgba(14,18,54,${(night * 0.5).toFixed(3)})`; ctx.fillRect(0, 0, VW, VH); }
       if (golden > 0.01) { ctx.fillStyle = `rgba(255,150,60,${(golden * 0.14).toFixed(3)})`; ctx.fillRect(0, 0, VW, VH); }
       // 5. 地点标签
-      ctx.textAlign = 'center'; ctx.font = '12px ui-monospace, monospace';
+      const fam = fontRef.current;
+      ctx.textAlign = 'center'; ctx.font = '12px ' + fam;
       for (const l of LOCATIONS) { const p = posOf(l.id); const x = SX(p[0] * MAP_W), y = SY(p[1] * MAP_H) - TILE * 1.7;
         if (x < -40 || x > VW + 40) continue;
         ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.88)'; ctx.strokeText(l.name, x, y); ctx.fillStyle = '#ffd24d'; ctx.fillText(l.name, x, y); }
@@ -309,16 +411,33 @@ export default function WorldView() {
           else ctx.drawImage(img, fi * 16, 0, 16, 32, sx - cW / 2, dy0, cW, cH);
         }
         const label = a.name + (isOc ? ' ★' : '');
-        ctx.font = (isCtrl ? '600 ' : '') + '11px ui-monospace, monospace';
+        ctx.font = (isCtrl ? '600 ' : '') + '12px ' + fam;
         ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.85)'; ctx.strokeText(label, sx, sy + 14);
         ctx.fillStyle = isCtrl ? '#ff2d2d' : 'rgba(245,245,247,.95)'; ctx.fillText(label, sx, sy + 14);
-        if (isNear) { ctx.fillStyle = 'rgba(255,210,80,.95)'; ctx.font = '10px ui-monospace, monospace'; ctx.fillText('空格 · 交互', sx, sy - cH - 4); }
-        // 头顶对话气泡(命名角色:小智 + 5 个新加坡留学伙伴)
-        const bank = LINE_BANKS[a.name];
-        if (bank && bank.length) {
-          const bline = (liveRef.current && liveLines.current.get(a.name)) || bank[(Math.floor(now / 9000) + hue(id)) % bank.length];
-          if (talkRef.current?.withId !== id) bubble(ctx, sx, sy - cH - (isNear ? 18 : 6), bline);
+        if (isNear) { ctx.fillStyle = 'rgba(255,210,80,.95)'; ctx.font = '11px ' + fam; ctx.fillText('空格 · 互动 ♥', sx, sy - cH - 4); }
+        // 与玩家的好感 / 陪走 标记
+        if (!isCtrl) {
+          const aff = (ocId && affinity.current.get(pairKey(ocId, id))) || 0;
+          const mark = companionRef.current === id ? '✦ 陪走' : aff >= 6 ? '♥♥' : aff >= 3 ? '♥' : '';
+          if (mark) { ctx.font = '11px ' + fam; ctx.fillStyle = mark[0] === '✦' ? '#ffd24d' : '#ff5d8f'; ctx.fillText(mark, sx, sy + 27); }
         }
+        // 头顶对话气泡(相会悄悄话优先 → 真 LLM → 离线台词库)
+        const bank = LINE_BANKS[a.name];
+        const forced = (meetRef.current?.met && meetLines.current.get(id)) || null;
+        if (forced || (bank && bank.length)) {
+          const bline = forced || (liveRef.current && liveLines.current.get(a.name)) || bank[(Math.floor(now / 9000) + hue(id)) % bank.length];
+          if (talkRef.current?.withId !== id) bubble(ctx, sx, sy - cH - (isNear ? 18 : 6), bline, fam);
+        }
+      }
+      // 7b. 飘心 / 表情粒子(互动与相会时升起)
+      for (let i = emotes.current.length - 1; i >= 0; i--) {
+        const e = emotes.current[i], age = now - e.born, LIFE = 1400;
+        if (age > LIFE) { emotes.current.splice(i, 1); continue; }
+        const kk = age / LIFE, ex = SX(e.mx), ey = SY(e.my) - kk * 28;
+        if (ex < -20 || ex > VW + 20 || ey < -20 || ey > VH + 20) continue;
+        ctx.globalAlpha = 1 - kk * kk; ctx.font = (15 + kk * 7) + 'px ' + fam; ctx.textAlign = 'center';
+        ctx.fillStyle = e.glyph === '♥' ? '#ff5d8f' : e.glyph === '✦' ? '#ffd24d' : e.glyph === '✿' ? '#b07cf0' : '#7fd0ff';
+        ctx.fillText(e.glyph, ex, ey); ctx.globalAlpha = 1;
       }
       // ── 小地图雷达(右下):黄=伙伴 红=你 ──
       if (cpp) {
@@ -339,7 +458,6 @@ export default function WorldView() {
         }
         ctx.restore();
         ctx.strokeStyle = 'rgba(255,45,45,.5)'; ctx.lineWidth = 1.5; rrect(ctx, mx0, my0, MM, MM, 10); ctx.stroke();
-        ctx.fillStyle = 'rgba(245,245,247,.8)'; ctx.font = '10px ui-monospace, monospace'; ctx.textAlign = 'left'; ctx.fillText('雷达 · 黄=伙伴 红=你', mx0 + 4, my0 - 5);
       }
       } catch { /* 单帧出错不冻结 */ }
       raf = requestAnimationFrame(draw);
@@ -363,12 +481,11 @@ export default function WorldView() {
   const inspA = w && inspId ? w.agents[inspId] : undefined;
 
   return (
-    <section className="world-fs">
+    <section className="world-fs" style={{ '--world-font': font } as CSSProperties}>
       <canvas ref={ref} className="world-canvas2" onClick={onClick} tabIndex={0} />
 
       <div className="hud hud-tl">
         <div className="hud-ctrl">控制中 · <b>{ctrlA?.name ?? '—'}</b>{ctrl === ocId && ' ★'}</div>
-        <div className="hud-keys">WASD / 方向键 移动 · 点居民接管 · 靠近按空格交互</div>
       </div>
 
       <div className="hud hud-tr">
@@ -381,6 +498,9 @@ export default function WorldView() {
         <button className="hud-btn" onClick={() => setControlId(ocId)}>回到小智 ★</button>
         <button className="hud-btn live" onClick={() => setLive(true)}>⚡ 真 LLM/链</button>
         <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="温馨 8-bit 背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
+        <select className="hud-sel" value={font} title="选择字体" onChange={(e) => { setFont(e.target.value); try { localStorage.setItem('oc-world-font', e.target.value); } catch { /* ignore */ } }}>
+          {FONTS.map((f) => <option key={f.id} value={f.css}>字 · {f.name}</option>)}
+        </select>
       </div>
 
       <div className={'hud hud-feed' + (feedOpen ? '' : ' min')}>
@@ -404,9 +524,27 @@ export default function WorldView() {
       )}
 
       {(() => {
-        const tk = talkRef.current; const ln = tk && tk.lines[tk.i]; if (!tk || !ln) return null;
+        const tk = talkRef.current; if (!tk) return null;
+        const fr = w && w.agents[tk.withId];
+        if (tk.menu) {
+          return (
+            <div className="hud hud-talk">
+              <div className="talk-name">{fr?.name ?? ''}</div>
+              <div className="talk-prompt">想和 {fr?.name ?? 'TA'} 做点什么?</div>
+              <div className="talk-menu">
+                {ACTIONS.map((ac) => (
+                  <button key={ac.id} className="talk-act" onClick={() => doAction(tk.withId, ac.id)}>
+                    {ac.glyph} {companionRef.current === tk.withId && ac.id === 'follow' ? '结束陪走' : ac.label}<small>{ac.sub}</small>
+                  </button>
+                ))}
+              </div>
+              <div className="talk-hint" onClick={() => { talkRef.current = null; bumpTalk(); }}>空格关闭 · 点击选择 ▸</div>
+            </div>
+          );
+        }
+        const ln = tk.lines && tk.lines[tk.i]; if (!ln) return null;
         return (
-          <div className="hud hud-talk" onClick={() => { tk.i++; if (tk.i >= tk.lines.length) talkRef.current = null; bumpTalk(); }}>
+          <div className="hud hud-talk" onClick={() => { tk.i++; if (!tk.lines || tk.i >= tk.lines.length) talkRef.current = null; bumpTalk(); }}>
             <div className="talk-name">{ln.name}{liveRef.current && ' · ✦ Claude'}</div>
             <div className="talk-text">{ln.text}</div>
             <div className="talk-hint">空格 / 点击 继续 ▸</div>
