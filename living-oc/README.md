@@ -49,8 +49,10 @@ npm start                                              # http://localhost:8788
 
 ## 素材署名 / Credits
 
-远景「世界」观测台为**宝可梦火红(GBA)风格**外观,所用美术均为 **CC0 公共领域**的开源社区素材(并非任天堂/Game Freak 的游戏素材,与之无任何关联):
+远景「世界」观测台采用 **Pokémon FireRed/LeafGreen(GBA)原版画风**:
 
-- 小镇地图块 `public/sprites/pkmn-overworld.png`(640×576,16px)—— ArMM1998 的 “[Zelda-like tilesets and sprites](https://opengameart.org/content/zelda-like-tilesets-and-sprites)”(OpenGameArt,**CC0**)。运行时由 `WorldView` 的 `buildPkmnTown()` 用草地/土路/房子等图块程序化铺成一座 32×32 的小镇(每个地点一栋房子,土路汇向中央广场)。
-- 训练师角色精灵 `public/sprites/pkmn-chars.png`(16px 帧,4 向 × 3 帧行走,6 个变体)—— Corey Archer 的 “[Top-Down Pokémon-esque Sprites](https://opengameart.org/content/top-down-pokemon-esque-sprites)”(OpenGameArt,**CC0**)。
+- 小镇底图 `public/sprites/frlg-town.png` —— FireRed/LeafGreen「真新镇 / Pallet Town」游戏内地图(社区精灵 rip,作者 Bob799)。运行时由 `WorldView` 等比铺进观测台,6 个 ZEALWISH 地点叠在其上。
+- 训练师/居民精灵 `public/sprites/chr-*.png` —— FRLG 主角 Red、对手与各类 NPC 的行走精灵(16×32 帧条),取自 FRLG 反汇编工程 [`pret/pokefirered`](https://github.com/pret/pokefirered)。
 - 生命引擎、记忆/对话、经济与链上身份、整套观测台 UI 为本项目自研。
+
+> ⚠ **版权与用途声明**:`frlg-town.png` 与 `chr-*.png` 为 Pokémon FireRed/LeafGreen 的游戏美术,版权归 **任天堂 / Game Freak / Creatures Inc.** 所有。本仓库仅作 **非商用粉丝/学习项目** 使用(类似 PokeMMO 等粉丝项目的精神),与任天堂无任何关联、不获其授权或背书,**不得用于任何商业用途**。如版权方提出异议,将立即移除相关素材。详见 [`public/sprites/ASSETS-NOTICE.md`](public/sprites/ASSETS-NOTICE.md)。

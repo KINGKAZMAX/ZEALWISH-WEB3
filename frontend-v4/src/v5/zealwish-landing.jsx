@@ -17,12 +17,14 @@ function TopBar({ onConnectWallet, wallet }) {
       <a className="brand display" href="#top" aria-label="ZEALWISH home">ZEALWISH</a>
       <nav className="nav" aria-label="Primary navigation">
         <a href="web.html#/home">ZEALWISH Web</a>
+        <a href="/world/">活世界</a>
         <a href="#create">Create</a>
         <a href="#web3">Web3</a>
         <a href="#memory">Memory</a>
         <a href="#worlds">Worlds</a>
       </nav>
       <div className="topbar-actions">
+        <a className="primary-button edge" href="/world/">进入活世界 →</a>
         <a className="secondary-button edge" href="web.html#/home">Open ZEALWISH Web</a>
         <button className="wallet-button edge" onClick={onConnectWallet}>{walletLabel}</button>
       </div>

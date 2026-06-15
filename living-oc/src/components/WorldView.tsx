@@ -5,68 +5,19 @@ import { actionCN } from '../sim/text';
 import type { Agent, ActionKind } from '../sim/types';
 import WorldGoLive from './WorldGoLive';
 
-// Pokémon-FireRed 风瓦片坐标(pkmn-overworld.png,16px 瓦片,40×36 格)
-const TILE = 16;
-const TOWN_COLS = 32, TOWN_ROWS = 32;
-const T = {
-  grass: [15, 30], wild: [0, 5], bush: [0, 4], flower: [0, 7],
-  path: [13, 3], log: [4, 5], rock: [9, 5],
+// 资源基址:dev '/' / 构建 './'(/world 子路径)
+const BASE = import.meta.env.BASE_URL;
+// FRLG 原版小镇底图尺寸(裁掉底部署名条);宽 384=24 格
+const SRC_W = 384, SRC_H = 327, TOWN_TILES = 24;
+// FRLG 训练师/NPC 行走条(pret/pokefirered,16×32 帧/条)
+const FRLG_CHARS = ['red_normal', 'green_normal', 'boy', 'lass', 'youngster', 'fat_man', 'beauty', 'gentleman'];
+// FRLG 帧序:f0下-idle f2左-idle f5上-idle;下走[3,4] 上走[6,5] 左走[7,8](右=左翻转)
+const FRAME: Record<string, { idle: number; walk: [number, number] }> = {
+  down: { idle: 0, walk: [3, 4] }, up: { idle: 5, walk: [6, 5] }, side: { idle: 2, walk: [7, 8] },
 };
-const HOUSE = { c: 7, r: 0, w: 4, h: 4 };
+// 夜里透红光的窗户(归一化:两栋民居 + 实验室)
+const WINDOWS: [number, number][] = [[0.27, 0.26], [0.34, 0.26], [0.63, 0.24], [0.7, 0.24], [0.76, 0.62], [0.84, 0.62]];
 
-function tileHash(c: number, r: number): number {
-  let h = (Math.imul(c, 73856093) ^ Math.imul(r, 19349663)) >>> 0;
-  h = (h ^ (h >>> 13)) >>> 0;
-  return (h % 1000) / 1000;
-}
-
-// 用 Overworld 瓦片程序化铺一张 Pokémon 小镇:草地铺底 + 放射土路 + 每个地点一栋房子 + 散落植被
-function buildPkmnTown(ts: HTMLImageElement, locs: { x: number; y: number }[]): HTMLCanvasElement {
-  const COLS = TOWN_COLS, ROWS = TOWN_ROWS;
-  const cv = document.createElement('canvas'); cv.width = COLS * TILE; cv.height = ROWS * TILE;
-  const cx = cv.getContext('2d'); if (!cx) return cv;
-  cx.imageSmoothingEnabled = false;
-  const blit = (t: number[], dc: number, dr: number) =>
-    cx.drawImage(ts, t[0] * TILE, t[1] * TILE, TILE, TILE, dc * TILE, dr * TILE, TILE, TILE);
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) blit(T.grass, c, r); // 1. 草地铺底
-  const occ = new Uint8Array(COLS * ROWS);
-  const set = (c: number, r: number, v: number) => { if (c >= 0 && c < COLS && r >= 0 && r < ROWS) occ[r * COLS + c] = v; };
-  const anchors = locs.map((l) => [Math.round(l.x * COLS), Math.round(l.y * ROWS)] as [number, number]);
-  const cc = COLS >> 1, cr = ROWS >> 1;
-  // 1b. 湖泊:草地内矩形水域,3×3 岸线瓦片自动拼接(角/边/中心)
-  const WATER: Record<string, number[]> = { c: [3, 7], n: [3, 6], s: [3, 8], w: [2, 7], e: [4, 7], nw: [2, 6], ne: [4, 6], sw: [2, 8], se: [4, 8] };
-  const lake = (x0: number, y0: number, x1: number, y1: number) => {
-    for (let r = y0; r <= y1; r++) for (let c = x0; c <= x1; c++) {
-      const top = r === y0, bot = r === y1, lf = c === x0, rt = c === x1;
-      const t = top && lf ? WATER.nw : top && rt ? WATER.ne : bot && lf ? WATER.sw : bot && rt ? WATER.se
-        : top ? WATER.n : bot ? WATER.s : lf ? WATER.w : rt ? WATER.e : WATER.c;
-      blit(t, c, r); set(c, r, 3);
-    }
-  };
-  lake(2, 25, 10, 31); // 左下角一片湖
-  // 2. 土路:每个地点连到中心广场(L 形,2 格宽)
-  for (const [ac, ar] of anchors) {
-    for (let c = Math.min(ac, cc); c <= Math.max(ac, cc); c++) { blit(T.path, c, ar); set(c, ar, 1); blit(T.path, c, ar + 1); set(c, ar + 1, 1); }
-    for (let r = Math.min(ar, cr); r <= Math.max(ar, cr); r++) { blit(T.path, cc, r); set(cc, r, 1); blit(T.path, cc + 1, r); set(cc + 1, r, 1); }
-  }
-  // 3. 房子:每个地点北侧(门朝下,agent 站门前)
-  for (const [ac, ar] of anchors) {
-    const hx = ac - 1, hy = ar - HOUSE.h;
-    cx.drawImage(ts, HOUSE.c * TILE, HOUSE.r * TILE, HOUSE.w * TILE, HOUSE.h * TILE, hx * TILE, hy * TILE, HOUSE.w * TILE, HOUSE.h * TILE);
-    for (let dr = 0; dr < HOUSE.h; dr++) for (let dc = 0; dc < HOUSE.w; dc++) set(hx + dc, hy + dr, 2);
-  }
-  // 4. 散落植被(避开路/房)
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-    if (occ[r * COLS + c]) continue;
-    const h = tileHash(c, r);
-    if (h < 0.07) blit(T.wild, c, r);
-    else if (h < 0.115) blit(T.bush, c, r);
-    else if (h < 0.15) blit(T.flower, c, r);
-    else if (h < 0.165) blit(T.rock, c, r);
-    else if (h < 0.173) blit(T.log, c, r);
-  }
-  return cv;
-}
 function hue(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
@@ -137,8 +88,8 @@ export default function WorldView() {
   const pos = useRef(new Map<string, Pos>());
   const lines = useRef<Line[]>([]);
   const lastEpoch = useRef(-1);
-  const sprite = useRef<HTMLImageElement | null>(null);
-  const townMap = useRef<HTMLCanvasElement | null>(null);
+  const chars = useRef<HTMLImageElement[]>([]);
+  const townImg = useRef<HTMLImageElement | null>(null);
   const selRef = useRef<string | null>(null);
   selRef.current = sel ?? ocId ?? null;
 
@@ -148,15 +99,10 @@ export default function WorldView() {
     return () => clearInterval(iv);
   }, [worldRunning, worldSpeed, tick]);
 
-  // 角色精灵:Pokémon-FireRed 风训练师(pkmn-chars.png,16px 帧 / 17px 步距,6 变体)
-  useEffect(() => { const img = new Image(); img.src = '/sprites/pkmn-chars.png'; sprite.current = img; }, []);
-
-  // 小镇底图:加载 Overworld 瓦片,程序化铺一张 Pokémon 小镇(草地/土路/房子/植被)
+  // FRLG 原版小镇底图 + 训练师/NPC 行走精灵
   useEffect(() => {
-    let cancelled = false;
-    const ts = new Image(); ts.src = '/sprites/pkmn-overworld.png';
-    ts.onload = () => { if (!cancelled) townMap.current = buildPkmnTown(ts, LOCATIONS); };
-    return () => { cancelled = true; };
+    const t = new Image(); t.src = BASE + 'sprites/frlg-town.png'; t.onload = () => { townImg.current = t; };
+    chars.current = FRLG_CHARS.map((n) => { const im = new Image(); im.src = BASE + 'sprites/chr-' + n + '.png'; return im; });
   }, []);
 
   useEffect(() => {
@@ -169,40 +115,39 @@ export default function WorldView() {
       if (canvas.width !== W * dpr || canvas.height !== H * dpr) { canvas.width = W * dpr; canvas.height = H * dpr; }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
       try {
-      // 小镇底图:完整 AI 小镇地图(等比 contain,居中正方形)
-      const tm = townMap.current, src = tm ? tm.width : 640;
-      const mapSize = Math.min(W, H), ox = (W - mapSize) / 2, oy = (H - mapSize) / 2;
-      if (tm) { ctx.imageSmoothingEnabled = false; ctx.drawImage(tm, 0, 0, src, src, ox, oy, mapSize, mapSize); }
-      else { ctx.fillStyle = '#0c0c0e'; ctx.fillRect(ox, oy, mapSize, mapSize); }
-      const MX = (nx: number) => ox + nx * mapSize, MY = (ny: number) => oy + ny * mapSize;
-      const tDest = mapSize / TOWN_COLS;
-      // ── 昼夜光照:按 epoch 推进(每 24 epoch 一天)叠夜色 + 黄昏暖光 + 夜里窗户红光 ──
+      // 底图:真 FRLG 帕烈镇地图,等比 contain 进正方形面板(裁掉底部署名条)
+      const mapSize = Math.min(W, H);
+      const sc = mapSize / SRC_W, dW = mapSize, dH = SRC_H * sc;
+      const ox = (W - mapSize) / 2, oy = (H - mapSize) / 2 + (mapSize - dH) / 2;
+      ctx.fillStyle = '#0b0b0d'; ctx.fillRect((W - mapSize) / 2, (H - mapSize) / 2, mapSize, mapSize);
+      const tm = townImg.current;
+      if (tm) { ctx.imageSmoothingEnabled = false; ctx.drawImage(tm, 0, 0, SRC_W, SRC_H, ox, oy, dW, dH); }
+      const MX = (nx: number) => ox + nx * dW, MY = (ny: number) => oy + ny * dH;
+      const tDest = dW / TOWN_TILES;
+      // ── 昼夜光照(每 24 epoch 一天):夜蓝 + 黄昏暖光 + 夜里窗户红光 ──
       const epoch = w ? w.epoch : 12;
-      const ph = (((epoch % 24) + 24) % 24) / 24;        // 0..1,0=子夜
-      const sun = Math.max(0, Math.sin(ph * Math.PI));   // 0=夜 1=正午
+      const ph = (((epoch % 24) + 24) % 24) / 24;
+      const sun = Math.max(0, Math.sin(ph * Math.PI));
       const night = Math.max(0, 1 - sun * 1.15);
       const golden = sun > 0.02 ? Math.max(0, 1 - Math.abs(sun - 0.25) / 0.25) : 0;
-      if (night > 0.01) { ctx.fillStyle = `rgba(14,18,54,${(night * 0.6).toFixed(3)})`; ctx.fillRect(ox, oy, mapSize, mapSize); }
-      if (golden > 0.01) { ctx.fillStyle = `rgba(255,150,60,${(golden * 0.16).toFixed(3)})`; ctx.fillRect(ox, oy, mapSize, mapSize); }
+      if (night > 0.01) { ctx.fillStyle = `rgba(14,18,54,${(night * 0.58).toFixed(3)})`; ctx.fillRect(ox, oy, dW, dH); }
+      if (golden > 0.01) { ctx.fillStyle = `rgba(255,150,60,${(golden * 0.16).toFixed(3)})`; ctx.fillRect(ox, oy, dW, dH); }
       if (night > 0.22) {
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
-        const ga = (night - 0.22) / 0.78;
-        for (const l of LOCATIONS) {
-          const ac = Math.round(l.x * TOWN_COLS), ar = Math.round(l.y * TOWN_ROWS);
-          for (const [wc, wr] of [[ac - 1, ar - 2], [ac + 2, ar - 2]] as [number, number][]) {
-            const gx = ox + ((wc + 0.5) / TOWN_COLS) * mapSize, gy = oy + ((wr + 0.5) / TOWN_ROWS) * mapSize, rad = tDest * 1.2;
-            const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, rad);
-            g.addColorStop(0, `rgba(255,72,48,${(ga * 0.8).toFixed(3)})`); g.addColorStop(1, 'rgba(255,72,48,0)');
-            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(gx, gy, rad, 0, 7); ctx.fill();
-          }
+        const ga = (night - 0.22) / 0.78, rad = tDest * 0.9;
+        for (const [nx, ny] of WINDOWS) {
+          const gx = MX(nx), gy = MY(ny);
+          const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, rad);
+          g.addColorStop(0, `rgba(255,80,50,${(ga * 0.8).toFixed(3)})`); g.addColorStop(1, 'rgba(255,80,50,0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(gx, gy, rad, 0, 7); ctx.fill();
         }
         ctx.restore();
       }
       LOCATIONS.forEach((l) => {
-        const x = MX(l.x), y = MY(l.y) - HOUSE.h * (mapSize / TOWN_COLS) - 6;
+        const x = MX(l.x), y = MY(l.y) - tDest * 1.5;
         ctx.font = '10px ui-monospace, monospace'; ctx.textAlign = 'center';
         ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.85)'; ctx.strokeText(l.name, x, y);
-        ctx.fillStyle = 'rgba(245,245,247,.9)'; ctx.fillText(l.name, x, y);
+        ctx.fillStyle = 'rgba(245,245,247,.92)'; ctx.fillText(l.name, x, y);
       });
       if (!w) { raf = requestAnimationFrame(draw); return; }
       if (w.epoch !== lastEpoch.current) {
@@ -224,47 +169,47 @@ export default function WorldView() {
       // 每个 agent 最近动作 → 是否在室内(work/mint/reflect = 进屋)
       const lastAct = new Map<string, { a: ActionKind; e: number }>();
       for (const p of w.feed) { const cur = lastAct.get(p.agentId); if (!cur || p.epoch >= cur.e) lastAct.set(p.agentId, { a: p.action, e: p.epoch }); }
+      const t = Math.floor(Date.now() / 180);
       for (const id of w.order) {
         const a = w.agents[id]; if (!a) continue; const loc = locById[a.loc]; if (!loc) continue;
         const act = lastAct.get(id)?.a;
         const indoor = act === 'work' || act === 'mint' || act === 'reflect';
-        const jx = (hue('x' + id) / 360 - 0.5) * 56, jy = (hue('y' + id) / 360 - 0.5) * 56;
-        const tx = indoor ? MX(loc.x) + jx * 0.22 : MX(loc.x) + jx;
-        const ty = indoor ? MY(loc.y) - tDest * 1.15 : MY(loc.y) + jy;
+        const jx = (hue('x' + id) / 360 - 0.5) * tDest * 2.6, jy = (hue('y' + id) / 360 - 0.5) * tDest * 2.6;
+        const tx = indoor ? MX(loc.x) + jx * 0.25 : MX(loc.x) + jx;
+        const ty = indoor ? MY(loc.y) - tDest * 1.1 : MY(loc.y) + jy;
         let pp = pos.current.get(id); if (!pp) { pp = { px: tx, py: ty }; pos.current.set(id, pp); }
         pp.px += (tx - pp.px) * 0.08; pp.py += (ty - pp.py) * 0.08;
         const isOc = id === ocId, isSel = id === selRef.current;
         const dx = tx - pp.px, dy = ty - pp.py, moving = Math.abs(dx) + Math.abs(dy) > 0.6;
-        // Pokémon 训练师精灵:方向(下0/左3/上6,右=左翻转)× 3 帧行走;6 变体
-        const charPx = tDest * 1.8;
-        let dirBase = 0, flip = false;
+        // FRLG 训练师精灵(16×32):方向 + 行走帧;按 id 选角色
+        const charW = tDest * 1.06, charH = charW * 2;
+        let dir = 'down', flip = false;
         if (moving) {
-          if (Math.abs(dx) > Math.abs(dy)) { dirBase = 3; flip = dx > 0; }
-          else dirBase = dy < 0 ? 6 : 0;
+          if (Math.abs(dx) > Math.abs(dy)) { dir = 'side'; flip = dx > 0; }
+          else dir = dy < 0 ? 'up' : 'down';
         }
-        const frame = moving ? Math.floor(Date.now() / 180) % 3 : 1;
-        const sxF = (dirBase + frame) * 17, syF = (hue(id) % 6) * 17;
+        const fr = FRAME[dir]; const fi = moving ? fr.walk[t % 2] : fr.idle;
+        const img = chars.current[hue(id) % chars.current.length];
         // 影子
-        ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.beginPath(); ctx.ellipse(pp.px, pp.py + 4, charPx * 0.3, charPx * 0.11, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,.34)'; ctx.beginPath(); ctx.ellipse(pp.px, pp.py + 1, charW * 0.34, charW * 0.13, 0, 0, 7); ctx.fill();
         // 选中/破产环(ZEALWISH 红)
-        if (isSel) { ctx.strokeStyle = '#ff2d2d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(pp.px, pp.py - charPx * 0.32, charPx * 0.66, 0, 7); ctx.stroke(); }
-        else if (a.balance < 0) { ctx.strokeStyle = 'rgba(255,45,45,.6)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(pp.px, pp.py - charPx * 0.32, charPx * 0.6, 0, 7); ctx.stroke(); }
-        // 精灵(脚底对齐 pp.py;进屋则半透明,如同走进门内)
-        const img = sprite.current;
+        if (isSel) { ctx.strokeStyle = '#ff2d2d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(pp.px, pp.py - charH * 0.38, charW * 0.82, 0, 7); ctx.stroke(); }
+        else if (a.balance < 0) { ctx.strokeStyle = 'rgba(255,45,45,.6)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(pp.px, pp.py - charH * 0.38, charW * 0.76, 0, 7); ctx.stroke(); }
+        // 精灵(脚底对齐 pp.py;进屋则半透明)
         if (indoor) ctx.globalAlpha = moving ? 0.62 : 0.34;
         if (img && img.complete && img.naturalWidth) {
           ctx.imageSmoothingEnabled = false;
-          const dy0 = pp.py - charPx + 3;
-          if (flip) { ctx.save(); ctx.translate(pp.px + charPx / 2, dy0); ctx.scale(-1, 1); ctx.drawImage(img, sxF, syF, 16, 16, 0, 0, charPx, charPx); ctx.restore(); }
-          else ctx.drawImage(img, sxF, syF, 16, 16, pp.px - charPx / 2, dy0, charPx, charPx);
+          const dy0 = pp.py + 2 - charH;
+          if (flip) { ctx.save(); ctx.translate(pp.px + charW / 2, dy0); ctx.scale(-1, 1); ctx.drawImage(img, fi * 16, 0, 16, 32, 0, 0, charW, charH); ctx.restore(); }
+          else ctx.drawImage(img, fi * 16, 0, 16, 32, pp.px - charW / 2, dy0, charW, charH);
         } else {
-          ctx.fillStyle = `hsl(${hue(id)},42%,52%)`; roundRect(ctx, pp.px - 8, pp.py - 8, 16, 16, 3); ctx.fill();
+          ctx.fillStyle = `hsl(${hue(id)},42%,52%)`; roundRect(ctx, pp.px - 8, pp.py - 18, 16, 18, 3); ctx.fill();
         }
         ctx.globalAlpha = 1;
         const label = a.name + (isOc ? ' ★' : '');
         ctx.font = (isSel ? '600 ' : '') + '10px ui-monospace, monospace'; ctx.textAlign = 'center';
-        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.8)'; ctx.strokeText(label, pp.px, pp.py + 13);
-        ctx.fillStyle = isSel ? '#ff2d2d' : 'rgba(245,245,247,.92)'; ctx.fillText(label, pp.px, pp.py + 13);
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.82)'; ctx.strokeText(label, pp.px, pp.py + 13);
+        ctx.fillStyle = isSel ? '#ff2d2d' : 'rgba(245,245,247,.94)'; ctx.fillText(label, pp.px, pp.py + 13);
       }
       } catch { /* 单帧出错不冻结世界 */ }
       raf = requestAnimationFrame(draw);
@@ -277,10 +222,10 @@ export default function WorldView() {
     const w = useLiving.getState().world; if (!w) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    let best: string | null = null, bd = 26 * 26;
+    let best: string | null = null, bd = 28 * 28;
     for (const id of w.order) {
       const p = pos.current.get(id); if (!p) continue;
-      const d = (p.px - mx) ** 2 + (p.py - my) ** 2;
+      const d = (p.px - mx) ** 2 + (p.py - my - 14) ** 2;
       if (d < bd) { bd = d; best = id; }
     }
     if (best) setSel(best);
