@@ -17,13 +17,25 @@ const TILE = 16 * MAP_SCALE;           // 屏上一格 = 32
 const SPEED = 150;                     // 手控速度(地图 px/秒)
 const NPC_SPEED = 78;                  // 自治居民速度
 const INTERACT_R = 30;                 // 交互半径(地图 px)
-// 6 个 ZEALWISH 地点 = 初始海边据点:东海岸一处海景小屋绿地小岬
-// (四面环海 + 木码头 + 花园),角色在海边草坪聚会。坐标由地图像素扫描定位。
-const KANTO_POS: Record<string, [number, number]> = {
-  gallery: [0.9802, 0.5853], harbor: [0.9692, 0.5853], plaza: [0.9784, 0.5916],
-  bazaar:  [0.9643, 0.5934], commons: [0.9612, 0.5859], forge: [0.9612, 0.6022],
+// 6 个 ZEALWISH 地点 = 一处「活动区域」:活动中心点 + 固定相对偏移(成簇)。
+// 中心可自定义:选预设区域,或把当前位置「设为活动中心」;选择持久化到 localStorage。
+const REGION_DEFAULT: [number, number] = [0.9691, 0.5906];   // 默认:东海岸海景小屋绿地小岬
+const ANCHOR_OFFSETS: Record<string, [number, number]> = {
+  gallery: [0.0111, -0.0053], harbor: [0.0001, -0.0053], plaza: [0.0093, 0.0010],
+  bazaar: [-0.0048, 0.0028], commons: [-0.0079, -0.0047], forge: [-0.0079, 0.0116],
 };
-const posOf = (id: string): [number, number] => KANTO_POS[id] || [0.5, 0.5];
+// 预设活动区域(中心归一化坐标;由地图像素扫描挑出)
+const REGIONS: { id: string; name: string; c: [number, number] }[] = [
+  { id: 'seaside', name: '海边小屋', c: [0.9691, 0.5906] },
+  { id: 'pier',    name: '林海码头', c: [0.9632, 0.5200] },
+  { id: 'cove',    name: '海湾绿岛', c: [0.9560, 0.6320] },
+  { id: 'town',    name: '红顶小镇', c: [0.5588, 0.3300] },
+  { id: 'meadow',  name: '林间空地', c: [0.5833, 0.3450] },
+];
+function loadRegion(): [number, number] {
+  try { const s = localStorage.getItem('oc-world-region'); if (s) { const v = JSON.parse(s); if (Array.isArray(v) && v.length === 2 && typeof v[0] === 'number' && typeof v[1] === 'number') return [v[0], v[1]]; } } catch { /* ignore */ }
+  return REGION_DEFAULT;
+}
 
 const NPC_CHARS = ['green_normal', 'boy', 'lass', 'youngster', 'fat_man', 'beauty', 'gentleman'];
 // 命名角色专属精灵(小智=Red 另外处理;5 个新加坡留学伙伴用对应 chr-*.png)
@@ -146,6 +158,7 @@ export default function WorldView() {
   const [font, setFont] = useState<string>(() => {
     try { const id = localStorage.getItem('oc-world-font'); return FONTS.find((f) => f.id === id)?.css || FONT_DEFAULT; } catch { return FONT_DEFAULT; }
   });
+  const [regionC, setRegionC] = useState<[number, number]>(loadRegion);
   const [showHelp, setShowHelp] = useState<boolean>(() => { try { return !localStorage.getItem('oc-world-seen'); } catch { return true; } });
   const dismissHelp = () => { setShowHelp(false); try { localStorage.setItem('oc-world-seen', '1'); } catch { /* ignore */ } };
   const [, setTalkVer] = useState(0);
@@ -153,7 +166,7 @@ export default function WorldView() {
   const ref = useRef<HTMLCanvasElement>(null);
   const keys = useRef<Set<string>>(new Set());
   const apos = useRef(new Map<string, PP>());
-  const cam = useRef({ cx: MAP_W * 0.9731, cy: MAP_H * 0.5966 });
+  const cam = useRef({ cx: MAP_W * loadRegion()[0], cy: MAP_H * loadRegion()[1] });
   const view = useRef({ sx: 0, sy: 0 });
   const mapImg = useRef<CanvasImageSource | null>(null);
   const collide = useRef<{ d: Uint8ClampedArray; cw: number; ch: number; cs: number } | null>(null);
@@ -166,6 +179,7 @@ export default function WorldView() {
   const liveLines = useRef<Map<string, string>>(new Map());  // 真 LLM 气泡台词缓存
   const liveRef = useRef(false); liveRef.current = liveMode.cognition === 'live';
   const fontRef = useRef(font); fontRef.current = font;
+  const regionRef = useRef(regionC); regionRef.current = regionC;
   const talkRef = useRef<{ withId: string; lines?: { name: string; text: string }[]; i: number; menu?: boolean } | null>(null);
   const bumpTalk = () => setTalkVer((v) => v + 1);
   // ── 互动:飘心表情 / 好感度 / 陪走 / NPC 亲密相会 ──
@@ -181,6 +195,14 @@ export default function WorldView() {
   const joy = useRef<{ x: number; y: number; id: number | null }>({ x: 0, y: 0, id: null });
   const joyBase = useRef<HTMLDivElement>(null);
   const joyKnob = useRef<HTMLSpanElement>(null);
+  // 切换/自定义活动区域:迁移整簇居民到新中心,清位重新落位 + 相机移过去 + 持久化
+  const applyRegion = (c: [number, number]) => {
+    setRegionC(c);
+    try { localStorage.setItem('oc-world-region', JSON.stringify(c)); } catch { /* ignore */ }
+    apos.current.clear();
+    meetRef.current = null; meetLines.current.clear(); nextMeetAt.current = 0; companionRef.current = null;
+    cam.current.cx = c[0] * MAP_W; cam.current.cy = c[1] * MAP_H;
+  };
 
   useEffect(() => { setRun(true); }, [setRun]);
   // 进世界后首次交互自动轻声播放 BGM(符合浏览器自动播放策略)
@@ -334,7 +356,7 @@ export default function WorldView() {
       // 1. 位置更新
       if (w) for (const id of w.order) {
         const a = w.agents[id]; if (!a) continue; const loc = locById[a.loc]; if (!loc) continue;
-        const anchor = posOf(loc.id);
+        const ro = ANCHOR_OFFSETS[loc.id] || [0, 0], rc = regionRef.current; const anchor: [number, number] = [rc[0] + ro[0], rc[1] + ro[1]];
         let pp = apos.current.get(id);
         if (!pp) { pp = { mx: anchor[0] * MAP_W, my: anchor[1] * MAP_H, dir: 'down', moving: false }; apos.current.set(id, pp); }
         if (id === ctrl) {
@@ -528,6 +550,11 @@ export default function WorldView() {
         <select className="hud-sel" value={FONTS.find((f) => f.css === font)?.id ?? FONTS[0].id} title="选择字体" onChange={(e) => { const f = FONTS.find((x) => x.id === e.target.value) ?? FONTS[0]; setFont(f.css); try { localStorage.setItem('oc-world-font', f.id); } catch { /* ignore */ } }}>
           {FONTS.map((f) => <option key={f.id} value={f.id}>字 · {f.name}</option>)}
         </select>
+        <select className="hud-sel" value={REGIONS.find((r) => r.c[0] === regionC[0] && r.c[1] === regionC[1])?.id ?? 'custom'} title="活动区域(角色聚居的地图区域)" onChange={(e) => { const r = REGIONS.find((x) => x.id === e.target.value); if (r) applyRegion(r.c); }}>
+          {REGIONS.map((r) => <option key={r.id} value={r.id}>区 · {r.name}</option>)}
+          {!REGIONS.some((r) => r.c[0] === regionC[0] && r.c[1] === regionC[1]) && <option value="custom">区 · 自定义</option>}
+        </select>
+        <button className="hud-btn" title="把当前所在位置设为活动区域中心(整簇居民迁过来)" onClick={() => { const id = ctrlRef.current; const p = id ? apos.current.get(id) : null; if (p) applyRegion([+(p.mx / MAP_W).toFixed(4), +(p.my / MAP_H).toFixed(4)]); }}>📍 设此为区</button>
       </div>
 
       <div className={'hud hud-feed' + (feedOpen ? '' : ' min')}>

@@ -221,8 +221,8 @@ function toApiMessages(messages) {
 function defaultIdentity() {
   return {
     id: 'ZEALWISH-0001',
-    name: 'Echo',
-    prompt: 'A warm, quick-witted companion who remembers what matters to you.',
+    name: '小智',
+    prompt: '一个属于你的 AI 角色——话不多但都记得,在你的世界里慢慢长成自己的样子。',
     gender: 'female',
     artStyle: 'pixel',
     lookSeeds: [],
