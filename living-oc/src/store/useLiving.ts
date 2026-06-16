@@ -79,6 +79,7 @@ interface LivingState {
 }
 
 let worldSeq = 1;
+let ticking = false; // 单飞守卫:避免定时器在上一 tick 未完成时并发调用 step() 破坏世界状态
 
 export const useLiving = create<LivingState>((set, get) => ({
   oc: null, day: null, chatLog: [], version: 0, seed: 'zealwish',
@@ -123,8 +124,9 @@ export const useLiving = create<LivingState>((set, get) => ({
     set({ world, version: get().version + 1 });
   },
   async tickWorld() {
-    const w = get().world; if (!w) return;
-    await step(w, worldP);
+    const w = get().world; if (!w || ticking) return;
+    ticking = true;
+    try { await step(w, worldP); } finally { ticking = false; }
     set({ version: get().version + 1 });
   },
   setWorldRunning(b) { set({ worldRunning: b, version: get().version + 1 }); },

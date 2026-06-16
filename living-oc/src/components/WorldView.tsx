@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLiving } from '../store/useLiving';
-import { LOCATIONS, locById, ARCHE_CN } from '../sim/data';
+import { locById, ARCHE_CN } from '../sim/data';
 import { actionCN } from '../sim/text';
 import type { Agent } from '../sim/types';
 import WorldGoLive from './WorldGoLive';
@@ -144,8 +144,10 @@ export default function WorldView() {
   const [feedOpen, setFeedOpen] = useState(true);
   const [bgmOn, setBgmOn] = useState(false);
   const [font, setFont] = useState<string>(() => {
-    try { return localStorage.getItem('oc-world-font') || FONT_DEFAULT; } catch { return FONT_DEFAULT; }
+    try { const id = localStorage.getItem('oc-world-font'); return FONTS.find((f) => f.id === id)?.css || FONT_DEFAULT; } catch { return FONT_DEFAULT; }
   });
+  const [showHelp, setShowHelp] = useState<boolean>(() => { try { return !localStorage.getItem('oc-world-seen'); } catch { return true; } });
+  const dismissHelp = () => { setShowHelp(false); try { localStorage.setItem('oc-world-seen', '1'); } catch { /* ignore */ } };
   const [, setTalkVer] = useState(0);
 
   const ref = useRef<HTMLCanvasElement>(null);
@@ -175,6 +177,10 @@ export default function WorldView() {
   const meetLines = useRef<Map<string, string>>(new Map());
   const popEmote = (mx: number, my: number, glyph: string) => { emotes.current.push({ mx, my, glyph, born: performance.now() }); if (emotes.current.length > 48) emotes.current.shift(); };
   const pairKey = (a: string, b: string) => [a, b].sort().join('|');
+  // 移动端虚拟摇杆(模拟方向输入,叠加到键盘移动上)
+  const joy = useRef<{ x: number; y: number; id: number | null }>({ x: 0, y: 0, id: null });
+  const joyBase = useRef<HTMLDivElement>(null);
+  const joyKnob = useRef<HTMLSpanElement>(null);
 
   useEffect(() => { setRun(true); }, [setRun]);
   // 进世界后首次交互自动轻声播放 BGM(符合浏览器自动播放策略)
@@ -196,7 +202,16 @@ export default function WorldView() {
       const fx = fc.getContext('2d');
       if (fx) {
         fx.fillStyle = '#5b9c4a'; fx.fillRect(0, 0, MAP_W, MAP_H); fx.drawImage(t, 0, 0);
-        try { const id = fx.getImageData(0, 0, MAP_W, MAP_H), d = id.data; for (let i = 0; i < d.length; i += 4) if (d[i] > 228 && d[i + 1] > 228 && d[i + 2] > 228) { d[i] = 91; d[i + 1] = 156; d[i + 2] = 74; } fx.putImageData(id, 0, 0); } catch { /* taint 等异常则用原绿底图 */ }
+        // 白→草绿:分条带处理(每条 ~21MB,避免一次性分配 ~167MB 在低内存设备上崩溃/长卡顿)
+        try {
+          const BAND = 800;
+          for (let y0 = 0; y0 < MAP_H; y0 += BAND) {
+            const bh = Math.min(BAND, MAP_H - y0);
+            const id = fx.getImageData(0, y0, MAP_W, bh), d = id.data;
+            for (let i = 0; i < d.length; i += 4) if (d[i] > 228 && d[i + 1] > 228 && d[i + 2] > 228) { d[i] = 91; d[i + 1] = 156; d[i + 2] = 74; }
+            fx.putImageData(id, 0, y0);
+          }
+        } catch { /* taint 等异常则用原绿底图 */ }
         mapImg.current = fc;
       } else mapImg.current = t;
     };
@@ -267,6 +282,19 @@ export default function WorldView() {
     const key = pairKey(meId, friendId); affinity.current.set(key, (affinity.current.get(key) || 0) + gain);
     talkRef.current = { withId: friendId, lines, i: 0 }; bumpTalk();
   };
+  // 触屏「互动」按钮:与最近的伙伴打开互动菜单(无需空格键)
+  const interactNearest = () => { const tk = talkRef.current; if (tk) { if (tk.menu) { talkRef.current = null; bumpTalk(); } else { tk.i++; if (!tk.lines || tk.i >= tk.lines.length) talkRef.current = null; bumpTalk(); } } else if (nearRef.current) openMenu(nearRef.current); };
+  // 虚拟摇杆手势
+  const joyStart = (e: React.PointerEvent) => { const el = joyBase.current; if (!el) return; el.setPointerCapture(e.pointerId); joy.current.id = e.pointerId; joyMove(e); };
+  const joyMove = (e: React.PointerEvent) => {
+    if (joy.current.id === null || (joy.current.id !== e.pointerId)) return;
+    const el = joyBase.current; if (!el) return; const r = el.getBoundingClientRect(); const R = r.width / 2;
+    let dx = e.clientX - (r.left + R), dy = e.clientY - (r.top + R);
+    const len = Math.hypot(dx, dy) || 1, cl = Math.min(len, R); dx = dx / len * cl; dy = dy / len * cl;
+    joy.current.x = dx / R; joy.current.y = dy / R;
+    if (joyKnob.current) joyKnob.current.style.transform = `translate(${dx}px,${dy}px)`;
+  };
+  const joyEnd = (e: React.PointerEvent) => { if (joy.current.id !== e.pointerId) return; joy.current.id = null; joy.current.x = 0; joy.current.y = 0; if (joyKnob.current) joyKnob.current.style.transform = 'translate(0,0)'; };
 
   useEffect(() => {
     const dn = (e: KeyboardEvent) => {
@@ -288,7 +316,7 @@ export default function WorldView() {
   useEffect(() => {
     const canvas = ref.current; if (!canvas) return;
     const ctx = canvas.getContext('2d'); if (!ctx) return;
-    let raf = 0; const dpr = window.devicePixelRatio || 1;
+    let raf = 0; let errLogged = false; const dpr = window.devicePixelRatio || 1;
     const walkable = (mx: number, my: number) => {
       const c = collide.current; if (!c) return true;
       const gx = Math.max(0, Math.min(c.cw - 1, mx / c.cs | 0)), gy = Math.max(0, Math.min(c.ch - 1, my / c.cs | 0));
@@ -314,6 +342,7 @@ export default function WorldView() {
           if (!talkRef.current) { // 对话中冻结移动
             if (K.has('a') || K.has('arrowleft')) vx -= 1; if (K.has('d') || K.has('arrowright')) vx += 1;
             if (K.has('w') || K.has('arrowup')) vy -= 1; if (K.has('s') || K.has('arrowdown')) vy += 1;
+            if (joy.current.x || joy.current.y) { vx += joy.current.x; vy += joy.current.y; } // 虚拟摇杆
           }
           const len = Math.hypot(vx, vy) || 1; const nx = pp.mx + (vx / len) * SPEED * dt, ny = pp.my + (vy / len) * SPEED * dt;
           if (walkable(nx, ny)) { pp.mx = nx; pp.my = ny; }
@@ -362,9 +391,9 @@ export default function WorldView() {
           } else nextMeetAt.current = now + 6000;
         }
       }
-      // 2. 相机跟随 + 源切片
+      // 2. 相机跟随(平滑缓动)+ 源切片
       const cpp = ctrl ? apos.current.get(ctrl) : null;
-      if (cpp) { cam.current.cx = cpp.mx; cam.current.cy = cpp.my; }
+      if (cpp) { const f = Math.min(1, dt * 8); cam.current.cx += (cpp.mx - cam.current.cx) * f; cam.current.cy += (cpp.my - cam.current.cy) * f; }
       const sw = VW / MAP_SCALE, sh = VH / MAP_SCALE;
       const srcX = Math.max(0, Math.min(MAP_W - sw, cam.current.cx - sw / 2));
       const srcY = Math.max(0, Math.min(MAP_H - sh, cam.current.cy - sh / 2));
@@ -374,17 +403,14 @@ export default function WorldView() {
       ctx.fillStyle = '#0b0b0d'; ctx.fillRect(0, 0, VW, VH);
       const tm = mapImg.current;
       if (tm) { ctx.imageSmoothingEnabled = false; ctx.drawImage(tm, srcX, srcY, sw, sh, 0, 0, VW, VH); }
-      // 4. 昼夜
-      const epoch = w ? w.epoch : 12, ph = (((epoch % 24) + 24) % 24) / 24, sun = Math.max(0, Math.sin(ph * Math.PI));
+      // 4. 昼夜(实时平滑循环:约 180s 一轮昼夜,不再随 epoch 频闪)
+      const ph = (now / 180000) % 1, sun = 0.5 - 0.5 * Math.cos(ph * Math.PI * 2);
       const night = Math.max(0, 1 - sun * 1.15), golden = sun > 0.02 ? Math.max(0, 1 - Math.abs(sun - 0.25) / 0.25) : 0;
       if (night > 0.01) { ctx.fillStyle = `rgba(14,18,54,${(night * 0.5).toFixed(3)})`; ctx.fillRect(0, 0, VW, VH); }
       if (golden > 0.01) { ctx.fillStyle = `rgba(255,150,60,${(golden * 0.14).toFixed(3)})`; ctx.fillRect(0, 0, VW, VH); }
-      // 5. 地点标签
+      // 5.(地点标签已移除:6 个据点同处海边小岬,标签会互相重叠,改为干净画面)
       const fam = fontRef.current;
-      ctx.textAlign = 'center'; ctx.font = '12px ' + fam;
-      for (const l of LOCATIONS) { const p = posOf(l.id); const x = SX(p[0] * MAP_W), y = SY(p[1] * MAP_H) - TILE * 1.7;
-        if (x < -40 || x > VW + 40) continue;
-        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.88)'; ctx.strokeText(l.name, x, y); ctx.fillStyle = '#ffd24d'; ctx.fillText(l.name, x, y); }
+      ctx.textAlign = 'center';
       if (!w) { raf = requestAnimationFrame(draw); return; }
       // 6. 最近可交互居民
       let near: string | null = null;
@@ -459,7 +485,7 @@ export default function WorldView() {
         ctx.restore();
         ctx.strokeStyle = 'rgba(255,45,45,.5)'; ctx.lineWidth = 1.5; rrect(ctx, mx0, my0, MM, MM, 10); ctx.stroke();
       }
-      } catch { /* 单帧出错不冻结 */ }
+      } catch (err) { if (!errLogged) { errLogged = true; console.error('[WorldView] 绘制循环出错(后续同类错误已抑制):', err); } }
       raf = requestAnimationFrame(draw);
     };
     raf = requestAnimationFrame(draw);
@@ -493,13 +519,14 @@ export default function WorldView() {
         <span className="wstat sm"><i>居民</i> {w ? w.order.length : 0}</span>
         <span className="wstat sm hot"><i>供给</i> {(w ? Math.round(w.stats.supply) : 0)}◈</span>
         <button className="hud-btn" onClick={() => setRun(!worldRunning)}>{worldRunning ? '⏸' : '▶'}</button>
-        <button className="hud-btn" onClick={() => { const n = window.prompt('克隆一个新居民:', '@new_soul'); if (n) addAgent(n); }}>＋人格</button>
-        <button className="hud-btn" onClick={() => { reseed(); apos.current.clear(); }}>↻ 重置</button>
+        <button className="hud-btn" onClick={() => { const n = window.prompt('克隆一个新居民(起个名字):', '@new_soul'); const v = n && n.trim(); if (v) addAgent(v); }}>＋人格</button>
+        <button className="hud-btn" onClick={() => { reseed(); apos.current.clear(); affinity.current.clear(); meetLines.current.clear(); companionRef.current = null; meetRef.current = null; nextMeetAt.current = 0; talkRef.current = null; setControlId(null); setInspId(null); }}>↻ 重置</button>
         <button className="hud-btn" onClick={() => setControlId(ocId)}>回到小智 ★</button>
         <button className="hud-btn live" onClick={() => setLive(true)}>⚡ 真 LLM/链</button>
         <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="温馨 8-bit 背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
-        <select className="hud-sel" value={font} title="选择字体" onChange={(e) => { setFont(e.target.value); try { localStorage.setItem('oc-world-font', e.target.value); } catch { /* ignore */ } }}>
-          {FONTS.map((f) => <option key={f.id} value={f.css}>字 · {f.name}</option>)}
+        <button className="hud-btn" onClick={() => setShowHelp(true)} title="玩法说明">?</button>
+        <select className="hud-sel" value={FONTS.find((f) => f.css === font)?.id ?? FONTS[0].id} title="选择字体" onChange={(e) => { const f = FONTS.find((x) => x.id === e.target.value) ?? FONTS[0]; setFont(f.css); try { localStorage.setItem('oc-world-font', f.id); } catch { /* ignore */ } }}>
+          {FONTS.map((f) => <option key={f.id} value={f.id}>字 · {f.name}</option>)}
         </select>
       </div>
 
@@ -507,7 +534,8 @@ export default function WorldView() {
         <div className="hud-feed-head" onClick={() => setFeedOpen(!feedOpen)}>实时社交流 · THE FEED <span>{w?.feed.length ?? 0}{feedOpen ? ' ▾' : ' ▸'}</span></div>
         {feedOpen && <div className="hud-feed-body">
           {(w?.feed ?? []).slice(0, 14).map((p) => (
-            <div key={p.id} className={'wpost' + (p.ev ? ' ev-' + p.ev.kind : '')}>
+            <div key={p.id} className={'wpost' + (p.ev ? ' ev-' + p.ev.kind : '')} title="点击:镜头飞向 TA 并接管"
+              onClick={() => { if (useLiving.getState().world?.agents[p.agentId]) { setControlId(p.agentId); setInspId(p.agentId); } }}>
               <div className="wrow"><span className="wav" style={{ background: `hsl(${hue(p.agentId)},45%,55%)` }} /><b>{p.name}</b><span className="wact">{actionCN[p.action]}</span></div>
               <div className="wtext">{p.text}</div>
             </div>
@@ -553,6 +581,28 @@ export default function WorldView() {
       })()}
 
       {live && <WorldGoLive onClose={() => setLive(false)} />}
+
+      {showHelp && (
+        <div className="world-help" onClick={dismissHelp}>
+          <div className="world-help-card" onClick={(e) => e.stopPropagation()}>
+            <h3>欢迎来到活世界 ✦</h3>
+            <ul>
+              <li><b>移动</b> · WASD / 方向键(手机用左下摇杆)</li>
+              <li><b>互动</b> · 走近伙伴按 空格(手机点「互动」),菜单:闲聊 / 夸夸 / 约饭 / 抱抱 / 陪走</li>
+              <li><b>接管</b> · 点击任意居民,即可化身 TA 自由行走</li>
+              <li><b>飞向</b> · 点左侧 THE FEED 的动态,镜头会飞向当事人</li>
+              <li>伙伴们会自己相遇、说悄悄话、头顶冒 ♥ —— 一个自运转的小社会</li>
+            </ul>
+            <button className="world-help-go" onClick={dismissHelp}>开始 ▸</button>
+          </div>
+        </div>
+      )}
+
+      {/* 移动端触控:虚拟摇杆 + 互动按钮(CSS 仅在触屏/窄屏显示) */}
+      <div className="world-joy" ref={joyBase} onPointerDown={joyStart} onPointerMove={joyMove} onPointerUp={joyEnd} onPointerCancel={joyEnd}>
+        <span className="world-joy-knob" ref={joyKnob} />
+      </div>
+      <button className="world-act" onClick={interactNearest} aria-label="互动">互动 ♥</button>
     </section>
   );
 }

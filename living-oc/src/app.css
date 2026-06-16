@@ -55,7 +55,8 @@ input{background:var(--panel);color:var(--text);border:1px solid var(--line);bor
   background:radial-gradient(circle at 50% 118%,rgba(255,45,45,.07),transparent 55%),#0b0b0d}
 .worldcanvas{width:100%;height:100%;display:block}
 .world-feed{height:440px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel)}
-.wpost{padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.5;font-family:var(--world-font)}
+.wpost{padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.5;font-family:var(--world-font);cursor:pointer;border-radius:6px;transition:background .12s}
+.wpost:hover{background:rgba(255,255,255,.05)}
 .wpost b{color:var(--text);font-weight:600;margin-right:6px}
 .wpost .wtext{color:#d9d4c6}
 .wpost.ev-transfer{background:linear-gradient(90deg,rgba(227,169,72,.06),transparent)}
@@ -192,3 +193,18 @@ input{background:var(--panel);color:var(--text);border:1px solid var(--line);bor
 .talk-act small{display:block;font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--font-mono)}
 .talk-prompt{font-family:var(--world-font);font-size:13px;color:var(--muted);margin-bottom:9px}
 @media(max-width:760px){.hud-feed,.hud-insp{width:min(48vw,260px)}.hud-keys{display:none}.hud-tr{max-width:54vw}}
+/* 移动端触控:虚拟摇杆 + 互动按钮 */
+.world-joy{position:absolute;left:20px;bottom:20px;width:116px;height:116px;border-radius:50%;background:rgba(10,10,11,.36);border:1.5px solid var(--line-strong);backdrop-filter:blur(6px);z-index:7;touch-action:none;display:none}
+.world-joy-knob{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:rgba(255,45,45,.55);border:1.5px solid rgba(255,255,255,.55);pointer-events:none;transition:transform .05s linear}
+.world-act{position:absolute;left:50%;transform:translateX(-50%);bottom:30px;z-index:7;display:none;width:80px;height:80px;border-radius:50%;background:rgba(255,45,45,.24);border:1.6px solid var(--red);color:#fff;font-family:var(--world-font);font-size:15px;font-weight:700;cursor:pointer;backdrop-filter:blur(6px)}
+.world-act:active{background:rgba(255,45,45,.42);transform:translateX(-50%) scale(.94)}
+@media (pointer:coarse),(max-width:820px){.world-joy,.world-act{display:block}.hud-feed{display:none}}
+/* 一次性玩法引导卡 */
+.world-help{position:absolute;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;background:rgba(8,8,11,.55);backdrop-filter:blur(3px)}
+.world-help-card{width:min(440px,86vw);background:rgba(16,16,20,.97);border:2px solid var(--red);border-radius:16px;padding:22px 24px;box-shadow:0 18px 60px rgba(0,0,0,.6);font-family:var(--world-font)}
+.world-help-card h3{font-size:20px;margin-bottom:13px;color:var(--text);font-weight:700}
+.world-help-card ul{list-style:none;display:flex;flex-direction:column;gap:9px;margin:0 0 16px}
+.world-help-card li{font-size:13.5px;line-height:1.5;color:var(--muted)}
+.world-help-card li b{color:var(--red)}
+.world-help-go{width:100%;padding:11px;border-radius:10px;background:var(--red);border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--world-font)}
+.world-help-go:hover{background:var(--red-deep)}

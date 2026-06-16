@@ -13,7 +13,7 @@ cd living-oc && npm install && npm run dev
 ## 测
 
 ```bash
-npx vitest run                       # 12 tests
+npx vitest run                       # 13 tests
 npx tsc --noEmit -p tsconfig.app.json
 ```
 
@@ -41,11 +41,7 @@ npm start                                              # http://localhost:8788
 ## 不在 MVP(见 spec 路线图)
 
 多人/互访 · 链上身份钱包(ERC-8004 / AgentKit / x402)· Electron 桌面 · 真 LLM 实接(B)· 真链实接(C)· 衍生资产交易。
-(远景「世界」观测台 — 宝可梦火红风(GBA JRPG)小镇地图 + 实时社交流 + 训练师像素小人 + 人格检查面板 — 已内置,见「世界」标签。)
-
-对应设计与计划:
-- `../docs/superpowers/specs/2026-06-14-zealwish-living-oc-design.md`
-- `../docs/superpowers/plans/2026-06-14-living-oc-mvp.md`
+(远景「世界」观测台 — 宝可梦火红风(GBA JRPG)地图 + 实时社交流 + 像素小人 + 人格检查面板 — 已内置,见「世界」标签。)
 
 ## 素材署名 / Credits
 
@@ -55,4 +51,4 @@ npm start                                              # http://localhost:8788
 - 训练师/居民精灵 `public/sprites/chr-*.png` —— FRLG 主角 Red(小智)、对手与各类 NPC 的行走精灵(16×32 帧条),取自 FRLG 反汇编工程 [`pret/pokefirered`](https://github.com/pret/pokefirered)。
 - 生命引擎、记忆/对话、经济与链上身份、整套观测台 UI 为本项目自研。
 
-> ⚠ **版权与用途声明**:`frlg-town.png` 与 `chr-*.png` 为 Pokémon FireRed/LeafGreen 的游戏美术,版权归 **任天堂 / Game Freak / Creatures Inc.** 所有。本仓库仅作 **非商用粉丝/学习项目** 使用(类似 PokeMMO 等粉丝项目的精神),与任天堂无任何关联、不获其授权或背书,**不得用于任何商业用途**。如版权方提出异议,将立即移除相关素材。详见 [`public/sprites/ASSETS-NOTICE.md`](public/sprites/ASSETS-NOTICE.md)。
+> ⚠ **版权与用途声明**:`kanto.webp` 与 `chr-*.png` 为 Pokémon FireRed/LeafGreen 的游戏美术,版权归 **任天堂 / Game Freak / Creatures Inc.** 所有。本仓库仅作 **非商用粉丝/学习项目** 使用(类似 PokeMMO 等粉丝项目的精神),与任天堂无任何关联、不获其授权或背书,**不得用于任何商业用途**。如版权方提出异议,将立即移除相关素材。详见 [`public/sprites/ASSETS-NOTICE.md`](public/sprites/ASSETS-NOTICE.md)。
