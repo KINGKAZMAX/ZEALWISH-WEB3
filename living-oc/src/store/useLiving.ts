@@ -156,14 +156,21 @@ export const useLiving = create<LivingState>((set, get) => ({
     const world = createPrivateWorld(clone, get().seed + ':world' + worldSeq);
     set({ world, worldRunning: false, version: get().version + 1 });
   },
-  // 共享世界(非主机端):按 NPC 名字落地主机广播的状态 + feed + 纪元 + 供给
+  // 共享世界(非主机端):按 NPC 名字落地主机广播的完整内部态 + feed + 纪元 + 供给。
+  // 同步 needs/balance/rngState/rel,使主机迁移后晋升主机能无缝续跑,各端一致。
   applyWorldSnapshot(snap) {
     const w = get().world; if (!w) return;
     w.epoch = snap.e; w.stats.supply = snap.supply;
     const byName: Record<string, string> = {};
     for (const id of w.order) { const a = w.agents[id]; if (a) byName[a.name] = id; }
-    for (const n of snap.npc) { const id = byName[n.name]; if (id) { w.agents[id].loc = n.loc; w.agents[id].mood = n.mood; } }
-    w.feed = snap.feed.map((p): Post => ({ id: p.id, agentId: byName[p.name] || p.agentId, name: p.name, handle: '@' + p.name, text: p.text, action: p.action as Post['action'], ev: null, epoch: snap.e, likes: 0 }));
+    for (const n of snap.npc) {
+      const id = byName[n.name]; if (!id) continue; const a = w.agents[id];
+      a.loc = n.loc; a.mood = n.mood; a.balance = n.balance;
+      if (n.needs) a.needs = { ...a.needs, ...n.needs };
+      if (typeof n.rng === 'number') a.rngState = n.rng;
+      if (n.rel) a.rel = n.rel;
+    }
+    w.feed = snap.feed.map((p): Post => ({ id: p.id, agentId: byName[p.name] || p.agentId, name: p.name, handle: '@' + p.name, text: p.text, action: p.action as Post['action'], ev: p.ev ? { kind: p.ev as 'mint' | 'transfer' | 'bankrupt' } : null, epoch: snap.e, likes: 0 }));
     set({ version: get().version + 1 });
   },
   setLiveMode(m) { const lm = { ...get().liveMode, ...m }; worldP = buildProviders(lm); set({ liveMode: lm, version: get().version + 1 }); },

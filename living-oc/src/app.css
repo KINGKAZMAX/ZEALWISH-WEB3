@@ -255,6 +255,7 @@ html.oc-embed .world-fs{height:100vh}
 .wc-msg b{color:#8cd2ff}
 .world-chat-in{pointer-events:auto;width:100%;background:rgba(8,9,11,.7);border:1px solid var(--line-strong);border-radius:10px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;backdrop-filter:blur(8px);font-family:var(--world-font)}
 .world-chat-in:focus{border-color:#8cd2ff}
+.world-syncing{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;background:rgba(8,9,11,.82);border:1px solid #8cd2ff;border-radius:12px;padding:12px 18px;font-size:14px;color:#cde9ff;backdrop-filter:blur(6px)}
 .net-card{width:min(460px,88vw)}
 .net-note{font-size:13px;line-height:1.6;color:var(--muted);margin-bottom:12px}
 .net-note b{color:var(--text)}

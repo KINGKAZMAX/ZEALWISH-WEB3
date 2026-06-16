@@ -8,8 +8,13 @@
 export interface PosMsg { id: string; name: string; sprite: string; x: number; y: number; dir: string; moving: boolean; flip: boolean }
 export interface ChatMsg { id: string; name: string; text: string }
 export interface NetSelf { id: string; name: string; sprite: string }
-// 共享世界快照(主机权威):按 NPC 名字同步,无需固定种子
-export interface WorldSnap { e: number; supply: number; npc: { name: string; loc: string; mood: string }[]; feed: { id: string; agentId: string; name: string; action: string; text: string; ev: string | null }[] }
+// 共享世界快照(主机权威):按 NPC 名字同步完整决策相关内部态,保证主机迁移无缝、各端一致。
+// host = 发送方玩家 id(用于校验:只接受当前选举出的主机的快照)。
+export interface WorldSnap {
+  host: string; e: number; supply: number;
+  npc: { name: string; loc: string; mood: string; balance: number; needs: Record<string, number>; rng: number; rel: Record<string, number> }[];
+  feed: { id: string; agentId: string; name: string; action: string; text: string; ev: string | null }[];
+}
 
 export interface NetTransport {
   kind: 'global' | 'local';
@@ -62,6 +67,7 @@ class LocalTransport implements NetTransport {
   kind = 'local' as const;
   private bc?: BroadcastChannel; private me!: NetSelf;
   private peers = new Map<string, number>();
+  private pruneTimer?: ReturnType<typeof setInterval>;
   private posCb?: (p: PosMsg) => void; private chatCb?: (m: ChatMsg) => void; private presCb?: (n: number) => void;
   private peersCb?: (ids: string[]) => void; private worldCb?: (s: WorldSnap) => void;
   connect(room: string, me: NetSelf) {
@@ -76,6 +82,9 @@ class LocalTransport implements NetTransport {
       else if (d.t === 'yo') { this.peers.set(d.from, performance.now()); this.prune(); }
     };
     this.bc.postMessage({ t: 'hi', from: me.id });
+    this.prune();   // 立即触发一次 peers 回调 → 独自时即刻完成主机选举
+    // 周期性 prune:即使主机静默消失(崩溃/无 bye),也能在 ~6s 内剔除并重新选举(本机多窗口协作的兜底)
+    this.pruneTimer = setInterval(() => this.prune(), 3000);
   }
   private prune() { const now = performance.now(); for (const [id, t] of this.peers) if (now - t > 6000) this.peers.delete(id); this.presCb?.(this.peers.size + 1); this.peersCb?.([this.me.id, ...this.peers.keys()]); }
   sendPos(p: PosMsg) { this.bc?.postMessage({ t: 'pos', from: this.me.id, p }); }
@@ -86,7 +95,7 @@ class LocalTransport implements NetTransport {
   onWorld(cb: (s: WorldSnap) => void) { this.worldCb = cb; }
   onPresence(cb: (n: number) => void) { this.presCb = cb; cb(1); }
   onPeers(cb: (ids: string[]) => void) { this.peersCb = cb; cb([this.me?.id || 'self']); }
-  disconnect() { try { this.bc?.postMessage({ t: 'bye', from: this.me?.id }); this.bc?.close(); } catch { /* ignore */ } }
+  disconnect() { try { if (this.pruneTimer) clearInterval(this.pruneTimer); this.bc?.postMessage({ t: 'bye', from: this.me?.id }); this.bc?.close(); } catch { /* ignore */ } }
 }
 
 // ── Supabase Realtime:全球房间(动态加载 supabase-js)──

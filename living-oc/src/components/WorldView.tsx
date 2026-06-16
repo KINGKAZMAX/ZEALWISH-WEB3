@@ -175,7 +175,7 @@ export default function WorldView() {
   const [font, setFont] = useState<string>(() => {
     try { const id = localStorage.getItem('oc-world-font'); return FONTS.find((f) => f.id === id)?.css || FONT_DEFAULT; } catch { return FONT_DEFAULT; }
   });
-  const [regionC, setRegionC] = useState<[number, number]>(loadRegion);
+  const [regionC, setRegionC] = useState<[number, number]>(() => (GLOBAL ? REGION_DEFAULT : loadRegion()));  // 全球模式固定同一个镇
   const [showHelp, setShowHelp] = useState<boolean>(() => { try { return !localStorage.getItem('oc-world-seen'); } catch { return true; } });
   const dismissHelp = () => { setShowHelp(false); try { localStorage.setItem('oc-world-seen', '1'); } catch { /* ignore */ } };
   const [, setTalkVer] = useState(0);
@@ -186,6 +186,7 @@ export default function WorldView() {
   const cam = useRef({ cx: MAP_W * (GLOBAL ? REGION_DEFAULT[0] : loadRegion()[0]), cy: MAP_H * (GLOBAL ? REGION_DEFAULT[1] : loadRegion()[1]) });
   const view = useRef({ sx: 0, sy: 0 });
   const mapImg = useRef<CanvasImageSource | null>(null);
+  const miniMap = useRef<HTMLCanvasElement | null>(null);   // 雷达用的 1/8 降采样底图(预渲染,免每帧降采)
   const collide = useRef<{ d: Uint8ClampedArray; cw: number; ch: number; cs: number } | null>(null);
   const ocSprite = useRef<HTMLImageElement | null>(null);
   const npcSprites = useRef<HTMLImageElement[]>([]);
@@ -207,6 +208,7 @@ export default function WorldView() {
   const companionRef = useRef<string | null>(null);
   const meetRef = useRef<{ a: string; b: string; until: number; met: boolean; lastHeart: number } | null>(null);
   const nextMeetAt = useRef(0);
+  const lastMeetEp = useRef(-1);                  // 相会按同步的 epoch 触发(各端一致),而非各自墙钟
   const meetLines = useRef<Map<string, string>>(new Map());
   const popEmote = (mx: number, my: number, glyph: string) => { emotes.current.push({ mx, my, glyph, born: performance.now() }); if (emotes.current.length > 48) emotes.current.shift(); };
   const pairKey = (a: string, b: string) => [a, b].sort().join('|');
@@ -216,8 +218,13 @@ export default function WorldView() {
   const remotes = useRef<Map<string, { x: number; y: number; tx: number; ty: number; dir: string; moving: boolean; flip: boolean; name: string; sprite: string; bubble?: string; bubbleAt: number; last: number }>>(new Map());
   const spriteByName = useRef<Record<string, HTMLImageElement>>({});
   const lastPosSent = useRef(0);
-  const isHostRef = useRef(true);                 // 主机权威:在场玩家 id 最小者为主机(独自时即主机)
-  const [isHost, setIsHost] = useState(true);
+  const isHostRef = useRef(false);                // 主机权威:在场玩家 id 最小者为主机;选举完成前不抢当主机(防脑裂)
+  const [isHost, setIsHost] = useState(false);
+  const peersCountRef = useRef(1);
+  const currentHostRef = useRef<string | null>(null);  // 当前选举出的主机 id(用于校验快照来源)
+  const electedRef = useRef(false);
+  const syncedRef = useRef(false);                     // 非主机:是否已收到首份主机快照
+  const [synced, setSynced] = useState(false);
   const applySnap = useLiving((s) => s.applyWorldSnapshot);
   const [online, setOnline] = useState(1);
   const [chatLog, setChatLog] = useState<{ name: string; text: string }[]>([]);
@@ -268,6 +275,10 @@ export default function WorldView() {
           }
         } catch { /* taint 等异常则用原绿底图 */ }
         mapImg.current = fc;
+        // 预渲染 1/8 降采样底图给雷达(免每帧把 6528×6400 降采)
+        const mw = Math.round(MAP_W / 8), mh = Math.round(MAP_H / 8);
+        const mc = document.createElement('canvas'); mc.width = mw; mc.height = mh;
+        const mcx = mc.getContext('2d'); if (mcx) { mcx.imageSmoothingEnabled = false; mcx.drawImage(fc, 0, 0, MAP_W, MAP_H, 0, 0, mw, mh); miniMap.current = mc; }
       } else mapImg.current = t;
     };
     const r = new Image(); r.src = BASE + 'sprites/chr-red_normal.png'; ocSprite.current = r;
@@ -286,7 +297,11 @@ export default function WorldView() {
   // 联机:连接全球世界(或本机多窗口),接收远端玩家与世界聊天
   useEffect(() => {
     const net = makeNet(); netRef.current = net;
-    const me = playerSelf(); meSelf.current = me;
+    // 联机昵称默认沿用 OC 名(避免"训练师-xxxx"与 OC 名两套身份)
+    const ocNm = useLiving.getState().oc?.name;
+    if (ocNm && /^训练师-/.test(playerSelf().name)) setPlayerName(ocNm);
+    // 访客 id 加 'z' 前缀使其排序最后 → 永不被选为主机(只读旁观)
+    const base = playerSelf(); const me: NetSelf = VISIT ? { ...base, id: 'z' + base.id } : base; meSelf.current = me;
     net.onPos((p) => {
       if (p.id === me.id) return;
       const r = remotes.current.get(p.id) || { x: p.x, y: p.y, tx: p.x, ty: p.y, dir: p.dir, moving: p.moving, flip: p.flip, name: p.name, sprite: p.sprite, bubbleAt: 0, last: 0 };
@@ -298,20 +313,26 @@ export default function WorldView() {
       if (m.id !== me.id) { const r = remotes.current.get(m.id); if (r) { r.bubble = m.text; r.bubbleAt = performance.now(); } }
     });
     net.onPresence((n) => setOnline(n));
-    // 主机选举:在场玩家 id 最小者为主机;主机跑模拟并广播,其余镜像
-    net.onPeers((ids) => { const host = ids.slice().sort()[0]; const amHost = !ids.length || host === me.id; isHostRef.current = amHost; setIsHost(amHost); });
-    // 非主机:落地主机广播的共享世界状态(NPC 位置/心情 + feed + 纪元 + 供给)
-    net.onWorld((snap) => { if (!isHostRef.current) applySnap(snap); });
+    // 主机选举:在场玩家 id 最小者为主机(访客除外);记录当前主机以校验快照来源
+    net.onPeers((ids) => {
+      peersCountRef.current = ids.length || 1;
+      const host = ids.slice().sort()[0] || me.id; currentHostRef.current = host;
+      const amHost = !VISIT && host === me.id; isHostRef.current = amHost; electedRef.current = true; setIsHost(amHost);
+    });
+    // 非主机:仅落地"当前选举出的主机"的快照(忽略已降级旧主机的过期快照,防脑裂污染)
+    net.onWorld((snap) => { if (!isHostRef.current && (!snap.host || !currentHostRef.current || snap.host === currentHostRef.current)) { applySnap(snap); if (!syncedRef.current) { syncedRef.current = true; setSynced(true); } } });
     void net.connect('global', me);
-    // 主机:每 ~0.8s 广播一份共享世界快照(只含 5 位居民 + feed,玩家 OC 各自本地)
+    // 安全兜底:若 2s 内仍未选举(如独自且 presence 未同步),非访客自任主机,保证世界推进
+    const electTimer = setTimeout(() => { if (!electedRef.current && !VISIT) { isHostRef.current = true; setIsHost(true); currentHostRef.current = me.id; } }, 2000);
+    // 主机:每 ~0.8s 广播共享世界快照(5 位居民完整内部态 + 居民 feed + 纪元 + 供给;独自时不广播)
     const snapIv = setInterval(() => {
-      if (!isHostRef.current) return;
+      if (!isHostRef.current || peersCountRef.current <= 1) return;
       const w = useLiving.getState().world; if (!w) return;
-      const npc = w.order.map((id) => w.agents[id]).filter((a) => a && NAMED_SPRITE[a.name]).map((a) => ({ name: a.name, loc: a.loc, mood: a.mood }));
-      const feed = w.feed.slice(0, 8).map((p) => ({ id: p.id, agentId: p.agentId, name: p.name, action: p.action as string, text: p.text, ev: p.ev?.kind ?? null }));
-      netRef.current?.sendWorld({ e: w.epoch, supply: w.stats.supply, npc, feed });
+      const npc = w.order.map((id) => w.agents[id]).filter((a) => a && NAMED_SPRITE[a.name]).map((a) => ({ name: a.name, loc: a.loc, mood: a.mood, balance: a.balance, needs: a.needs as unknown as Record<string, number>, rng: a.rngState, rel: a.rel }));
+      const feed = w.feed.filter((p) => NAMED_SPRITE[p.name]).slice(0, 8).map((p) => ({ id: p.id, agentId: p.agentId, name: p.name, action: p.action as string, text: p.text, ev: p.ev?.kind ?? null }));
+      netRef.current?.sendWorld({ host: me.id, e: w.epoch, supply: w.stats.supply, npc, feed });
     }, 800);
-    return () => { clearInterval(snapIv); try { net.disconnect(); } catch { /* ignore */ } netRef.current = null; remotes.current.clear(); };
+    return () => { clearTimeout(electTimer); clearInterval(snapIv); try { net.disconnect(); } catch { /* ignore */ } netRef.current = null; remotes.current.clear(); };
   }, []);
   const sendChat = () => { const t = chatInput.trim(); if (!t || !netRef.current) return; netRef.current.sendChat(t.slice(0, 120)); setChatInput(''); };
 
@@ -396,7 +417,7 @@ export default function WorldView() {
   useEffect(() => {
     const canvas = ref.current; if (!canvas) return;
     const ctx = canvas.getContext('2d'); if (!ctx) return;
-    let raf = 0; let errLogged = false; const dpr = window.devicePixelRatio || 1;
+    let raf = 0; let errLogged = false; const dpr = Math.min(2, window.devicePixelRatio || 1);  // 像素画 dpr 封顶 2,省高分屏填充率
     const walkable = (mx: number, my: number) => {
       const c = collide.current; if (!c) return true;
       const gx = Math.max(0, Math.min(c.cw - 1, mx / c.cs | 0)), gy = Math.max(0, Math.min(c.ch - 1, my / c.cs | 0));
@@ -438,8 +459,8 @@ export default function WorldView() {
           const jx = (hue('x' + id) / 360 - 0.5) * 44, jy = (hue('y' + id) / 360 - 0.5) * 44;
           let tx = anchor[0] * MAP_W + jx, ty = anchor[1] * MAP_H + jy;
           const m = meetRef.current;
-          if (companionRef.current === id && ctrl) {
-            const cp = apos.current.get(ctrl); if (cp) { tx = cp.mx - 30 + jx * 0.35; ty = cp.my + 6 + jy * 0.35; } // 陪走:跟在玩家身后
+          if (!GLOBAL && companionRef.current === id && ctrl) {
+            const cp = apos.current.get(ctrl); if (cp) { tx = cp.mx - 30 + jx * 0.35; ty = cp.my + 6 + jy * 0.35; } // 陪走:跟在玩家身后(全球模式禁用,避免 NPC 偏离主机)
           } else if (m && (id === m.a || id === m.b)) {
             const op = apos.current.get(id === m.a ? m.b : m.a);                                                   // 相会:走向对方,留间距
             if (op) { const ang = Math.atan2(op.my - pp.my, op.mx - pp.mx); tx = op.mx - Math.cos(ang) * 22; ty = op.my - Math.sin(ang) * 22; }
@@ -460,25 +481,28 @@ export default function WorldView() {
             if (now - m.lastHeart > 650) { m.lastHeart = now; popEmote((pa.mx + pb.mx) / 2, (pa.my + pb.my) / 2 - 26, '♥'); }
             const k = pairKey(m.a, m.b); affinity.current.set(k, (affinity.current.get(k) || 0) + 0.02);
           }
-        } else if (now > nextMeetAt.current) {
-          const friends = w.order.filter((id) => w.agents[id] && NAMED_SPRITE[w.agents[id].name] && id !== ctrl && id !== companionRef.current);
+        } else if (w.epoch !== lastMeetEp.current && w.epoch % 8 === 0) {
+          // 相会按同步的 epoch 触发、用 epoch 哈希选配对 → 全球各端一致的相遇动态
+          lastMeetEp.current = w.epoch;
+          const friends = w.order.filter((id) => w.agents[id] && NAMED_SPRITE[w.agents[id].name] && id !== companionRef.current).sort();
           if (friends.length >= 2) {
-            const a = friends[Math.floor(Math.random() * friends.length)];
-            let b = friends[Math.floor(Math.random() * friends.length)], guard = 0;
-            while (b === a && guard++ < 8) b = friends[Math.floor(Math.random() * friends.length)];
+            const h = hue('m' + w.epoch);
+            const a = friends[h % friends.length];
+            let b = friends[(h + 1 + ((h >> 3) % (friends.length - 1))) % friends.length];
+            if (b === a) b = friends[(friends.indexOf(a) + 1) % friends.length];
             if (b !== a) {
-              const pl = PAIR_LINES[Math.floor(Math.random() * PAIR_LINES.length)];
-              meetRef.current = { a, b, until: now + 11000, met: false, lastHeart: 0 };
+              const pl = PAIR_LINES[h % PAIR_LINES.length];
+              meetRef.current = { a, b, until: now + 9000, met: false, lastHeart: 0 };
               meetLines.current.clear(); meetLines.current.set(a, pl[0]); meetLines.current.set(b, pl[1]);
             }
-            nextMeetAt.current = now + 12000 + Math.random() * 7000;
-          } else nextMeetAt.current = now + 6000;
+          }
         }
       }
-      // 1c. 广播本地玩家位置(节流 ~10Hz;静止时每 2s 心跳;访客只读不广播)
+      // 1c. 广播本地玩家位置。Supabase Free 有 100 msg/s + N+1 扇出硬限(有效率≈限额/人数),
+      //     故移动时 ~6.7Hz、静止每 3s 心跳,且只读访客不广播。
       if (!VISIT && netRef.current && ctrl && meSelf.current) {
         const mp = apos.current.get(ctrl);
-        if (mp && now - lastPosSent.current > 100 && (mp.moving || now - lastPosSent.current > 2000)) {
+        if (mp && now - lastPosSent.current > 150 && (mp.moving || now - lastPosSent.current > 3000)) {
           lastPosSent.current = now; const s = meSelf.current;
           netRef.current.sendPos({ id: s.id, name: s.name, sprite: s.sprite, x: +(mp.mx / MAP_W).toFixed(4), y: +(mp.my / MAP_H).toFixed(4), dir: mp.dir, moving: mp.moving, flip: !!mp.flip });
         }
@@ -589,8 +613,8 @@ export default function WorldView() {
         const MM = 168, mg = 16, mx0 = VW - MM - mg, my0 = VH - MM - mg, RR = 1500;
         ctx.save();
         rrect(ctx, mx0, my0, MM, MM, 10); ctx.fillStyle = 'rgba(8,9,11,.7)'; ctx.fill(); ctx.clip();
-        const tmm = mapImg.current;
-        if (tmm) { ctx.imageSmoothingEnabled = false; ctx.drawImage(tmm, cpp.mx - RR, cpp.my - RR, RR * 2, RR * 2, mx0, my0, MM, MM); }
+        const tmm = miniMap.current || mapImg.current; const ms = miniMap.current ? 1 / 8 : 1;
+        if (tmm) { ctx.imageSmoothingEnabled = false; ctx.drawImage(tmm, (cpp.mx - RR) * ms, (cpp.my - RR) * ms, RR * 2 * ms, RR * 2 * ms, mx0, my0, MM, MM); }
         ctx.fillStyle = 'rgba(8,9,11,.32)'; ctx.fillRect(mx0, my0, MM, MM);
         for (const id of w.order) {
           const p = apos.current.get(id); if (!p) continue;
@@ -718,7 +742,7 @@ export default function WorldView() {
               <div className="talk-name">{fr?.name ?? ''}</div>
               <div className="talk-prompt">想和 {fr?.name ?? 'TA'} 做点什么?</div>
               <div className="talk-menu">
-                {ACTIONS.map((ac) => (
+                {ACTIONS.filter((ac) => !(GLOBAL && ac.id === 'follow')).map((ac) => (
                   <button key={ac.id} className="talk-act" onClick={() => doAction(tk.withId, ac.id)}>
                     {ac.glyph} {companionRef.current === tk.withId && ac.id === 'follow' ? '结束陪走' : ac.label}<small>{ac.sub}</small>
                   </button>
@@ -771,13 +795,18 @@ export default function WorldView() {
         </div>
       )}
 
-      {/* 世界频道(多人聊天):消息浮在输入框上方,远端玩家头顶也会冒同样的气泡 */}
-      <div className="world-chat">
+      {/* 全球非主机:首份主机快照到达前,提示正在进入共享世界(避免短暂看到本地私有世界) */}
+      {GLOBAL && !isHost && !synced && (
+        <div className="world-syncing">🌐 正在进入共享世界…</div>
+      )}
+
+      {/* 世界频道(多人聊天):消息浮在输入框上方;对话/菜单进行时隐藏,避免与对话框重叠 */}
+      {!talkRef.current && <div className="world-chat">
         {chatLog.length > 0 && <div className="world-chat-log">
           {chatLog.slice(-6).map((m, i) => <div key={i} className="wc-msg"><b>{m.name}:</b> {m.text}</div>)}
         </div>}
         <input className="world-chat-in" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') sendChat(); e.stopPropagation(); }} placeholder={`世界频道 · 以 ${meSelf.current?.name ?? '训练师'} 发言…`} maxLength={120} />
-      </div>
+      </div>}
 
       {netOpen && (
         <div className="world-help" onClick={() => setNetOpen(false)}>
