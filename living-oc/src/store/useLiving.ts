@@ -3,6 +3,7 @@ import type { Archetype, DayResult, MemoryEvent, WorldState, Providers } from '.
 import { createOc, sedimentGuidance, type OC } from '../oc/oc';
 import { runDay, step, flushInputs } from '../sim/step';
 import { createPrivateWorld } from '../sim/world';
+import { ARCHE_TRAITS } from '../sim/data';
 import { reflectToDiary } from '../sim/systems/memory';
 import { ScriptedCognitionProvider } from '../sim/providers/cognition';
 import { LiveCognitionProvider, LiveChainProvider } from '../live/liveProviders';
@@ -67,6 +68,7 @@ interface LivingState {
   liveADay(): Promise<void>;
   send(text: string): void;
   guide(text: string): void;
+  editOc(patch: { name?: string; bio?: string; arche?: Archetype }): void;
   load(): void;
   setView(v: View): void;
   enterWorld(): void;
@@ -109,6 +111,14 @@ export const useLiving = create<LivingState>((set, get) => ({
     const oc = get().oc; if (!oc) return;
     livingActions(get().seed).guide(oc, text); saveOc(oc);
     set({ chatLog: [...get().chatLog, { who: 'you', text: '【引导】' + text }, { who: 'oc', text: '……我记下了。' }], version: get().version + 1 });
+  },
+  editOc(patch) {
+    const oc = get().oc; if (!oc) return;
+    if (patch.name && patch.name.trim()) oc.name = patch.name.trim();
+    if (patch.bio !== undefined) oc.bio = patch.bio.trim() || oc.bio;
+    if (patch.arche && patch.arche !== oc.arche) { oc.arche = patch.arche; oc.traits = { ...ARCHE_TRAITS[patch.arche] }; }
+    saveOc(oc);
+    set({ version: get().version + 1 });
   },
   load() {
     const oc = loadOc(); if (oc) set({ oc, version: get().version + 1 });

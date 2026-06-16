@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useLiving } from '../store/useLiving';
 import { ARCHE_CN } from '../sim/data';
+import type { Archetype } from '../sim/types';
 import Chat from './Chat';
 import LifeFeed from './LifeFeed';
 
@@ -11,41 +13,70 @@ function Bar({ label, v }: { label: string; v: number }) {
   );
 }
 
-// 个人空间:这位 OC 的「家」——身份、性格、此刻、你为它沉淀的信念、记忆、今日人生、对话
+// 个人空间:这位 OC 的「家」——身份、性格、此刻、你为它沉淀的信念、记忆、今日人生、对话。
+// 你可亲手编辑它的人设(名字/原型/背景故事)—— 共创即拥有。
 export default function PersonalSpace() {
   useLiving((s) => s.version);
   const oc = useLiving.getState().oc;
+  const editOc = useLiving((s) => s.editOc);
+  const [editing, setEditing] = useState(false);
+  const [eName, setEName] = useState('');
+  const [eBio, setEBio] = useState('');
+  const [eArche, setEArche] = useState<Archetype>('creator');
   if (!oc) return null;
   const p = oc.profile;
+  const startEdit = () => { setEName(oc.name); setEBio(oc.bio); setEArche(oc.arche); setEditing(true); };
+  const save = () => { editOc({ name: eName, bio: eBio, arche: eArche }); setEditing(false); };
+
   return (
     <div className="app space">
       <div className="space-grid">
         <aside className="space-col">
           <section className="sp-card">
-            <div className="sp-id">
-              <span className="sp-av" style={{ background: `hsl(${hue(oc.id)},48%,55%)` }} />
-              <div className="sp-id-txt">
-                <div className="sp-name">{oc.name} <span className="sp-star">★</span></div>
-                <div className="sp-sub">{oc.handle} · {ARCHE_CN[oc.arche]} · 「{oc.mood}」</div>
+            {editing ? (
+              <div className="sp-edit">
+                <div className="sp-sec">编辑人设 · 它属于你</div>
+                <label className="sp-field"><span>名字</span><input value={eName} onChange={(e) => setEName(e.target.value)} maxLength={12} /></label>
+                <label className="sp-field"><span>原型</span>
+                  <select value={eArche} onChange={(e) => setEArche(e.target.value as Archetype)}>
+                    {(Object.keys(ARCHE_CN) as Archetype[]).map((a) => <option key={a} value={a}>{ARCHE_CN[a]}</option>)}
+                  </select>
+                </label>
+                <label className="sp-field"><span>背景故事 / 人设</span><textarea value={eBio} onChange={(e) => setEBio(e.target.value)} rows={4} placeholder="它是谁、从哪来、在乎什么、说话什么调调…" /></label>
+                <div className="sp-edit-actions">
+                  <button className="btn primary" onClick={save}>保存 ✦</button>
+                  <button className="btn" onClick={() => setEditing(false)}>取消</button>
+                </div>
               </div>
-            </div>
-            <div className="sp-meta">
-              <span><i>钱包</i> {oc.wallet.slice(0, 6)}…{oc.wallet.slice(-4)}</span>
-              <span><i>余额</i> {oc.balance.toFixed(2)} ◈</span>
-              <span><i>活过</i> {p.daysLived} 天</span>
-            </div>
-            <div className="sp-bio">{oc.bio}</div>
-            <div className="sp-sec">性格 · Traits</div>
-            <Bar label="野心" v={oc.traits.ambition} />
-            <Bar label="社交" v={oc.traits.sociability} />
-            <Bar label="冒险" v={oc.traits.risk} />
-            <Bar label="创造" v={oc.traits.creativity} />
-            <Bar label="节俭" v={oc.traits.frugality} />
-            <div className="sp-sec">此刻 · Needs</div>
-            <Bar label="精力" v={oc.needs.energy} />
-            <Bar label="财力" v={oc.needs.money} />
-            <Bar label="社交" v={oc.needs.social} />
-            <Bar label="名声" v={oc.needs.fame} />
+            ) : (
+              <>
+                <div className="sp-id">
+                  <span className="sp-av" style={{ background: `hsl(${hue(oc.id)},48%,55%)` }} />
+                  <div className="sp-id-txt">
+                    <div className="sp-name">{oc.name} <span className="sp-star">★</span></div>
+                    <div className="sp-sub">{oc.handle} · {ARCHE_CN[oc.arche]} · 「{oc.mood}」</div>
+                  </div>
+                  <button className="sp-edit-btn" onClick={startEdit} title="编辑人设(名字 / 原型 / 背景故事)">✎</button>
+                </div>
+                <div className="sp-meta">
+                  <span><i>钱包</i> {oc.wallet.slice(0, 6)}…{oc.wallet.slice(-4)}</span>
+                  <span><i>余额</i> {oc.balance.toFixed(2)} ◈</span>
+                  <span><i>活过</i> {p.daysLived} 天</span>
+                </div>
+                <div className="sp-bio">{oc.bio}</div>
+                <div className="sp-sec">性格 · Traits</div>
+                <Bar label="野心" v={oc.traits.ambition} />
+                <Bar label="社交" v={oc.traits.sociability} />
+                <Bar label="冒险" v={oc.traits.risk} />
+                <Bar label="创造" v={oc.traits.creativity} />
+                <Bar label="节俭" v={oc.traits.frugality} />
+                <div className="sp-sec">此刻 · Needs</div>
+                <Bar label="精力" v={oc.needs.energy} />
+                <Bar label="财力" v={oc.needs.money} />
+                <Bar label="社交" v={oc.needs.social} />
+                <Bar label="名声" v={oc.needs.fame} />
+              </>
+            )}
           </section>
 
           <section className="sp-card">
