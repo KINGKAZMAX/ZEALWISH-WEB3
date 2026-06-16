@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLiving } from '../store/useLiving';
+import type { Archetype } from '../sim/types';
 import ZealwishTopbar from './ZealwishTopbar';
 import PersonalSpace from './PersonalSpace';
 import WorldView from './WorldView';
@@ -10,6 +11,16 @@ const params = typeof window !== 'undefined' ? new URLSearchParams(window.locati
 const EMBED = params?.get('embed') === '1';
 const VISIT = params?.get('visit') === '1';
 const WORLD_ONLY = EMBED || VISIT;
+
+// ── 工作台「创建角色 → 化为像素小人 → 进入世界」交接 ──
+// 工作台 CreateView 把所选人设写进共享 localStorage(同源),并以 ?spawn=<ts> 加载本 iframe;
+// 这里读取它,把创建出的角色实例化为本世界的可控 OC(只消费一次,幂等)。
+const SPAWN_KEY = 'zealwish.world.spawn.v1';
+const SPAWN_DONE = 'zealwish.world.spawn.consumed.v1';
+const SPAWN_SPRITES = ['red_normal', 'green_normal', 'boy', 'lass', 'youngster', 'beauty', 'gentleman', 'fat_man'];
+const SPAWN_ARCHES = ['creator', 'trader', 'helper', 'worker', 'socialite', 'gambler', 'saver'];
+type SpawnIntent = { name?: string; bio?: string; arche?: string; sprite?: string; ts?: number };
+function readSpawn(): SpawnIntent | null { try { const s = localStorage.getItem(SPAWN_KEY); return s ? (JSON.parse(s) as SpawnIntent) : null; } catch { return null; } }
 
 export default function App() {
   useLiving((s) => s.version);
@@ -23,7 +34,20 @@ export default function App() {
     load();
     if (WORLD_ONLY) {
       document.documentElement.classList.add('oc-embed');
-      if (!useLiving.getState().oc) create({ name: '小智', handle: '@xiaozhi', bio: '一个待沉淀的灵魂,在海边自由生活', arche: 'creator' });
+      const spawnTs = params?.get('spawn');
+      const intent = readSpawn();
+      let consumed: string | null = null; try { consumed = localStorage.getItem(SPAWN_DONE); } catch { /* ignore */ }
+      if (!VISIT && spawnTs && intent && String(intent.ts) === spawnTs && spawnTs !== consumed) {
+        // 工作台刚创建/更新了角色 → 实例化为可控 OC(覆盖既有),并落地所选像素身体
+        const sprite = intent.sprite && SPAWN_SPRITES.includes(intent.sprite) ? intent.sprite : 'red_normal';
+        const arche = (intent.arche && SPAWN_ARCHES.includes(intent.arche) ? intent.arche : 'creator') as Archetype;
+        const nm = (intent.name || '小智').toString().trim().slice(0, 12) || '小智';
+        const bio = (intent.bio || '').toString().trim().slice(0, 200) || '一个待沉淀的灵魂,在海边自由生活';
+        create({ name: nm, handle: '@' + nm, bio, arche, sprite });
+        try { localStorage.setItem(SPAWN_DONE, spawnTs); } catch { /* ignore */ }
+      } else if (!useLiving.getState().oc) {
+        create({ name: '小智', handle: '@xiaozhi', bio: '一个待沉淀的灵魂,在海边自由生活', arche: 'creator', sprite: 'red_normal' });
+      }
       setView('world');
     }
   }, []);

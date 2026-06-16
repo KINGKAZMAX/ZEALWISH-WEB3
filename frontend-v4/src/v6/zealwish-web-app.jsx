@@ -218,6 +218,28 @@ function toApiMessages(messages) {
 
 // --- Identity (character record) ---
 
+// 「化为像素小人，进入活世界」交接用：人格原型 + 像素身体（须与 living-oc 的 Archetype / 精灵保持一致）
+const WORLD_SPAWN_KEY = 'zealwish.world.spawn.v1';
+const WORLD_ARCHES = [
+  { id: 'creator', cn: '创作者', en: 'Creator' },
+  { id: 'trader', cn: '投机者', en: 'Trader' },
+  { id: 'helper', cn: '守护者', en: 'Guardian' },
+  { id: 'worker', cn: '匠人', en: 'Maker' },
+  { id: 'socialite', cn: '社交动物', en: 'Socialite' },
+  { id: 'gambler', cn: '赌徒', en: 'Gambler' },
+  { id: 'saver', cn: '积攒者', en: 'Saver' }
+];
+const WORLD_BODIES = [
+  { id: 'red_normal', label: '红衣主角' },
+  { id: 'green_normal', label: '绿衣' },
+  { id: 'boy', label: '男孩' },
+  { id: 'lass', label: '少女' },
+  { id: 'youngster', label: '少年' },
+  { id: 'beauty', label: '美人' },
+  { id: 'gentleman', label: '绅士' },
+  { id: 'fat_man', label: '壮汉' }
+];
+
 function defaultIdentity() {
   return {
     id: 'ZEALWISH-0001',
@@ -225,6 +247,8 @@ function defaultIdentity() {
     prompt: '一个属于你的 AI 角色——话不多但都记得,在你的世界里慢慢长成自己的样子。',
     gender: 'female',
     artStyle: 'pixel',
+    arche: 'creator',
+    sprite: 'red_normal',
     lookSeeds: [],
     backdrop: 'auto',
     customColor: '#10B981',
@@ -933,6 +957,8 @@ function CreateView({ identity, wallet, onSaveIdentity, onGeneratePortrait, port
   const [prompt, setPrompt] = useState(identity?.prompt || '');
   const [gender, setGender] = useState(identity?.gender || 'auto');
   const [artStyle, setArtStyle] = useState(identity?.artStyle || 'pixel');
+  const [arche, setArche] = useState(identity?.arche || 'creator');
+  const [sprite, setSprite] = useState(identity?.sprite || 'red_normal');
   const [lookSeeds, setLookSeeds] = useState(() => identity?.lookSeeds || []);
   const [backdrop, setBackdrop] = useState(identity?.backdrop || 'auto');
   const [customColor, setCustomColor] = useState(identity?.customColor || '#10B981');
@@ -961,9 +987,23 @@ function CreateView({ identity, wallet, onSaveIdentity, onGeneratePortrait, port
 
   const handleSaveClick = useCallback(async () => {
     setSaveStatus('Saving passport...');
-    await onSaveIdentity({ name, prompt, gender, artStyle, lookSeeds, backdrop, customColor });
+    await onSaveIdentity({ name, prompt, gender, artStyle, lookSeeds, backdrop, customColor, arche, sprite });
     setSaveStatus('Passport saved. Your companion is live — go talk.');
-  }, [name, prompt, gender, artStyle, lookSeeds, backdrop, customColor, onSaveIdentity]);
+  }, [name, prompt, gender, artStyle, lookSeeds, backdrop, customColor, arche, sprite, onSaveIdentity]);
+
+  // 化为像素小人，进入活世界：持久化人设 + 身体，写入交接 intent，跳到 World 模块，世界即以此角色出生
+  const handleEnterWorld = useCallback(async () => {
+    setSaveStatus('Spawning your pixel avatar in the Living World...');
+    await onSaveIdentity({ name, prompt, gender, artStyle, lookSeeds, backdrop, customColor, arche, sprite });
+    try {
+      localStorage.setItem(WORLD_SPAWN_KEY, JSON.stringify({
+        name: String(name || identity?.name || '小智').trim(),
+        bio: String(prompt || identity?.prompt || '').trim(),
+        arche, sprite, ts: Date.now()
+      }));
+    } catch {}
+    window.location.hash = '#/world';
+  }, [name, prompt, gender, artStyle, lookSeeds, backdrop, customColor, arche, sprite, onSaveIdentity, identity]);
 
   const handlePortraitClick = useCallback(() => {
     onGeneratePortrait({ name, prompt, artStyle, lookSeeds, backdrop, customColor });
@@ -1094,6 +1134,32 @@ function CreateView({ identity, wallet, onSaveIdentity, onGeneratePortrait, port
             <option value="female">Female voice</option>
             <option value="male">Male voice</option>
           </select>
+
+          <label className="field-label">人格原型 · Personality（决定它在活世界里怎么生活）</label>
+          <select id="create-arche" className="field" value={arche} onChange={(event) => setArche(event.target.value)}>
+            {WORLD_ARCHES.map((a) => <option key={a.id} value={a.id}>{a.cn} · {a.en}</option>)}
+          </select>
+
+          <label className="field-label">像素小人 · 你在世界里的身体（头像仍是护照 PFP）</label>
+          <div className="seed-chips" style={{ gap: 10 }}>
+            {WORLD_BODIES.map((b) => (
+              <button
+                type="button"
+                key={b.id}
+                title={b.label}
+                aria-label={`Pixel body ${b.label}`}
+                aria-pressed={sprite === b.id}
+                onClick={() => setSprite(b.id)}
+                style={{
+                  width: 42, height: 90, padding: 0, cursor: 'pointer', overflow: 'hidden',
+                  borderRadius: 8, background: '#0d0d10 no-repeat 0px 3px', backgroundImage: `url(/world/sprites/chr-${b.id}.png)`,
+                  backgroundSize: 'auto 84px', imageRendering: 'pixelated',
+                  border: sprite === b.id ? '2px solid #ff2d2d' : '1px solid rgba(255,255,255,.18)'
+                }}
+              />
+            ))}
+          </div>
+
           <div className="create-actions">
             <button className="button-primary edge" onClick={handleSaveClick}>Save Passport</button>
             <button className="button-secondary edge" onClick={handleSurprise}>Surprise me</button>
@@ -1101,7 +1167,10 @@ function CreateView({ identity, wallet, onSaveIdentity, onGeneratePortrait, port
               {portraitState === 'rendering' || portraitState === 'slow' ? 'Rendering...' : 'Generate portrait'}
             </button>
           </div>
-          <div className="create-meta mono">AI IMAGE / 4-UP / {activeStyle.label} STYLE / STEPFUN</div>
+          <div className="create-actions" style={{ marginTop: 10 }}>
+            <button className="button-primary edge" style={{ width: '100%' }} onClick={handleEnterWorld}>化为像素小人 · 进入活世界 →</button>
+          </div>
+          <div className="create-meta mono">AI IMAGE / 4-UP / {activeStyle.label} STYLE / STEPFUN · SPAWN AS PIXEL AVATAR</div>
           <div className="action-status mono" role="status" aria-live="polite">{saveStatus}</div>
         </div>
         <div className="panel edge passport-preview">
@@ -1526,6 +1595,9 @@ const CREATOR_SKINS = [
 function WorldView({ activeScene, signedPassport, portraitState, onApplySkin, onEnterScene, onRunTask, onOpenOwnership }) {
   const [worldStatus, setWorldStatus] = useState('Every route below is live: skins restyle the portrait, scenes and tasks land in Talk.');
   const skinBusy = portraitState === 'rendering' || portraitState === 'slow';
+  // 若工作台刚「化为像素小人」交接了角色，带上 ?spawn=<ts>，内嵌世界即以该角色出生
+  const spawnTs = (() => { try { return JSON.parse(localStorage.getItem(WORLD_SPAWN_KEY) || 'null')?.ts || null; } catch { return null; } })();
+  const worldSrc = '/world/?embed=1' + (spawnTs ? `&spawn=${spawnTs}` : '');
 
   return (
     <>
@@ -1542,7 +1614,7 @@ function WorldView({ activeScene, signedPassport, portraitState, onApplySkin, on
           <a className="button-secondary edge" href="/world/" target="_blank" rel="noopener noreferrer">全屏打开 ⤢</a>
         </div>
         <div className="living-embed-frame">
-          <iframe src="/world/?embed=1" title="LIVING OC · 活世界" loading="lazy" allow="autoplay"></iframe>
+          <iframe src={worldSrc} title="LIVING OC · 活世界" loading="lazy" allow="autoplay"></iframe>
         </div>
       </section>
 
@@ -1908,7 +1980,7 @@ function App() {
     try { localStorage.setItem(PASSPORT_KEY, JSON.stringify(next)); } catch {}
   }, []);
 
-  const handleSaveIdentity = useCallback(async ({ name, prompt, gender, artStyle, lookSeeds, backdrop, customColor }) => {
+  const handleSaveIdentity = useCallback(async ({ name, prompt, gender, artStyle, lookSeeds, backdrop, customColor, arche, sprite }) => {
     let resolvedGender = gender;
     if (gender === 'auto') {
       resolvedGender = 'female';
@@ -1933,6 +2005,8 @@ function App() {
       prompt: String(prompt || '').trim() || defaultIdentity().prompt,
       gender: resolvedGender,
       artStyle: ART_STYLES.some((entry) => entry.id === artStyle) ? artStyle : (identityRef.current.artStyle || 'pixel'),
+      arche: WORLD_ARCHES.some((entry) => entry.id === arche) ? arche : (identityRef.current.arche || 'creator'),
+      sprite: WORLD_BODIES.some((entry) => entry.id === sprite) ? sprite : (identityRef.current.sprite || 'red_normal'),
       lookSeeds: Array.isArray(lookSeeds) ? lookSeeds.slice(0, 6) : (identityRef.current.lookSeeds || []),
       backdrop: backdrop || identityRef.current.backdrop || 'auto',
       customColor: customColor || identityRef.current.customColor || '#10B981',

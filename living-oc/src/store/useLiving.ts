@@ -65,7 +65,7 @@ interface LivingState {
   worldRunning: boolean;
   worldSpeed: number;
   liveMode: LiveMode;
-  create(input: { name: string; handle: string; bio: string; arche: Archetype }): void;
+  create(input: { name: string; handle: string; bio: string; arche: Archetype; sprite?: string }): void;
   liveADay(): Promise<void>;
   send(text: string): void;
   guide(text: string): void;
@@ -92,6 +92,7 @@ export const useLiving = create<LivingState>((set, get) => ({
   create(input) {
     const a = livingActions(get().seed);
     const oc = a.create(input);
+    if (input.sprite) oc.sprite = input.sprite;   // 工作台带入的像素小人身体
     saveOc(oc);
     set({ oc, day: null, chatLog: [], world: null, worldRunning: false, version: get().version + 1 });
   },

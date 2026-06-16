@@ -6,7 +6,8 @@ export interface OcProfile {
   insights: string[];
   daysLived: number;
 }
-export type OC = Agent & { profile: OcProfile };
+// sprite:玩家在世界里的「像素小人」身体(从工作台创建流程带入;见 App.tsx spawn 流程)
+export type OC = Agent & { profile: OcProfile; sprite?: string };
 
 export function createOc(p: { name: string; handle: string; bio: string; arche: Archetype; seed: string }): OC {
   const a = makeAgent('oc#' + p.handle.replace('@', '') + ':' + p.seed, p.name, p.handle, p.bio, p.arche, p.seed);

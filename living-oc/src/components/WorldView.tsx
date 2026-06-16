@@ -43,6 +43,8 @@ function loadRegion(): [number, number] {
 }
 
 const NPC_CHARS = ['green_normal', 'boy', 'lass', 'youngster', 'fat_man', 'beauty', 'gentleman'];
+// 玩家可选的「像素小人」身体(工作台创建流程里挑选;含主角 Red)
+const PLAYER_SPRITES = ['red_normal', ...NPC_CHARS];
 // 命名角色专属精灵(小智=Red 另外处理;5 个新加坡留学伙伴用对应 chr-*.png)
 const NAMED_SPRITE: Record<string, string> = {
   '范范兔': 'fanfan', '熊熊': 'xiongxiong', '鹿鹿鹅': 'lulu', '猪猪仔': 'zhuzhu', '冰冰雁': 'bingbing',
@@ -281,7 +283,8 @@ export default function WorldView() {
         const mcx = mc.getContext('2d'); if (mcx) { mcx.imageSmoothingEnabled = false; mcx.drawImage(fc, 0, 0, MAP_W, MAP_H, 0, 0, mw, mh); miniMap.current = mc; }
       } else mapImg.current = t;
     };
-    const r = new Image(); r.src = BASE + 'sprites/chr-red_normal.png'; ocSprite.current = r;
+    const ocsp = useLiving.getState().oc?.sprite; const ocBody = ocsp && PLAYER_SPRITES.includes(ocsp) ? ocsp : 'red_normal';
+    const r = new Image(); r.src = BASE + 'sprites/chr-' + ocBody + '.png'; ocSprite.current = r;
     npcSprites.current = NPC_CHARS.map((n) => { const im = new Image(); im.src = BASE + 'sprites/chr-' + n + '.png'; return im; });
     for (const nm in NAMED_SPRITE) {
       const im = new Image(); im.src = BASE + 'sprites/chr-' + NAMED_SPRITE[nm] + '.png';
@@ -301,7 +304,9 @@ export default function WorldView() {
     const ocNm = useLiving.getState().oc?.name;
     if (ocNm && /^训练师-/.test(playerSelf().name)) setPlayerName(ocNm);
     // 访客 id 加 'z' 前缀使其排序最后 → 永不被选为主机(只读旁观)
-    const base = playerSelf(); const me: NetSelf = VISIT ? { ...base, id: 'z' + base.id } : base; meSelf.current = me;
+    const base = playerSelf();
+    const ocsp = useLiving.getState().oc?.sprite; if (ocsp && PLAYER_SPRITES.includes(ocsp)) base.sprite = ocsp;   // 广播给其他玩家的身体 = 所选像素小人,保证同屏一致
+    const me: NetSelf = VISIT ? { ...base, id: 'z' + base.id } : base; meSelf.current = me;
     net.onPos((p) => {
       if (p.id === me.id) return;
       const r = remotes.current.get(p.id) || { x: p.x, y: p.y, tx: p.x, ty: p.y, dir: p.dir, moving: p.moving, flip: p.flip, name: p.name, sprite: p.sprite, bubbleAt: 0, last: 0 };
