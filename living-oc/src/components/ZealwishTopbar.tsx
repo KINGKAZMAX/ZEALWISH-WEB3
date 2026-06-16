@@ -21,7 +21,7 @@ export default function ZealwishTopbar({ view, setView }: { view: View; setView:
       </div>
       {oc && (
         <nav className="zw-nav">
-          <button className={view === 'room' ? 'on' : ''} onClick={() => setView('room')}>卧室</button>
+          <button className={view === 'room' ? 'on' : ''} onClick={() => setView('room')}>个人空间</button>
           <button className={view === 'world' ? 'on' : ''} onClick={() => setView('world')}>世界</button>
         </nav>
       )}

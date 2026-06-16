@@ -211,3 +211,30 @@ html.oc-embed .world-fs{height:100vh}
 .world-help-card li b{color:var(--red)}
 .world-help-go{width:100%;padding:11px;border-radius:10px;background:var(--red);border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--world-font)}
 .world-help-go:hover{background:var(--red-deep)}
+
+/* ── 个人空间(OC 的家)── */
+.app.space{max-width:1200px}
+.space-grid{display:grid;grid-template-columns:320px minmax(0,1fr) 340px;gap:16px;align-items:start}
+.space-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.sp-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.sp-id{display:flex;align-items:center;gap:12px}
+.sp-av{width:46px;height:46px;border-radius:12px;flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.sp-id-txt{min-width:0}
+.sp-name{font-family:var(--font-display);font-size:30px;font-weight:700;line-height:1}
+.sp-star{color:var(--red);font-size:16px}
+.sp-sub{font-size:11px;color:var(--muted);margin-top:5px;letter-spacing:.02em}
+.sp-meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin:13px 0;font-size:11px;color:var(--text);font-family:var(--font-mono)}
+.sp-meta i{color:var(--muted);font-style:normal;margin-right:4px}
+.sp-bio{font-size:13px;line-height:1.6;color:var(--muted);border-left:2px solid var(--red);padding-left:10px;margin-bottom:6px}
+.sp-sec{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--red);margin:16px 0 9px}
+.sp-bar{margin:7px 0}
+.sp-bar-lab{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:3px}
+.sp-bar-lab span:last-child{color:var(--text);font-family:var(--font-mono)}
+.sp-bar-track{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.sp-bar-track span{display:block;height:100%;background:linear-gradient(90deg,var(--red-deep),var(--red))}
+.sp-belief{font-size:13px;line-height:1.55;color:var(--text);background:var(--red-soft);border:1px solid rgba(255,45,45,.22);border-radius:9px;padding:9px 11px;margin-bottom:7px}
+.sp-insight{font-size:12.5px;line-height:1.5;color:var(--muted);padding:4px 0 4px 2px}
+.sp-empty{font-size:12.5px;line-height:1.6;color:var(--faint);padding:6px 0}
+.sp-mem{font-size:12.5px;line-height:1.5;color:var(--muted);padding:6px 0;border-bottom:1px dotted var(--line)}
+.sp-mem .tk{color:var(--red);font-family:var(--font-mono);font-size:10px;margin-right:6px}
+@media(max-width:980px){.space-grid{grid-template-columns:1fr}}

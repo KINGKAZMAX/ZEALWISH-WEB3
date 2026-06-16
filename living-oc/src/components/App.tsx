@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLiving } from '../store/useLiving';
 import ZealwishTopbar from './ZealwishTopbar';
-import LifeFeed from './LifeFeed';
-import Chat from './Chat';
+import PersonalSpace from './PersonalSpace';
 import WorldView from './WorldView';
 
 // ?embed=1:被 ZEALWISH 工作台 World 模块 iframe 内嵌(隐藏自身顶栏,导航交给外壳)。
@@ -52,9 +51,7 @@ export default function App() {
   return (
     <>
       <ZealwishTopbar view={view} setView={setView} />
-      {view === 'room'
-        ? <div className="app"><main className="grid2"><Chat /><LifeFeed /></main></div>
-        : <WorldView />}
+      {view === 'room' ? <PersonalSpace /> : <WorldView />}
     </>
   );
 }
