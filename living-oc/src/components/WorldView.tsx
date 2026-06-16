@@ -11,6 +11,8 @@ import { makeNet, playerSelf, setPlayerName, netMode, netConfig, setNetConfig, c
 const BASE = import.meta.env.BASE_URL;
 // 访客观光模式(?visit=1):只读串门 —— 无操控/接管/互动,自动巡游 + 点角色聚焦查看 + 转化 CTA
 const VISIT = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('visit') === '1';
+// 全球模式(配置了 Supabase):共享世界(主机权威)+ 固定区域,所有人同一个镇、同样的 NPC 动态
+const GLOBAL = netMode() === 'global';
 const MAP_SRC = 'kanto.webp';
 // 关都总图 6528×6400(地图坐标系 = 原始像素)。内容是不规则陆地、含白色空白,
 // 移动用降采样碰撞图限定在陆地上;6 地点放在一处镇区陆地上。
@@ -181,7 +183,7 @@ export default function WorldView() {
   const ref = useRef<HTMLCanvasElement>(null);
   const keys = useRef<Set<string>>(new Set());
   const apos = useRef(new Map<string, PP>());
-  const cam = useRef({ cx: MAP_W * loadRegion()[0], cy: MAP_H * loadRegion()[1] });
+  const cam = useRef({ cx: MAP_W * (GLOBAL ? REGION_DEFAULT[0] : loadRegion()[0]), cy: MAP_H * (GLOBAL ? REGION_DEFAULT[1] : loadRegion()[1]) });
   const view = useRef({ sx: 0, sy: 0 });
   const mapImg = useRef<CanvasImageSource | null>(null);
   const collide = useRef<{ d: Uint8ClampedArray; cw: number; ch: number; cs: number } | null>(null);
@@ -214,6 +216,9 @@ export default function WorldView() {
   const remotes = useRef<Map<string, { x: number; y: number; tx: number; ty: number; dir: string; moving: boolean; flip: boolean; name: string; sprite: string; bubble?: string; bubbleAt: number; last: number }>>(new Map());
   const spriteByName = useRef<Record<string, HTMLImageElement>>({});
   const lastPosSent = useRef(0);
+  const isHostRef = useRef(true);                 // 主机权威:在场玩家 id 最小者为主机(独自时即主机)
+  const [isHost, setIsHost] = useState(true);
+  const applySnap = useLiving((s) => s.applyWorldSnapshot);
   const [online, setOnline] = useState(1);
   const [chatLog, setChatLog] = useState<{ name: string; text: string }[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -239,7 +244,7 @@ export default function WorldView() {
     window.addEventListener('pointerdown', kick); window.addEventListener('keydown', kick);
     return () => { window.removeEventListener('pointerdown', kick); window.removeEventListener('keydown', kick); };
   }, []);
-  useEffect(() => { if (!worldRunning) return; const iv = setInterval(() => { void tick(); }, 900); return () => clearInterval(iv); }, [worldRunning, tick]);
+  useEffect(() => { if (!worldRunning) return; const iv = setInterval(() => { if (isHostRef.current) void tick(); }, 900); return () => clearInterval(iv); }, [worldRunning, tick]);
 
   useEffect(() => {
     const t = new Image(); t.src = BASE + 'sprites/' + MAP_SRC; t.onload = () => {
@@ -293,8 +298,20 @@ export default function WorldView() {
       if (m.id !== me.id) { const r = remotes.current.get(m.id); if (r) { r.bubble = m.text; r.bubbleAt = performance.now(); } }
     });
     net.onPresence((n) => setOnline(n));
+    // 主机选举:在场玩家 id 最小者为主机;主机跑模拟并广播,其余镜像
+    net.onPeers((ids) => { const host = ids.slice().sort()[0]; const amHost = !ids.length || host === me.id; isHostRef.current = amHost; setIsHost(amHost); });
+    // 非主机:落地主机广播的共享世界状态(NPC 位置/心情 + feed + 纪元 + 供给)
+    net.onWorld((snap) => { if (!isHostRef.current) applySnap(snap); });
     void net.connect('global', me);
-    return () => { try { net.disconnect(); } catch { /* ignore */ } netRef.current = null; remotes.current.clear(); };
+    // 主机:每 ~0.8s 广播一份共享世界快照(只含 5 位居民 + feed,玩家 OC 各自本地)
+    const snapIv = setInterval(() => {
+      if (!isHostRef.current) return;
+      const w = useLiving.getState().world; if (!w) return;
+      const npc = w.order.map((id) => w.agents[id]).filter((a) => a && NAMED_SPRITE[a.name]).map((a) => ({ name: a.name, loc: a.loc, mood: a.mood }));
+      const feed = w.feed.slice(0, 8).map((p) => ({ id: p.id, agentId: p.agentId, name: p.name, action: p.action as string, text: p.text, ev: p.ev?.kind ?? null }));
+      netRef.current?.sendWorld({ e: w.epoch, supply: w.stats.supply, npc, feed });
+    }, 800);
+    return () => { clearInterval(snapIv); try { net.disconnect(); } catch { /* ignore */ } netRef.current = null; remotes.current.clear(); };
   }, []);
   const sendChat = () => { const t = chatInput.trim(); if (!t || !netRef.current) return; netRef.current.sendChat(t.slice(0, 120)); setChatInput(''); };
 
@@ -397,7 +414,7 @@ export default function WorldView() {
       // 1. 位置更新
       if (w) for (const id of w.order) {
         const a = w.agents[id]; if (!a) continue; const loc = locById[a.loc]; if (!loc) continue;
-        const ro = ANCHOR_OFFSETS[loc.id] || [0, 0], rc = regionRef.current; const anchor: [number, number] = [rc[0] + ro[0], rc[1] + ro[1]];
+        const ro = ANCHOR_OFFSETS[loc.id] || [0, 0], rc = GLOBAL ? REGION_DEFAULT : regionRef.current; const anchor: [number, number] = [rc[0] + ro[0], rc[1] + ro[1]];
         let pp = apos.current.get(id);
         if (!pp) { pp = { mx: anchor[0] * MAP_W, my: anchor[1] * MAP_H, dir: 'down', moving: false }; apos.current.set(id, pp); }
         if (id === ctrl) {
@@ -615,7 +632,8 @@ export default function WorldView() {
       const c = ctrlRef.current, cp = c ? apos.current.get(c) : null, bp = apos.current.get(best);
       const adjacent = !!cp && !!bp && best !== c && ((cp.mx - bp.mx) ** 2 + (cp.my - bp.my) ** 2) < (INTERACT_R * 2.2) ** 2;
       if (adjacent) openMenu(best);                               // 站旁边点 TA → 互动菜单
-      else { setControlId(best); setInspId(best); }               // 点别的居民 → 接管 + 查看
+      else if (GLOBAL) setInspId(best);                           // 全球模式:只看不接管(只操控自己的 OC)
+      else { setControlId(best); setInspId(best); }               // 单机:点别的居民 → 接管 + 查看
     } else {
       walkTarget.current = { x: mx, y: my };                      // 点空地 → 走过去
     }
@@ -640,7 +658,7 @@ export default function WorldView() {
         <span className="wstat sm"><i>EPOCH</i> {w?.epoch ?? 0}</span>
         <span className="wstat sm"><i>居民</i> {w ? w.order.length : 0}</span>
         <span className="wstat sm hot"><i>供给</i> {(w ? Math.round(w.stats.supply) : 0)}◈</span>
-        <span className="wstat sm" title={netMode() === 'global' ? '全球联机中' : '本机多窗口(配置 Supabase 即全球联机)'}>{netMode() === 'global' ? '🌐' : '🖥'} 在线 {online}</span>
+        <span className="wstat sm" title={GLOBAL ? (isHost ? '全球联机中 · 本端为世界主机' : '全球联机中 · 镜像主机世界') : '本机多窗口(配置 Supabase 即全球联机)'}>{GLOBAL ? '🌐' : '🖥'} 在线 {online}{GLOBAL && isHost && online > 1 ? ' · 主机' : ''}</span>
         <button className="hud-btn" onClick={openNet} title="联机设置">联机</button>
         {VISIT ? (
           <>
@@ -650,9 +668,9 @@ export default function WorldView() {
           </>
         ) : (
           <>
-            <button className="hud-btn" onClick={() => setRun(!worldRunning)}>{worldRunning ? '⏸' : '▶'}</button>
-            <button className="hud-btn" onClick={() => { const n = window.prompt('克隆一个新居民(起个名字):', '@new_soul'); const v = n && n.trim(); if (v) addAgent(v); }}>＋人格</button>
-            <button className="hud-btn" onClick={() => { reseed(); apos.current.clear(); affinity.current.clear(); meetLines.current.clear(); companionRef.current = null; meetRef.current = null; nextMeetAt.current = 0; talkRef.current = null; setControlId(null); setInspId(null); }}>↻ 重置</button>
+            {!GLOBAL && <button className="hud-btn" onClick={() => setRun(!worldRunning)}>{worldRunning ? '⏸' : '▶'}</button>}
+            {!GLOBAL && <button className="hud-btn" onClick={() => { const n = window.prompt('克隆一个新居民(起个名字):', '@new_soul'); const v = n && n.trim(); if (v) addAgent(v); }}>＋人格</button>}
+            {!GLOBAL && <button className="hud-btn" onClick={() => { reseed(); apos.current.clear(); affinity.current.clear(); meetLines.current.clear(); companionRef.current = null; meetRef.current = null; nextMeetAt.current = 0; talkRef.current = null; setControlId(null); setInspId(null); }}>↻ 重置</button>}
             <button className="hud-btn" onClick={() => setControlId(ocId)}>回到小智 ★</button>
             <button className="hud-btn live" onClick={() => setLive(true)}>⚡ 真 LLM/链</button>
             <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="温馨 8-bit 背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
@@ -661,11 +679,11 @@ export default function WorldView() {
             <select className="hud-sel" value={FONTS.find((f) => f.css === font)?.id ?? FONTS[0].id} title="选择字体" onChange={(e) => { const f = FONTS.find((x) => x.id === e.target.value) ?? FONTS[0]; setFont(f.css); try { localStorage.setItem('oc-world-font', f.id); } catch { /* ignore */ } }}>
               {FONTS.map((f) => <option key={f.id} value={f.id}>字 · {f.name}</option>)}
             </select>
-            <select className="hud-sel" value={REGIONS.find((r) => r.c[0] === regionC[0] && r.c[1] === regionC[1])?.id ?? 'custom'} title="活动区域(角色聚居的地图区域)" onChange={(e) => { const r = REGIONS.find((x) => x.id === e.target.value); if (r) applyRegion(r.c); }}>
+            {!GLOBAL && <select className="hud-sel" value={REGIONS.find((r) => r.c[0] === regionC[0] && r.c[1] === regionC[1])?.id ?? 'custom'} title="活动区域(角色聚居的地图区域)" onChange={(e) => { const r = REGIONS.find((x) => x.id === e.target.value); if (r) applyRegion(r.c); }}>
               {REGIONS.map((r) => <option key={r.id} value={r.id}>区 · {r.name}</option>)}
               {!REGIONS.some((r) => r.c[0] === regionC[0] && r.c[1] === regionC[1]) && <option value="custom">区 · 自定义</option>}
-            </select>
-            <button className="hud-btn" title="把当前所在位置设为活动区域中心(整簇居民迁过来)" onClick={() => { const id = ctrlRef.current; const p = id ? apos.current.get(id) : null; if (p) applyRegion([+(p.mx / MAP_W).toFixed(4), +(p.my / MAP_H).toFixed(4)]); }}>📍 设此为区</button>
+            </select>}
+            {!GLOBAL && <button className="hud-btn" title="把当前所在位置设为活动区域中心(整簇居民迁过来)" onClick={() => { const id = ctrlRef.current; const p = id ? apos.current.get(id) : null; if (p) applyRegion([+(p.mx / MAP_W).toFixed(4), +(p.my / MAP_H).toFixed(4)]); }}>📍 设此为区</button>}
           </>
         )}
       </div>

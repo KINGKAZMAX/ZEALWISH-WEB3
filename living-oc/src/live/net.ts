@@ -8,15 +8,20 @@
 export interface PosMsg { id: string; name: string; sprite: string; x: number; y: number; dir: string; moving: boolean; flip: boolean }
 export interface ChatMsg { id: string; name: string; text: string }
 export interface NetSelf { id: string; name: string; sprite: string }
+// 共享世界快照(主机权威):按 NPC 名字同步,无需固定种子
+export interface WorldSnap { e: number; supply: number; npc: { name: string; loc: string; mood: string }[]; feed: { id: string; agentId: string; name: string; action: string; text: string; ev: string | null }[] }
 
 export interface NetTransport {
   kind: 'global' | 'local';
   connect(room: string, me: NetSelf): Promise<void> | void;
   sendPos(p: PosMsg): void;
   sendChat(text: string): void;
+  sendWorld(snap: WorldSnap): void;
   onPos(cb: (p: PosMsg) => void): void;
   onChat(cb: (m: ChatMsg) => void): void;
+  onWorld(cb: (snap: WorldSnap) => void): void;
   onPresence(cb: (count: number) => void): void;
+  onPeers(cb: (ids: string[]) => void): void;   // 当前在场玩家 id 列表(用于主机选举)
   disconnect(): void;
 }
 
@@ -58,23 +63,29 @@ class LocalTransport implements NetTransport {
   private bc?: BroadcastChannel; private me!: NetSelf;
   private peers = new Map<string, number>();
   private posCb?: (p: PosMsg) => void; private chatCb?: (m: ChatMsg) => void; private presCb?: (n: number) => void;
+  private peersCb?: (ids: string[]) => void; private worldCb?: (s: WorldSnap) => void;
   connect(room: string, me: NetSelf) {
     this.me = me; this.bc = new BroadcastChannel('oc-world:' + room);
     this.bc.onmessage = (e) => {
       const d = e.data; if (!d || d.from === me.id) return;
       if (d.t === 'pos') { this.peers.set(d.p.id, performance.now()); this.posCb?.(d.p); this.prune(); }
       else if (d.t === 'chat') { this.chatCb?.(d.m); }
+      else if (d.t === 'world') { this.peers.set(d.from, performance.now()); this.worldCb?.(d.snap); this.prune(); }
       else if (d.t === 'bye') { this.peers.delete(d.from); this.prune(); }
-      else if (d.t === 'hi') { /* 新人加入:回应一次,便于互相发现 */ this.prune(); }
+      else if (d.t === 'hi') { this.bc?.postMessage({ t: 'yo', from: me.id }); this.prune(); }   // 新人加入 → 回应,便于互相发现
+      else if (d.t === 'yo') { this.peers.set(d.from, performance.now()); this.prune(); }
     };
     this.bc.postMessage({ t: 'hi', from: me.id });
   }
-  private prune() { const now = performance.now(); for (const [id, t] of this.peers) if (now - t > 6000) this.peers.delete(id); this.presCb?.(this.peers.size + 1); }
+  private prune() { const now = performance.now(); for (const [id, t] of this.peers) if (now - t > 6000) this.peers.delete(id); this.presCb?.(this.peers.size + 1); this.peersCb?.([this.me.id, ...this.peers.keys()]); }
   sendPos(p: PosMsg) { this.bc?.postMessage({ t: 'pos', from: this.me.id, p }); }
   sendChat(text: string) { const m = { id: this.me.id, name: this.me.name, text }; this.bc?.postMessage({ t: 'chat', from: this.me.id, m }); this.chatCb?.(m); }
+  sendWorld(snap: WorldSnap) { this.bc?.postMessage({ t: 'world', from: this.me.id, snap }); }
   onPos(cb: (p: PosMsg) => void) { this.posCb = cb; }
   onChat(cb: (m: ChatMsg) => void) { this.chatCb = cb; }
+  onWorld(cb: (s: WorldSnap) => void) { this.worldCb = cb; }
   onPresence(cb: (n: number) => void) { this.presCb = cb; cb(1); }
+  onPeers(cb: (ids: string[]) => void) { this.peersCb = cb; cb([this.me?.id || 'self']); }
   disconnect() { try { this.bc?.postMessage({ t: 'bye', from: this.me?.id }); this.bc?.close(); } catch { /* ignore */ } }
 }
 
@@ -85,6 +96,7 @@ class GlobalTransport implements NetTransport {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private channel: any; private client: any;
   private posCb?: (p: PosMsg) => void; private chatCb?: (m: ChatMsg) => void; private presCb?: (n: number) => void;
+  private peersCb?: (ids: string[]) => void; private worldCb?: (s: WorldSnap) => void;
   constructor(cfg: { url: string; key: string }) { this.cfg = cfg; }
   async connect(room: string, me: NetSelf) {
     this.me = me;
@@ -96,15 +108,20 @@ class GlobalTransport implements NetTransport {
       .on('broadcast', { event: 'pos' }, (m: any) => this.posCb?.(m.payload))
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .on('broadcast', { event: 'chat' }, (m: any) => this.chatCb?.(m.payload))
-      .on('presence', { event: 'sync' }, () => { try { this.presCb?.(Object.keys(this.channel.presenceState()).length); } catch { /* ignore */ } })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .on('broadcast', { event: 'world' }, (m: any) => this.worldCb?.(m.payload))
+      .on('presence', { event: 'sync' }, () => { try { const ids = Object.keys(this.channel.presenceState()); this.presCb?.(ids.length); this.peersCb?.(ids); } catch { /* ignore */ } })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .subscribe(async (status: string) => { if (status === 'SUBSCRIBED') { try { await this.channel.track({ name: me.name, sprite: me.sprite }); } catch { /* ignore */ } } });
   }
   sendPos(p: PosMsg) { try { this.channel?.send({ type: 'broadcast', event: 'pos', payload: p }); } catch { /* ignore */ } }
   sendChat(text: string) { const payload = { id: this.me.id, name: this.me.name, text }; try { this.channel?.send({ type: 'broadcast', event: 'chat', payload }); } catch { /* ignore */ } this.chatCb?.(payload); }
+  sendWorld(snap: WorldSnap) { try { this.channel?.send({ type: 'broadcast', event: 'world', payload: snap }); } catch { /* ignore */ } }
   onPos(cb: (p: PosMsg) => void) { this.posCb = cb; }
   onChat(cb: (m: ChatMsg) => void) { this.chatCb = cb; }
+  onWorld(cb: (s: WorldSnap) => void) { this.worldCb = cb; }
   onPresence(cb: (n: number) => void) { this.presCb = cb; }
+  onPeers(cb: (ids: string[]) => void) { this.peersCb = cb; }
   disconnect() { try { this.channel?.unsubscribe(); this.client?.removeAllChannels?.(); } catch { /* ignore */ } }
 }
 

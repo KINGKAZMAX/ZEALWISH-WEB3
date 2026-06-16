@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { Archetype, DayResult, MemoryEvent, WorldState, Providers } from '../sim/types';
+import type { Archetype, DayResult, MemoryEvent, WorldState, Providers, Post } from '../sim/types';
+import type { WorldSnap } from '../live/net';
 import { createOc, sedimentGuidance, type OC } from '../oc/oc';
 import { runDay, step, flushInputs } from '../sim/step';
 import { createPrivateWorld } from '../sim/world';
@@ -77,6 +78,7 @@ interface LivingState {
   setWorldSpeed(n: number): void;
   addAgentToWorld(name: string): void;
   reseedWorld(): void;
+  applyWorldSnapshot(snap: WorldSnap): void;
   setLiveMode(m: Partial<LiveMode>): void;
 }
 
@@ -153,6 +155,16 @@ export const useLiving = create<LivingState>((set, get) => ({
     const clone = JSON.parse(JSON.stringify(oc)) as OC;
     const world = createPrivateWorld(clone, get().seed + ':world' + worldSeq);
     set({ world, worldRunning: false, version: get().version + 1 });
+  },
+  // 共享世界(非主机端):按 NPC 名字落地主机广播的状态 + feed + 纪元 + 供给
+  applyWorldSnapshot(snap) {
+    const w = get().world; if (!w) return;
+    w.epoch = snap.e; w.stats.supply = snap.supply;
+    const byName: Record<string, string> = {};
+    for (const id of w.order) { const a = w.agents[id]; if (a) byName[a.name] = id; }
+    for (const n of snap.npc) { const id = byName[n.name]; if (id) { w.agents[id].loc = n.loc; w.agents[id].mood = n.mood; } }
+    w.feed = snap.feed.map((p): Post => ({ id: p.id, agentId: byName[p.name] || p.agentId, name: p.name, handle: '@' + p.name, text: p.text, action: p.action as Post['action'], ev: null, epoch: snap.e, likes: 0 }));
+    set({ version: get().version + 1 });
   },
   setLiveMode(m) { const lm = { ...get().liveMode, ...m }; worldP = buildProviders(lm); set({ liveMode: lm, version: get().version + 1 }); },
 }));
