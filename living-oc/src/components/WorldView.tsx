@@ -191,10 +191,8 @@ export default function WorldView() {
   const meetLines = useRef<Map<string, string>>(new Map());
   const popEmote = (mx: number, my: number, glyph: string) => { emotes.current.push({ mx, my, glyph, born: performance.now() }); if (emotes.current.length > 48) emotes.current.shift(); };
   const pairKey = (a: string, b: string) => [a, b].sort().join('|');
-  // 移动端虚拟摇杆(模拟方向输入,叠加到键盘移动上)
-  const joy = useRef<{ x: number; y: number; id: number | null }>({ x: 0, y: 0, id: null });
-  const joyBase = useRef<HTMLDivElement>(null);
-  const joyKnob = useRef<HTMLSpanElement>(null);
+  // 点击地面走过去的目标(鼠标/触屏通用,替代虚拟摇杆)
+  const walkTarget = useRef<{ x: number; y: number } | null>(null);
   // 切换/自定义活动区域:迁移整簇居民到新中心,清位重新落位 + 相机移过去 + 持久化
   const applyRegion = (c: [number, number]) => {
     setRegionC(c);
@@ -304,19 +302,6 @@ export default function WorldView() {
     const key = pairKey(meId, friendId); affinity.current.set(key, (affinity.current.get(key) || 0) + gain);
     talkRef.current = { withId: friendId, lines, i: 0 }; bumpTalk();
   };
-  // 触屏「互动」按钮:与最近的伙伴打开互动菜单(无需空格键)
-  const interactNearest = () => { const tk = talkRef.current; if (tk) { if (tk.menu) { talkRef.current = null; bumpTalk(); } else { tk.i++; if (!tk.lines || tk.i >= tk.lines.length) talkRef.current = null; bumpTalk(); } } else if (nearRef.current) openMenu(nearRef.current); };
-  // 虚拟摇杆手势
-  const joyStart = (e: React.PointerEvent) => { const el = joyBase.current; if (!el) return; el.setPointerCapture(e.pointerId); joy.current.id = e.pointerId; joyMove(e); };
-  const joyMove = (e: React.PointerEvent) => {
-    if (joy.current.id === null || (joy.current.id !== e.pointerId)) return;
-    const el = joyBase.current; if (!el) return; const r = el.getBoundingClientRect(); const R = r.width / 2;
-    let dx = e.clientX - (r.left + R), dy = e.clientY - (r.top + R);
-    const len = Math.hypot(dx, dy) || 1, cl = Math.min(len, R); dx = dx / len * cl; dy = dy / len * cl;
-    joy.current.x = dx / R; joy.current.y = dy / R;
-    if (joyKnob.current) joyKnob.current.style.transform = `translate(${dx}px,${dy}px)`;
-  };
-  const joyEnd = (e: React.PointerEvent) => { if (joy.current.id !== e.pointerId) return; joy.current.id = null; joy.current.x = 0; joy.current.y = 0; if (joyKnob.current) joyKnob.current.style.transform = 'translate(0,0)'; };
 
   useEffect(() => {
     const dn = (e: KeyboardEvent) => {
@@ -364,7 +349,11 @@ export default function WorldView() {
           if (!talkRef.current) { // 对话中冻结移动
             if (K.has('a') || K.has('arrowleft')) vx -= 1; if (K.has('d') || K.has('arrowright')) vx += 1;
             if (K.has('w') || K.has('arrowup')) vy -= 1; if (K.has('s') || K.has('arrowdown')) vy += 1;
-            if (joy.current.x || joy.current.y) { vx += joy.current.x; vy += joy.current.y; } // 虚拟摇杆
+            if (vx || vy) walkTarget.current = null;                       // 键盘输入取消点击寻路
+            else if (walkTarget.current) {                                 // 点击地面 → 朝目标走(鼠标/触屏通用)
+              const dx = walkTarget.current.x - pp.mx, dy = walkTarget.current.y - pp.my, d = Math.hypot(dx, dy);
+              if (d > 6) { vx = dx / d; vy = dy / d; } else walkTarget.current = null;
+            }
           }
           const len = Math.hypot(vx, vy) || 1; const nx = pp.mx + (vx / len) * SPEED * dt, ny = pp.my + (vy / len) * SPEED * dt;
           if (walkable(nx, ny)) { pp.mx = nx; pp.my = ny; }
@@ -514,13 +503,22 @@ export default function WorldView() {
     return () => cancelAnimationFrame(raf);
   }, [ocId]);
 
+  // 点击/触摸:点居民(站在旁边=互动,远处=接管),点空地=走过去 —— 鼠标与触屏通用
   const onClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const w = useLiving.getState().world; if (!w) return;
+    if (talkRef.current) return;                                  // 对话/菜单进行中,交给对话框处理
     const rect = e.currentTarget.getBoundingClientRect();
     const mx = view.current.sx + (e.clientX - rect.left) / MAP_SCALE, my = view.current.sy + (e.clientY - rect.top) / MAP_SCALE;
-    let best: string | null = null, bd = 26 * 26;
+    let best: string | null = null, bd = 28 * 28;
     for (const id of w.order) { const p = apos.current.get(id); if (!p) continue; const d = (p.mx - mx) ** 2 + (p.my - 16 - my) ** 2; if (d < bd) { bd = d; best = id; } }
-    if (best) { setControlId(best); setInspId(best); }
+    if (best) {
+      const c = ctrlRef.current, cp = c ? apos.current.get(c) : null, bp = apos.current.get(best);
+      const adjacent = !!cp && !!bp && best !== c && ((cp.mx - bp.mx) ** 2 + (cp.my - bp.my) ** 2) < (INTERACT_R * 2.2) ** 2;
+      if (adjacent) openMenu(best);                               // 站旁边点 TA → 互动菜单
+      else { setControlId(best); setInspId(best); }               // 点别的居民 → 接管 + 查看
+    } else {
+      walkTarget.current = { x: mx, y: my };                      // 点空地 → 走过去
+    }
   };
 
   const w = useLiving.getState().world;
@@ -614,9 +612,9 @@ export default function WorldView() {
           <div className="world-help-card" onClick={(e) => e.stopPropagation()}>
             <h3>欢迎来到活世界 ✦</h3>
             <ul>
-              <li><b>移动</b> · WASD / 方向键(手机用左下摇杆)</li>
-              <li><b>互动</b> · 走近伙伴按 空格(手机点「互动」),菜单:闲聊 / 夸夸 / 约饭 / 抱抱 / 陪走</li>
-              <li><b>接管</b> · 点击任意居民,即可化身 TA 自由行走</li>
+              <li><b>移动</b> · WASD / 方向键 · 或<b>点击地面</b>走过去(手机轻点即可)</li>
+              <li><b>互动</b> · 走近伙伴按 空格,或<b>点一下身边的 TA</b>:闲聊 / 夸夸 / 约饭 / 抱抱 / 陪走</li>
+              <li><b>接管</b> · 点击远处任意居民,即可化身 TA 自由行走</li>
               <li><b>飞向</b> · 点左侧 THE FEED 的动态,镜头会飞向当事人</li>
               <li>伙伴们会自己相遇、说悄悄话、头顶冒 ♥ —— 一个自运转的小社会</li>
             </ul>
@@ -624,12 +622,6 @@ export default function WorldView() {
           </div>
         </div>
       )}
-
-      {/* 移动端触控:虚拟摇杆 + 互动按钮(CSS 仅在触屏/窄屏显示) */}
-      <div className="world-joy" ref={joyBase} onPointerDown={joyStart} onPointerMove={joyMove} onPointerUp={joyEnd} onPointerCancel={joyEnd}>
-        <span className="world-joy-knob" ref={joyKnob} />
-      </div>
-      <button className="world-act" onClick={interactNearest} aria-label="互动">互动 ♥</button>
     </section>
   );
 }
