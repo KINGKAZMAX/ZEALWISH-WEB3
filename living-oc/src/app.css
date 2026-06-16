@@ -247,3 +247,15 @@ html.oc-embed .world-fs{height:100vh}
 .sp-edit-actions{display:flex;gap:8px;margin-top:4px}
 .sp-edit-actions .btn{flex:1}
 @media(max-width:980px){.space-grid{grid-template-columns:1fr}}
+
+/* ── 世界频道 + 联机 ── */
+.world-chat{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;z-index:8;width:min(440px,72vw);display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.world-chat-log{display:flex;flex-direction:column;gap:3px}
+.wc-msg{align-self:flex-start;max-width:100%;background:rgba(8,9,11,.66);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:12.5px;line-height:1.4;color:var(--text);backdrop-filter:blur(6px)}
+.wc-msg b{color:#8cd2ff}
+.world-chat-in{pointer-events:auto;width:100%;background:rgba(8,9,11,.7);border:1px solid var(--line-strong);border-radius:10px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;backdrop-filter:blur(8px);font-family:var(--world-font)}
+.world-chat-in:focus{border-color:#8cd2ff}
+.net-card{width:min(460px,88vw)}
+.net-note{font-size:13px;line-height:1.6;color:var(--muted);margin-bottom:12px}
+.net-note b{color:var(--text)}
+.net-hint{font-size:11.5px;line-height:1.55;color:var(--faint);margin:4px 0 12px}

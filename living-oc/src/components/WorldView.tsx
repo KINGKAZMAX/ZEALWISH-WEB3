@@ -6,6 +6,7 @@ import type { Agent } from '../sim/types';
 import WorldGoLive from './WorldGoLive';
 import { liveSay, liveTalk } from '../live/liveProviders';
 import { toggleBgm, bgmPlaying } from '../live/bgm';
+import { makeNet, playerSelf, setPlayerName, netMode, netConfig, setNetConfig, clearNetConfig, type NetTransport, type NetSelf } from '../live/net';
 
 const BASE = import.meta.env.BASE_URL;
 // 访客观光模式(?visit=1):只读串门 —— 无操控/接管/互动,自动巡游 + 点角色聚焦查看 + 转化 CTA
@@ -207,6 +208,19 @@ export default function WorldView() {
   const meetLines = useRef<Map<string, string>>(new Map());
   const popEmote = (mx: number, my: number, glyph: string) => { emotes.current.push({ mx, my, glyph, born: performance.now() }); if (emotes.current.length > 48) emotes.current.shift(); };
   const pairKey = (a: string, b: string) => [a, b].sort().join('|');
+  // ── 全球多人联机:本地玩家身份、远端玩家、世界聊天 ──
+  const netRef = useRef<NetTransport | null>(null);
+  const meSelf = useRef<NetSelf | null>(null);
+  const remotes = useRef<Map<string, { x: number; y: number; tx: number; ty: number; dir: string; moving: boolean; flip: boolean; name: string; sprite: string; bubble?: string; bubbleAt: number; last: number }>>(new Map());
+  const spriteByName = useRef<Record<string, HTMLImageElement>>({});
+  const lastPosSent = useRef(0);
+  const [online, setOnline] = useState(1);
+  const [chatLog, setChatLog] = useState<{ name: string; text: string }[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [netOpen, setNetOpen] = useState(false);
+  const [nf, setNf] = useState({ name: '', url: '', key: '' });
+  const openNet = () => { const cfg = netConfig(); setNf({ name: playerSelf().name, url: cfg?.url || '', key: cfg?.key || '' }); setNetOpen(true); };
+  const saveNet = () => { setPlayerName(nf.name); if (nf.url.trim() && nf.key.trim()) setNetConfig(nf.url, nf.key); else clearNetConfig(); window.location.reload(); };
   // 点击地面走过去的目标(鼠标/触屏通用,替代虚拟摇杆)
   const walkTarget = useRef<{ x: number; y: number } | null>(null);
   // 切换/自定义活动区域:迁移整簇居民到新中心,清位重新落位 + 相机移过去 + 持久化
@@ -258,7 +272,31 @@ export default function WorldView() {
       if (nm === '范范兔') { im.onload = () => { named.current[nm] = recolorHairPurple(im); }; named.current[nm] = im; } // 主角女生:运行时把头发染紫
       else named.current[nm] = im;
     }
+    // 远端玩家精灵集(按玩家 id 哈希分配,玩家之间外观各异)
+    for (const n of ['red_normal', 'green_normal', 'boy', 'lass', 'youngster', 'fat_man', 'beauty', 'gentleman']) {
+      const im = new Image(); im.src = BASE + 'sprites/chr-' + n + '.png'; spriteByName.current[n] = im;
+    }
   }, []);
+
+  // 联机:连接全球世界(或本机多窗口),接收远端玩家与世界聊天
+  useEffect(() => {
+    const net = makeNet(); netRef.current = net;
+    const me = playerSelf(); meSelf.current = me;
+    net.onPos((p) => {
+      if (p.id === me.id) return;
+      const r = remotes.current.get(p.id) || { x: p.x, y: p.y, tx: p.x, ty: p.y, dir: p.dir, moving: p.moving, flip: p.flip, name: p.name, sprite: p.sprite, bubbleAt: 0, last: 0 };
+      r.tx = p.x; r.ty = p.y; r.dir = p.dir; r.moving = p.moving; r.flip = p.flip; r.name = p.name; r.sprite = p.sprite; r.last = performance.now();
+      remotes.current.set(p.id, r);
+    });
+    net.onChat((m) => {
+      setChatLog((l) => [...l.slice(-49), { name: m.name, text: m.text }]);
+      if (m.id !== me.id) { const r = remotes.current.get(m.id); if (r) { r.bubble = m.text; r.bubbleAt = performance.now(); } }
+    });
+    net.onPresence((n) => setOnline(n));
+    void net.connect('global', me);
+    return () => { try { net.disconnect(); } catch { /* ignore */ } netRef.current = null; remotes.current.clear(); };
+  }, []);
+  const sendChat = () => { const t = chatInput.trim(); if (!t || !netRef.current) return; netRef.current.sendChat(t.slice(0, 120)); setChatInput(''); };
 
   // 真 LLM 气泡:开启「真 LLM」后,逐个角色每 ~3s 取一句 Claude 生成的主题台词,缓存覆盖离线库
   useEffect(() => {
@@ -322,6 +360,7 @@ export default function WorldView() {
   useEffect(() => {
     const dn = (e: KeyboardEvent) => {
       if (VISIT) return;                                 // 访客观光:只读,不接受键盘操控
+      const ae = document.activeElement; if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return; // 输入框聚焦时不触发移动
       const k = e.key.toLowerCase();
       if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) { keys.current.add(k); e.preventDefault(); }
       if (k === ' ') {
@@ -419,6 +458,14 @@ export default function WorldView() {
           } else nextMeetAt.current = now + 6000;
         }
       }
+      // 1c. 广播本地玩家位置(节流 ~10Hz;静止时每 2s 心跳;访客只读不广播)
+      if (!VISIT && netRef.current && ctrl && meSelf.current) {
+        const mp = apos.current.get(ctrl);
+        if (mp && now - lastPosSent.current > 100 && (mp.moving || now - lastPosSent.current > 2000)) {
+          lastPosSent.current = now; const s = meSelf.current;
+          netRef.current.sendPos({ id: s.id, name: s.name, sprite: s.sprite, x: +(mp.mx / MAP_W).toFixed(4), y: +(mp.my / MAP_H).toFixed(4), dir: mp.dir, moving: mp.moving, flip: !!mp.flip });
+        }
+      }
       // 2. 相机跟随(平滑缓动)+ 源切片。访客观光:自动巡游,每 ~10s 换一个居民聚焦
       let cpp = ctrl ? apos.current.get(ctrl) : null;
       if (VISIT && w) {
@@ -490,6 +537,26 @@ export default function WorldView() {
           if (talkRef.current?.withId !== id) bubble(ctx, sx, sy - cH - (isNear ? 18 : 6), bline, fam);
         }
       }
+      // 7a. 远端玩家(其他真人):插值移动 + 蓝圈 + 名牌 + 聊天气泡;12s 无更新视为离线
+      for (const [rid, r] of remotes.current) {
+        if (now - r.last > 12000) { remotes.current.delete(rid); continue; }
+        const lerp = Math.min(1, dt * 10); r.x += (r.tx - r.x) * lerp; r.y += (r.ty - r.y) * lerp;
+        const rx = SX(r.x * MAP_W), ry = SY(r.y * MAP_H);
+        if (rx < -TILE * 2 || rx > VW + TILE * 2 || ry < -TILE * 3 || ry > VH + TILE * 2) continue;
+        const cW = TILE * 1.05, cH = cW * 2;
+        const img = spriteByName.current[r.sprite] || spriteByName.current['green_normal'];
+        const frRm = FRAME[r.dir] || FRAME.down; const fiRm = r.moving ? frRm.walk[t % 2] : frRm.idle;
+        ctx.fillStyle = 'rgba(0,0,0,.34)'; ctx.beginPath(); ctx.ellipse(rx, ry + 1, cW * 0.34, cW * 0.13, 0, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(110,200,255,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(rx, ry - cH * 0.36, cW * 0.8, 0, 7); ctx.stroke();
+        if (img && img.complete && img.naturalWidth) {
+          ctx.imageSmoothingEnabled = false; const dy0 = ry + 2 - cH;
+          if (r.flip && r.dir === 'side') { ctx.save(); ctx.translate(rx + cW / 2, dy0); ctx.scale(-1, 1); ctx.drawImage(img, fiRm * 16, 0, 16, 32, 0, 0, cW, cH); ctx.restore(); }
+          else ctx.drawImage(img, fiRm * 16, 0, 16, 32, rx - cW / 2, dy0, cW, cH);
+        }
+        ctx.font = '11px ' + fam; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.85)';
+        ctx.strokeText('🌐 ' + r.name, rx, ry + 14); ctx.fillStyle = 'rgba(150,215,255,.97)'; ctx.fillText('🌐 ' + r.name, rx, ry + 14);
+        if (r.bubble && now - r.bubbleAt < 6000) bubble(ctx, rx, ry - cH - 6, r.bubble, fam);
+      }
       // 7b. 飘心 / 表情粒子(互动与相会时升起)
       for (let i = emotes.current.length - 1; i >= 0; i--) {
         const e = emotes.current[i], age = now - e.born, LIFE = 1400;
@@ -516,6 +583,11 @@ export default function WorldView() {
           ctx.fillStyle = me ? '#ff2d2d' : 'rgba(255,210,80,.95)';
           ctx.beginPath(); ctx.arc(px, py, me ? 4 : 3, 0, 7); ctx.fill();
           if (me) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke(); }
+        }
+        for (const [, r] of remotes.current) {                       // 远端玩家:青蓝点
+          const ddx = (r.x * MAP_W - cpp.mx) / RR, ddy = (r.y * MAP_H - cpp.my) / RR;
+          if (Math.abs(ddx) > 1 || Math.abs(ddy) > 1) continue;
+          ctx.fillStyle = 'rgba(110,200,255,.95)'; ctx.beginPath(); ctx.arc(mx0 + MM / 2 + ddx * MM / 2, my0 + MM / 2 + ddy * MM / 2, 3, 0, 7); ctx.fill();
         }
         ctx.restore();
         ctx.strokeStyle = 'rgba(255,45,45,.5)'; ctx.lineWidth = 1.5; rrect(ctx, mx0, my0, MM, MM, 10); ctx.stroke();
@@ -568,6 +640,8 @@ export default function WorldView() {
         <span className="wstat sm"><i>EPOCH</i> {w?.epoch ?? 0}</span>
         <span className="wstat sm"><i>居民</i> {w ? w.order.length : 0}</span>
         <span className="wstat sm hot"><i>供给</i> {(w ? Math.round(w.stats.supply) : 0)}◈</span>
+        <span className="wstat sm" title={netMode() === 'global' ? '全球联机中' : '本机多窗口(配置 Supabase 即全球联机)'}>{netMode() === 'global' ? '🌐' : '🖥'} 在线 {online}</span>
+        <button className="hud-btn" onClick={openNet} title="联机设置">联机</button>
         {VISIT ? (
           <>
             <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
@@ -675,6 +749,34 @@ export default function WorldView() {
                 <button className="world-help-go" onClick={dismissHelp}>开始 ▸</button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 世界频道(多人聊天):消息浮在输入框上方,远端玩家头顶也会冒同样的气泡 */}
+      <div className="world-chat">
+        {chatLog.length > 0 && <div className="world-chat-log">
+          {chatLog.slice(-6).map((m, i) => <div key={i} className="wc-msg"><b>{m.name}:</b> {m.text}</div>)}
+        </div>}
+        <input className="world-chat-in" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') sendChat(); e.stopPropagation(); }} placeholder={`世界频道 · 以 ${meSelf.current?.name ?? '训练师'} 发言…`} maxLength={120} />
+      </div>
+
+      {netOpen && (
+        <div className="world-help" onClick={() => setNetOpen(false)}>
+          <div className="world-help-card net-card" onClick={(e) => e.stopPropagation()}>
+            <h3>🌐 全球联机</h3>
+            <p className="net-note">
+              当前:<b>{netMode() === 'global' ? '已接入全球房间' : '本机多窗口模式'}</b>。
+              {netMode() === 'global' ? ' 同一世界的玩家会实时同屏走动、聊天。' : ' 同浏览器多开窗口即可看到彼此;要真·全球联机,填一个免费 Supabase 项目(URL + anon key,均为可公开的客户端密钥):'}
+            </p>
+            <label className="sp-field"><span>你的昵称(其他玩家看到的名字)</span><input value={nf.name} onChange={(e) => setNf({ ...nf, name: e.target.value })} maxLength={16} /></label>
+            <label className="sp-field"><span>Supabase Project URL</span><input value={nf.url} onChange={(e) => setNf({ ...nf, url: e.target.value })} placeholder="https://xxxx.supabase.co" /></label>
+            <label className="sp-field"><span>Supabase anon key(public)</span><input value={nf.key} onChange={(e) => setNf({ ...nf, key: e.target.value })} placeholder="eyJ…(anon public key)" /></label>
+            <p className="net-hint">免费开通:supabase.com → 新建项目 → Project Settings · API → 复制 Project URL 与 anon public key。留空 URL/key = 仅本机多窗口。保存后会重连。</p>
+            <div className="sp-edit-actions">
+              <button className="btn primary" onClick={saveNet}>保存并重连 ✦</button>
+              <button className="btn" onClick={() => setNetOpen(false)}>取消</button>
+            </div>
           </div>
         </div>
       )}
