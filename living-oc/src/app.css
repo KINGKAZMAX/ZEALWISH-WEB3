@@ -159,6 +159,8 @@ input{background:var(--panel);color:var(--text);border:1px solid var(--line);bor
 
 /* ── 全屏沉浸世界 + 浮层 HUD ── */
 .world-fs{position:relative;width:100%;height:calc(100vh - 62px);overflow:hidden;background:#0b0b0d;--world-font:var(--font-body)}
+html.oc-embed,html.oc-embed body{height:100%;overflow:hidden}
+html.oc-embed .world-fs{height:100vh}
 .world-canvas2{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none;cursor:pointer}
 .hud{position:absolute;z-index:5;font-family:var(--font-mono)}
 .hud-tl{left:18px;top:14px}

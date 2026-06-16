@@ -1529,9 +1529,23 @@ function WorldView({ activeScene, signedPassport, portraitState, onApplySkin, on
 
   return (
     <>
-      <PageTitle eyebrow="World" title="World Layer">
-        One wallet-owned identity, many destinations. Apply a creator skin, step into a scene, hand over a task, or carry the passport across worlds.
+      <PageTitle eyebrow="World · 活世界" title="Living World">
+        你的角色在「活世界」里自由生活、与伙伴相遇 —— 走近交互、接管任意居民、看它们的日常。同一外壳里,下方还能换皮肤、进场景、派任务、带着护照跨世界。
       </PageTitle>
+
+      <section className="panel edge living-embed-panel">
+        <div className="living-embed-head">
+          <div>
+            <div className="code mono">00 / LIVING OC · 活世界</div>
+            <h2>进入活世界</h2>
+          </div>
+          <a className="button-secondary edge" href="/world/" target="_blank" rel="noopener noreferrer">全屏打开 ⤢</a>
+        </div>
+        <div className="living-embed-frame">
+          <iframe src="/world/?embed=1" title="LIVING OC · 活世界" loading="lazy" allow="autoplay"></iframe>
+        </div>
+      </section>
+
       <div className="world-grid">
         <section className="panel edge world-panel">
           <div className="code mono">01 / CREATOR SKINS</div>
