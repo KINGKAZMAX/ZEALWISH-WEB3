@@ -141,6 +141,8 @@ input{background:var(--panel);color:var(--text);border:1px solid var(--line);bor
 .zw-topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:18px;height:62px;padding:0 clamp(16px,4vw,40px);
   background:linear-gradient(180deg,rgba(10,10,11,.97),rgba(10,10,11,.8));border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
 .zw-left{display:flex;align-items:baseline;gap:12px}
+.zw-back{align-self:center;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--line);border-radius:9px;color:var(--muted);font-size:16px;text-decoration:none;transition:all .12s}
+.zw-back:hover{color:var(--text);border-color:var(--red)}
 .zw-brand{font-family:var(--font-display);font-size:36px;font-weight:700;letter-spacing:.05em;line-height:1}
 .zw-product{font-size:10px;letter-spacing:.24em;color:var(--muted);text-transform:uppercase}
 .zw-nav{display:flex;gap:6px;margin-left:6px}
