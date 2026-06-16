@@ -168,6 +168,9 @@ html.oc-embed .world-fs{height:100vh}
 .hud-tl{left:18px;top:14px}
 .hud-ctrl{font-size:13px;color:var(--text);background:rgba(10,10,11,.62);border:1px solid var(--line);border-radius:20px;padding:6px 14px;backdrop-filter:blur(8px);display:inline-block}
 .hud-ctrl b{color:var(--red)}
+.hud-ctrl.visit{color:#ffd24d;border-color:rgba(255,210,77,.5)}
+.hud-btn.hud-cta{color:#fff;background:var(--red);border-color:var(--red);font-weight:700}
+.hud-btn.hud-cta:hover{background:var(--red-deep)}
 .hud-keys{margin-top:6px;font-size:10px;letter-spacing:.04em;color:var(--muted)}
 .hud-tr{right:18px;top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:62vw}
 .wstat.sm{font-size:11px;color:var(--text);background:rgba(10,10,11,.62);border:1px solid var(--line);border-radius:14px;padding:5px 10px}

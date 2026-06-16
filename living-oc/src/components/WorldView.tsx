@@ -8,6 +8,8 @@ import { liveSay, liveTalk } from '../live/liveProviders';
 import { toggleBgm, bgmPlaying } from '../live/bgm';
 
 const BASE = import.meta.env.BASE_URL;
+// 访客观光模式(?visit=1):只读串门 —— 无操控/接管/互动,自动巡游 + 点角色聚焦查看 + 转化 CTA
+const VISIT = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('visit') === '1';
 const MAP_SRC = 'kanto.webp';
 // 关都总图 6528×6400(地图坐标系 = 原始像素)。内容是不规则陆地、含白色空白,
 // 移动用降采样碰撞图限定在陆地上;6 地点放在一处镇区陆地上。
@@ -173,7 +175,9 @@ export default function WorldView() {
   const ocSprite = useRef<HTMLImageElement | null>(null);
   const npcSprites = useRef<HTMLImageElement[]>([]);
   const named = useRef<Record<string, HTMLImageElement>>({});
-  const ctrlRef = useRef<string | null>(null); ctrlRef.current = controlId ?? ocId;
+  const ctrlRef = useRef<string | null>(null); ctrlRef.current = VISIT ? null : (controlId ?? ocId);
+  const spectateRef = useRef<string | null>(null);   // 访客观光:当前聚焦的居民
+  const nextSpectateAt = useRef(0);
   const nearRef = useRef<string | null>(null);
   const lastT = useRef(0);
   const liveLines = useRef<Map<string, string>>(new Map());  // 真 LLM 气泡台词缓存
@@ -305,6 +309,7 @@ export default function WorldView() {
 
   useEffect(() => {
     const dn = (e: KeyboardEvent) => {
+      if (VISIT) return;                                 // 访客观光:只读,不接受键盘操控
       const k = e.key.toLowerCase();
       if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) { keys.current.add(k); e.preventDefault(); }
       if (k === ' ') {
@@ -402,9 +407,16 @@ export default function WorldView() {
           } else nextMeetAt.current = now + 6000;
         }
       }
-      // 2. 相机跟随(平滑缓动)+ 源切片
-      const cpp = ctrl ? apos.current.get(ctrl) : null;
-      if (cpp) { const f = Math.min(1, dt * 8); cam.current.cx += (cpp.mx - cam.current.cx) * f; cam.current.cy += (cpp.my - cam.current.cy) * f; }
+      // 2. 相机跟随(平滑缓动)+ 源切片。访客观光:自动巡游,每 ~10s 换一个居民聚焦
+      let cpp = ctrl ? apos.current.get(ctrl) : null;
+      if (VISIT && w) {
+        if (now > nextSpectateAt.current || !spectateRef.current || !apos.current.get(spectateRef.current)) {
+          const ids = w.order.filter((id) => apos.current.get(id));
+          if (ids.length) { spectateRef.current = ids[Math.floor(Math.random() * ids.length)]; nextSpectateAt.current = now + 10000; }
+        }
+        cpp = spectateRef.current ? apos.current.get(spectateRef.current) || null : null;
+      }
+      if (cpp) { const f = Math.min(1, dt * (VISIT ? 3.5 : 8)); cam.current.cx += (cpp.mx - cam.current.cx) * f; cam.current.cy += (cpp.my - cam.current.cy) * f; }
       const sw = VW / MAP_SCALE, sh = VH / MAP_SCALE;
       const srcX = Math.max(0, Math.min(MAP_W - sw, cam.current.cx - sw / 2));
       const srcY = Math.max(0, Math.min(MAP_H - sh, cam.current.cy - sh / 2));
@@ -511,6 +523,10 @@ export default function WorldView() {
     const mx = view.current.sx + (e.clientX - rect.left) / MAP_SCALE, my = view.current.sy + (e.clientY - rect.top) / MAP_SCALE;
     let best: string | null = null, bd = 28 * 28;
     for (const id of w.order) { const p = apos.current.get(id); if (!p) continue; const d = (p.mx - mx) ** 2 + (p.my - 16 - my) ** 2; if (d < bd) { bd = d; best = id; } }
+    if (VISIT) {                                                  // 访客观光:只读,点居民=聚焦+查看,不接管/不移动
+      if (best) { spectateRef.current = best; nextSpectateAt.current = performance.now() + 12000; setInspId(best); }
+      return;
+    }
     if (best) {
       const c = ctrlRef.current, cp = c ? apos.current.get(c) : null, bp = apos.current.get(best);
       const adjacent = !!cp && !!bp && best !== c && ((cp.mx - bp.mx) ** 2 + (cp.my - bp.my) ** 2) < (INTERACT_R * 2.2) ** 2;
@@ -531,36 +547,49 @@ export default function WorldView() {
       <canvas ref={ref} className="world-canvas2" onClick={onClick} tabIndex={0} />
 
       <div className="hud hud-tl">
-        <div className="hud-ctrl">控制中 · <b>{ctrlA?.name ?? '—'}</b>{ctrl === ocId && ' ★'}</div>
+        {VISIT
+          ? <div className="hud-ctrl visit">👁 访客观光 · 只读串门</div>
+          : <div className="hud-ctrl">控制中 · <b>{ctrlA?.name ?? '—'}</b>{ctrl === ocId && ' ★'}</div>}
       </div>
 
       <div className="hud hud-tr">
         <span className="wstat sm"><i>EPOCH</i> {w?.epoch ?? 0}</span>
         <span className="wstat sm"><i>居民</i> {w ? w.order.length : 0}</span>
         <span className="wstat sm hot"><i>供给</i> {(w ? Math.round(w.stats.supply) : 0)}◈</span>
-        <button className="hud-btn" onClick={() => setRun(!worldRunning)}>{worldRunning ? '⏸' : '▶'}</button>
-        <button className="hud-btn" onClick={() => { const n = window.prompt('克隆一个新居民(起个名字):', '@new_soul'); const v = n && n.trim(); if (v) addAgent(v); }}>＋人格</button>
-        <button className="hud-btn" onClick={() => { reseed(); apos.current.clear(); affinity.current.clear(); meetLines.current.clear(); companionRef.current = null; meetRef.current = null; nextMeetAt.current = 0; talkRef.current = null; setControlId(null); setInspId(null); }}>↻ 重置</button>
-        <button className="hud-btn" onClick={() => setControlId(ocId)}>回到小智 ★</button>
-        <button className="hud-btn live" onClick={() => setLive(true)}>⚡ 真 LLM/链</button>
-        <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="温馨 8-bit 背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
-        <button className="hud-btn" onClick={() => setShowHelp(true)} title="玩法说明">?</button>
-        <select className="hud-sel" value={FONTS.find((f) => f.css === font)?.id ?? FONTS[0].id} title="选择字体" onChange={(e) => { const f = FONTS.find((x) => x.id === e.target.value) ?? FONTS[0]; setFont(f.css); try { localStorage.setItem('oc-world-font', f.id); } catch { /* ignore */ } }}>
-          {FONTS.map((f) => <option key={f.id} value={f.id}>字 · {f.name}</option>)}
-        </select>
-        <select className="hud-sel" value={REGIONS.find((r) => r.c[0] === regionC[0] && r.c[1] === regionC[1])?.id ?? 'custom'} title="活动区域(角色聚居的地图区域)" onChange={(e) => { const r = REGIONS.find((x) => x.id === e.target.value); if (r) applyRegion(r.c); }}>
-          {REGIONS.map((r) => <option key={r.id} value={r.id}>区 · {r.name}</option>)}
-          {!REGIONS.some((r) => r.c[0] === regionC[0] && r.c[1] === regionC[1]) && <option value="custom">区 · 自定义</option>}
-        </select>
-        <button className="hud-btn" title="把当前所在位置设为活动区域中心(整簇居民迁过来)" onClick={() => { const id = ctrlRef.current; const p = id ? apos.current.get(id) : null; if (p) applyRegion([+(p.mx / MAP_W).toFixed(4), +(p.my / MAP_H).toFixed(4)]); }}>📍 设此为区</button>
+        {VISIT ? (
+          <>
+            <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
+            <button className="hud-btn" onClick={() => setShowHelp(true)} title="说明">?</button>
+            <a className="hud-btn hud-cta" href="/web.html#/create">✦ 创建你的活世界 →</a>
+          </>
+        ) : (
+          <>
+            <button className="hud-btn" onClick={() => setRun(!worldRunning)}>{worldRunning ? '⏸' : '▶'}</button>
+            <button className="hud-btn" onClick={() => { const n = window.prompt('克隆一个新居民(起个名字):', '@new_soul'); const v = n && n.trim(); if (v) addAgent(v); }}>＋人格</button>
+            <button className="hud-btn" onClick={() => { reseed(); apos.current.clear(); affinity.current.clear(); meetLines.current.clear(); companionRef.current = null; meetRef.current = null; nextMeetAt.current = 0; talkRef.current = null; setControlId(null); setInspId(null); }}>↻ 重置</button>
+            <button className="hud-btn" onClick={() => setControlId(ocId)}>回到小智 ★</button>
+            <button className="hud-btn live" onClick={() => setLive(true)}>⚡ 真 LLM/链</button>
+            <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="温馨 8-bit 背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
+            <button className="hud-btn" onClick={() => setShowHelp(true)} title="玩法说明">?</button>
+            <button className="hud-btn" title="复制只读观光链接,发给朋友来串门" onClick={() => { const url = window.location.origin + '/world/?visit=1'; try { void navigator.clipboard?.writeText(url); } catch { /* ignore */ } window.prompt('把这个只读观光链接发给朋友来串门:', url); }}>🔗 分享观光</button>
+            <select className="hud-sel" value={FONTS.find((f) => f.css === font)?.id ?? FONTS[0].id} title="选择字体" onChange={(e) => { const f = FONTS.find((x) => x.id === e.target.value) ?? FONTS[0]; setFont(f.css); try { localStorage.setItem('oc-world-font', f.id); } catch { /* ignore */ } }}>
+              {FONTS.map((f) => <option key={f.id} value={f.id}>字 · {f.name}</option>)}
+            </select>
+            <select className="hud-sel" value={REGIONS.find((r) => r.c[0] === regionC[0] && r.c[1] === regionC[1])?.id ?? 'custom'} title="活动区域(角色聚居的地图区域)" onChange={(e) => { const r = REGIONS.find((x) => x.id === e.target.value); if (r) applyRegion(r.c); }}>
+              {REGIONS.map((r) => <option key={r.id} value={r.id}>区 · {r.name}</option>)}
+              {!REGIONS.some((r) => r.c[0] === regionC[0] && r.c[1] === regionC[1]) && <option value="custom">区 · 自定义</option>}
+            </select>
+            <button className="hud-btn" title="把当前所在位置设为活动区域中心(整簇居民迁过来)" onClick={() => { const id = ctrlRef.current; const p = id ? apos.current.get(id) : null; if (p) applyRegion([+(p.mx / MAP_W).toFixed(4), +(p.my / MAP_H).toFixed(4)]); }}>📍 设此为区</button>
+          </>
+        )}
       </div>
 
       <div className={'hud hud-feed' + (feedOpen ? '' : ' min')}>
         <div className="hud-feed-head" onClick={() => setFeedOpen(!feedOpen)}>实时社交流 · THE FEED <span>{w?.feed.length ?? 0}{feedOpen ? ' ▾' : ' ▸'}</span></div>
         {feedOpen && <div className="hud-feed-body">
           {(w?.feed ?? []).slice(0, 14).map((p) => (
-            <div key={p.id} className={'wpost' + (p.ev ? ' ev-' + p.ev.kind : '')} title="点击:镜头飞向 TA 并接管"
-              onClick={() => { if (useLiving.getState().world?.agents[p.agentId]) { setControlId(p.agentId); setInspId(p.agentId); } }}>
+            <div key={p.id} className={'wpost' + (p.ev ? ' ev-' + p.ev.kind : '')} title={VISIT ? '点击:镜头飞向 TA' : '点击:镜头飞向 TA 并接管'}
+              onClick={() => { if (!useLiving.getState().world?.agents[p.agentId]) return; if (VISIT) { spectateRef.current = p.agentId; nextSpectateAt.current = performance.now() + 12000; setInspId(p.agentId); } else { setControlId(p.agentId); setInspId(p.agentId); } }}>
               <div className="wrow"><span className="wav" style={{ background: `hsl(${hue(p.agentId)},45%,55%)` }} /><b>{p.name}</b><span className="wact">{actionCN[p.action]}</span></div>
               <div className="wtext">{p.text}</div>
             </div>
@@ -610,15 +639,30 @@ export default function WorldView() {
       {showHelp && (
         <div className="world-help" onClick={dismissHelp}>
           <div className="world-help-card" onClick={(e) => e.stopPropagation()}>
-            <h3>欢迎来到活世界 ✦</h3>
-            <ul>
-              <li><b>移动</b> · WASD / 方向键 · 或<b>点击地面</b>走过去(手机轻点即可)</li>
-              <li><b>互动</b> · 走近伙伴按 空格,或<b>点一下身边的 TA</b>:闲聊 / 夸夸 / 约饭 / 抱抱 / 陪走</li>
-              <li><b>接管</b> · 点击远处任意居民,即可化身 TA 自由行走</li>
-              <li><b>飞向</b> · 点左侧 THE FEED 的动态,镜头会飞向当事人</li>
-              <li>伙伴们会自己相遇、说悄悄话、头顶冒 ♥ —— 一个自运转的小社会</li>
-            </ul>
-            <button className="world-help-go" onClick={dismissHelp}>开始 ▸</button>
+            {VISIT ? (
+              <>
+                <h3>你正在串门一座活世界 ✦</h3>
+                <ul>
+                  <li>这是别人拥有的 AI 活世界 —— 你以<b>访客</b>身份<b>只读观光</b>。</li>
+                  <li>镜头会自动巡游;<b>点任意 TA</b> 可聚焦并查看它的人格与记忆。</li>
+                  <li>居民们自己生活:走动、相遇、说悄悄话、头顶冒 ♥ —— 一个自运转的小社会。</li>
+                  <li>喜欢?<b>创建你自己的活世界</b>,养一个属于你、归你钱包的 AI 角色。</li>
+                </ul>
+                <button className="world-help-go" onClick={dismissHelp}>开始观光 ▸</button>
+              </>
+            ) : (
+              <>
+                <h3>欢迎来到活世界 ✦</h3>
+                <ul>
+                  <li><b>移动</b> · WASD / 方向键 · 或<b>点击地面</b>走过去(手机轻点即可)</li>
+                  <li><b>互动</b> · 走近伙伴按 空格,或<b>点一下身边的 TA</b>:闲聊 / 夸夸 / 约饭 / 抱抱 / 陪走</li>
+                  <li><b>接管</b> · 点击远处任意居民,即可化身 TA 自由行走</li>
+                  <li><b>飞向</b> · 点左侧 THE FEED 的动态,镜头会飞向当事人</li>
+                  <li>伙伴们会自己相遇、说悄悄话、头顶冒 ♥ —— 一个自运转的小社会</li>
+                </ul>
+                <button className="world-help-go" onClick={dismissHelp}>开始 ▸</button>
+              </>
+            )}
           </div>
         </div>
       )}
