@@ -281,6 +281,50 @@ html.oc-embed .world-fs{height:100vh}
 .wc-mon-main small{color:#9aa0aa;font-size:11px;margin-top:2px}
 .wc-on{font-size:11px;color:#ff8a8a}
 .wc-empty{color:#9aa0aa;font-size:13px;padding:6px 2px}
+
+/* ── GBA 复古 RPG 框风(原创复刻观感:米白框 + 深蓝双描边 + 深色字)——覆盖默认暗色玻璃皮 ── */
+:root{--gba-cream:#f7f3e3;--gba-ink:#27314f;--gba-navy:#1c2547;--gba-line:#c9c0a0;--gba-hi:#8aa0d8}
+.world-card{background:var(--gba-cream);border:3px solid var(--gba-navy);box-shadow:inset 0 0 0 2px var(--gba-hi),0 16px 40px rgba(0,0,0,.45);color:var(--gba-ink);border-radius:10px}
+.wc-head{color:var(--gba-navy);border-bottom:2px solid var(--gba-line);padding-bottom:8px}
+.wc-x{color:#7a6f4e}
+.wc-item,.wc-mon{background:#fffdf5;border:2px solid var(--gba-line);color:var(--gba-ink);border-radius:8px}
+.wc-mon.on{border-color:var(--gba-navy);background:#eaf0ff}
+.wc-it-main,.wc-mon-main{color:var(--gba-ink)}
+.wc-it-main small,.wc-mon-main small{color:#8a7f5e}
+.wc-empty{color:#8a7f5e}
+.wc-on{color:#c0392b}
+.wc-ic{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:#fff;font-weight:700;font-size:15px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35),0 1px 0 rgba(0,0,0,.3)}
+.wc-item .hud-btn{background:var(--gba-navy);color:#fff;border-color:var(--gba-navy)}
+.wc-mon-dot{box-shadow:0 0 0 2px var(--gba-navy)}
+/* 弹窗/帮助/联机卡片统一框风 */
+.world-help-card{background:var(--gba-cream);border:3px solid var(--gba-navy);box-shadow:inset 0 0 0 2px var(--gba-hi),0 16px 50px rgba(0,0,0,.5);color:var(--gba-ink)}
+.world-help-card h3{color:var(--gba-navy)}
+.world-help-card li,.world-help-card p,.world-help-card .net-note,.world-help-card .net-hint{color:var(--gba-ink)}
+.world-help-card b{color:var(--gba-navy)}
+.world-help-card .sp-field span{color:#5a5238}
+.world-help-card .sp-field input{background:#fffdf5;border:2px solid var(--gba-line);color:var(--gba-ink)}
+.world-help-go,.world-help-card .btn.primary{background:var(--gba-navy);color:#fff;border:2px solid var(--gba-navy)}
+.world-help-card .btn{background:#fffdf5;border:2px solid var(--gba-line);color:var(--gba-ink)}
+/* HUD 小标签/按钮:做成 GBA 菜单牌(米白 + 深蓝描边) */
+.hud-ctrl,.wstat,.hud-btn,.hud-sel,.hud-kit .kit-mon,.hud-kit .kit-stone{background:var(--gba-cream)!important;border:2px solid var(--gba-navy)!important;color:var(--gba-ink)!important;backdrop-filter:none!important;border-radius:8px}
+.hud-btn{font-weight:600}
+.wstat i,.hud-kit .kit-mon.off{color:#7a6f4e}
+.wstat.hot{color:#b8501f!important}
+.hud-ctrl b{color:var(--gba-navy)}
+.hud-kit .kit-mon i{color:#c0392b}
+.hud-btn.live{background:#ffe08a!important;border-color:#a8801f!important;color:#5a3d00!important}
+.hud-cta{background:var(--gba-navy)!important;color:#fff!important}
+/* THE FEED 面板框风 */
+.hud-feed{background:var(--gba-cream);border:2px solid var(--gba-navy);color:var(--gba-ink)}
+.hud-feed-head{color:var(--gba-navy);border-bottom:2px solid var(--gba-line)}
+.hud-feed-body .wtext{color:#3a3f52}
+.hud-feed-body b{color:var(--gba-navy)}
+.hud-feed-body .wact{color:#7a6f4e}
+/* 收服提示 toast + 进入共享世界 */
+.world-toast{background:var(--gba-cream);border:2px solid var(--gba-navy);color:var(--gba-ink)}
+/* 世界频道输入框 */
+.world-chat-in{background:var(--gba-cream);border:2px solid var(--gba-navy);color:var(--gba-ink)}
+.world-chat-log{color:var(--gba-ink)}
 .net-card{width:min(460px,88vw)}
 .net-note{font-size:13px;line-height:1.6;color:var(--muted);margin-bottom:12px}
 .net-note b{color:var(--text)}

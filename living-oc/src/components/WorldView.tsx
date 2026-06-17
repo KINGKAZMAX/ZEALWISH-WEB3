@@ -114,10 +114,10 @@ function bubble(c: CanvasRenderingContext2D, cx: number, by: number, text: strin
   c.font = '12px ' + fam; c.textBaseline = 'top';
   const per = 13, lines: string[] = []; for (let i = 0; i < text.length; i += per) lines.push(text.slice(i, i + per));
   const lh = 15, w = Math.max(...lines.map((l) => c.measureText(l).width)) + 16, h = lines.length * lh + 8, x = cx - w / 2, y = by - h;
-  c.fillStyle = 'rgba(255,255,255,.95)'; c.strokeStyle = 'rgba(255,45,45,.45)'; c.lineWidth = 1.2;
-  rrect(c, x, y, w, h, 7); c.fill(); c.stroke();
-  c.beginPath(); c.moveTo(cx - 5, by - 1); c.lineTo(cx + 5, by - 1); c.lineTo(cx, by + 5); c.closePath(); c.fillStyle = 'rgba(255,255,255,.95)'; c.fill();
-  c.fillStyle = '#17171c'; c.textAlign = 'center'; lines.forEach((l, i) => c.fillText(l, cx, y + 4 + i * lh));
+  c.fillStyle = '#f7f3e3'; c.strokeStyle = '#283562'; c.lineWidth = 2;
+  rrect(c, x, y, w, h, 5); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(cx - 6, by - 2); c.lineTo(cx + 6, by - 2); c.lineTo(cx, by + 6); c.closePath(); c.fillStyle = '#283562'; c.fill();
+  c.fillStyle = '#27314f'; c.textAlign = 'center'; lines.forEach((l, i) => c.fillText(l, cx, y + 4 + i * lh));
   c.textBaseline = 'alphabetic';
 }
 // 运行时把金棕发染成紫色(给范范兔=主角女生);返回新 Image,避免文件 base64 round-trip 损坏
@@ -651,7 +651,7 @@ export default function WorldView() {
           const sp = speciesById[wd.species];
           ctx.font = '10px ' + fam; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.8)';
           ctx.strokeText('野生·' + (sp?.name ?? ''), sx, sy + 13); ctx.fillStyle = 'rgba(220,255,220,.9)'; ctx.fillText('野生·' + (sp?.name ?? ''), sx, sy + 13);
-          if (nearWild.current === wd.uid) { ctx.fillStyle = 'rgba(140,255,170,.96)'; ctx.font = '11px ' + fam; ctx.fillText('C · 收服 🔮', sx, sy - sz - 4); }
+          if (nearWild.current === wd.uid) { ctx.fillStyle = 'rgba(140,255,170,.96)'; ctx.font = '11px ' + fam; ctx.fillText('C · 收服', sx, sy - sz - 4); }
         }
       }
       // 7c. 随行灵宠(玩家激活的灵宠,跟在控制角色身后)
@@ -682,7 +682,7 @@ export default function WorldView() {
           else ctx.drawImage(img, fiRm * 16, 0, 16, 32, rx - cW / 2, dy0, cW, cH);
         }
         ctx.font = '11px ' + fam; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.85)';
-        ctx.strokeText('🌐 ' + r.name, rx, ry + 14); ctx.fillStyle = 'rgba(150,215,255,.97)'; ctx.fillText('🌐 ' + r.name, rx, ry + 14);
+        ctx.strokeText(r.name, rx, ry + 14); ctx.fillStyle = 'rgba(150,215,255,.97)'; ctx.fillText(r.name, rx, ry + 14);
         if (r.bubble && now - r.bubbleAt < 6000) bubble(ctx, rx, ry - cH - 6, r.bubble, fam);
       }
       // 7b. 飘心 / 表情粒子(互动与相会时升起)
@@ -767,14 +767,14 @@ export default function WorldView() {
 
       <div className="hud hud-tl">
         {VISIT
-          ? <div className="hud-ctrl visit">👁 访客观光 · 只读串门</div>
+          ? <div className="hud-ctrl visit">访客观光 · 只读串门</div>
           : <div className="hud-ctrl">控制中 · <b>{ctrlA?.name ?? '—'}</b>{ctrl === ocId && ' ★'}</div>}
         {!VISIT && (
           <div className="hud-kit" title="随行灵宠 · 背包灵石">
             {activeSpirit
               ? <button className="kit-mon" onClick={() => setTeamOpen(true)}><span className="kit-dot" style={{ background: speciesById[activeSpirit.species]?.body }} />{activeSpirit.name} <i>Lv{activeSpirit.level}</i></button>
               : <button className="kit-mon off" onClick={() => setTeamOpen(true)}>无随行灵宠</button>}
-            <button className="kit-stone" onClick={() => setBagOpen(true)}>🔮 {myOc?.bag?.stone ?? 0}</button>
+            <button className="kit-stone" onClick={() => setBagOpen(true)}>灵石 {myOc?.bag?.stone ?? 0}</button>
           </div>
         )}
       </div>
@@ -783,7 +783,7 @@ export default function WorldView() {
         <span className="wstat sm"><i>EPOCH</i> {w?.epoch ?? 0}</span>
         <span className="wstat sm"><i>居民</i> {w ? w.order.length : 0}</span>
         <span className="wstat sm hot"><i>供给</i> {(w ? Math.round(w.stats.supply) : 0)}◈</span>
-        <span className="wstat sm" title={GLOBAL ? (isHost ? '全球联机中 · 本端为世界主机' : '全球联机中 · 镜像主机世界') : '本机多窗口(配置 Supabase 即全球联机)'}>{GLOBAL ? '🌐' : '🖥'} 在线 {online}{GLOBAL && isHost && online > 1 ? ' · 主机' : ''}</span>
+        <span className="wstat sm" title={GLOBAL ? (isHost ? '全球联机中 · 本端为世界主机' : '全球联机中 · 镜像主机世界') : '本机多窗口(配置 Supabase 即全球联机)'}>在线 {online}{GLOBAL && isHost && online > 1 ? ' · 主机' : ''}</span>
         <button className="hud-btn" onClick={openNet} title="联机设置">联机</button>
         {VISIT ? (
           <>
@@ -793,17 +793,17 @@ export default function WorldView() {
           </>
         ) : (
           <>
-            {!GLOBAL && <button className="hud-btn" onClick={() => setRun(!worldRunning)}>{worldRunning ? '⏸' : '▶'}</button>}
+            {!GLOBAL && <button className="hud-btn" onClick={() => setRun(!worldRunning)}>{worldRunning ? '暂停' : '播放'}</button>}
             {!GLOBAL && <button className="hud-btn" onClick={() => { const n = window.prompt('克隆一个新居民(起个名字):', '@new_soul'); const v = n && n.trim(); if (v) addAgent(v); }}>＋人格</button>}
             {!GLOBAL && <button className="hud-btn" onClick={() => { reseed(); apos.current.clear(); affinity.current.clear(); meetLines.current.clear(); companionRef.current = null; meetRef.current = null; nextMeetAt.current = 0; talkRef.current = null; setControlId(null); setInspId(null); }}>↻ 重置</button>}
             <button className="hud-btn" onClick={() => { setControlId(xiaozhiId); setInspId(xiaozhiId); }}>回到小智 ★</button>
-            {ocIsCustom && <button className="hud-btn" onClick={() => { setControlId(ocId); setInspId(ocId); }} title="回到你创建的角色">🧍 我 · {ocName}</button>}
-            <button className="hud-btn" onClick={() => setBagOpen(true)} title="背包(B 键)">🎒 背包</button>
-            <button className="hud-btn" onClick={() => setTeamOpen(true)} title="灵宠队伍">✦ 灵宠</button>
-            <button className="hud-btn live" onClick={() => setLive(true)}>⚡ 真 LLM/链</button>
+            {ocIsCustom && <button className="hud-btn" onClick={() => { setControlId(ocId); setInspId(ocId); }} title="回到你创建的角色">我 · {ocName}</button>}
+            <button className="hud-btn" onClick={() => setBagOpen(true)} title="背包(B 键)">背包</button>
+            <button className="hud-btn" onClick={() => setTeamOpen(true)} title="灵宠队伍">灵宠</button>
+            <button className="hud-btn live" onClick={() => setLive(true)}>真 LLM/链</button>
             <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="温馨 8-bit 背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
             <button className="hud-btn" onClick={() => setShowHelp(true)} title="玩法说明">?</button>
-            <button className="hud-btn" title="复制只读观光链接,发给朋友来串门" onClick={() => { const url = window.location.origin + '/world/?visit=1'; try { void navigator.clipboard?.writeText(url); } catch { /* ignore */ } window.prompt('把这个只读观光链接发给朋友来串门:', url); }}>🔗 分享观光</button>
+            <button className="hud-btn" title="复制只读观光链接,发给朋友来串门" onClick={() => { const url = window.location.origin + '/world/?visit=1'; try { void navigator.clipboard?.writeText(url); } catch { /* ignore */ } window.prompt('把这个只读观光链接发给朋友来串门:', url); }}>分享观光</button>
             <select className="hud-sel" value={FONTS.find((f) => f.css === font)?.id ?? FONTS[0].id} title="选择字体" onChange={(e) => { const f = FONTS.find((x) => x.id === e.target.value) ?? FONTS[0]; setFont(f.css); try { localStorage.setItem('oc-world-font', f.id); } catch { /* ignore */ } }}>
               {FONTS.map((f) => <option key={f.id} value={f.id}>字 · {f.name}</option>)}
             </select>
@@ -811,7 +811,7 @@ export default function WorldView() {
               {REGIONS.map((r) => <option key={r.id} value={r.id}>区 · {r.name}</option>)}
               {!REGIONS.some((r) => r.c[0] === regionC[0] && r.c[1] === regionC[1]) && <option value="custom">区 · 自定义</option>}
             </select>}
-            {!GLOBAL && <button className="hud-btn" title="把当前所在位置设为活动区域中心(整簇居民迁过来)" onClick={() => { const id = ctrlRef.current; const p = id ? apos.current.get(id) : null; if (p) applyRegion([+(p.mx / MAP_W).toFixed(4), +(p.my / MAP_H).toFixed(4)]); }}>📍 设此为区</button>}
+            {!GLOBAL && <button className="hud-btn" title="把当前所在位置设为活动区域中心(整簇居民迁过来)" onClick={() => { const id = ctrlRef.current; const p = id ? apos.current.get(id) : null; if (p) applyRegion([+(p.mx / MAP_W).toFixed(4), +(p.my / MAP_H).toFixed(4)]); }}>设此为区</button>}
           </>
         )}
       </div>
@@ -890,7 +890,7 @@ export default function WorldView() {
                   <li><b>互动</b> · 走近伙伴按 空格,或<b>点一下身边的 TA</b>:闲聊 / 夸夸 / 约饭 / 抱抱 / 陪走</li>
                   <li><b>接管</b> · 点击远处任意居民,即可化身 TA 自由行走</li>
                   <li><b>飞向</b> · 点左侧 THE FEED 的动态,镜头会飞向当事人</li>
-                  <li><b>灵宠</b> · 走近野生灵宠按 <b>C</b> 收服(耗 🔮 灵石),激活的灵宠会<b>随行</b>;<b>B</b> 开背包,✦ 灵宠 管理队伍</li>
+                  <li><b>灵宠</b> · 走近野生灵宠按 <b>C</b> 收服(耗 1 灵石),激活的灵宠会<b>随行</b>;<b>B</b> 开背包,点「灵宠」管理队伍</li>
                   <li>伙伴们会自己相遇、说悄悄话、头顶冒 ♥ —— 一个自运转的小社会</li>
                 </ul>
                 <button className="world-help-go" onClick={dismissHelp}>开始 ▸</button>
@@ -902,7 +902,7 @@ export default function WorldView() {
 
       {/* 全球非主机:首份主机快照到达前,提示正在进入共享世界(避免短暂看到本地私有世界) */}
       {GLOBAL && !isHost && !synced && (
-        <div className="world-syncing">🌐 正在进入共享世界…</div>
+        <div className="world-syncing">正在进入共享世界…</div>
       )}
 
       {/* 世界频道(多人聊天):消息浮在输入框上方;对话/菜单进行时隐藏,避免与对话框重叠 */}
@@ -916,7 +916,7 @@ export default function WorldView() {
       {netOpen && (
         <div className="world-help" onClick={() => setNetOpen(false)}>
           <div className="world-help-card net-card" onClick={(e) => e.stopPropagation()}>
-            <h3>🌐 全球联机</h3>
+            <h3>全球联机</h3>
             <p className="net-note">
               当前:<b>{netMode() === 'global' ? '已接入全球房间' : '本机多窗口模式'}</b>。
               {netMode() === 'global' ? ' 同一世界的玩家会实时同屏走动、聊天。' : ' 同浏览器多开窗口即可看到彼此;要真·全球联机,填一个免费 Supabase 项目(URL + anon key,均为可公开的客户端密钥):'}
@@ -938,11 +938,11 @@ export default function WorldView() {
       {!VISIT && bagOpen && (
         <div className="world-modal" onClick={() => setBagOpen(false)}>
           <div className="world-card" onClick={(e) => e.stopPropagation()}>
-            <div className="wc-head">🎒 背包 · Backpack <button className="wc-x" onClick={() => setBagOpen(false)}>✕</button></div>
+            <div className="wc-head">背包 · BAG <button className="wc-x" onClick={() => setBagOpen(false)}>✕</button></div>
             <div className="wc-items">
               {ITEMS.map((it) => { const n = myOc?.bag?.[it.id] ?? 0; return (
                 <div key={it.id} className={'wc-item' + (n ? '' : ' off')}>
-                  <span className="wc-ic">{it.icon}</span>
+                  <span className="wc-ic" style={{ background: it.color }}>{it.tag}</span>
                   <div className="wc-it-main"><b>{it.name}</b> ×{n}<small>{it.desc}</small></div>
                   {it.id === 'berry' && n > 0 && <button className="hud-btn" onClick={() => useBagItem('berry')}>喂食 +羁绊</button>}
                 </div>
@@ -955,7 +955,7 @@ export default function WorldView() {
       {!VISIT && teamOpen && (
         <div className="world-modal" onClick={() => setTeamOpen(false)}>
           <div className="world-card" onClick={(e) => e.stopPropagation()}>
-            <div className="wc-head">✦ 灵宠队伍 · Team <button className="wc-x" onClick={() => setTeamOpen(false)}>✕</button></div>
+            <div className="wc-head">灵宠队伍 · TEAM <button className="wc-x" onClick={() => setTeamOpen(false)}>✕</button></div>
             <div className="wc-team">
               {(myOc?.team ?? []).map((s) => { const sp = speciesById[s.species]; const on = s.uid === myOc?.active; return (
                 <button key={s.uid} className={'wc-mon' + (on ? ' on' : '')} onClick={() => setActiveSpirit(s.uid)} title={on ? '随行中' : '设为随行'}>
