@@ -1,0 +1,3 @@
+# Zeabur/Netlify-style rewrites for the static site (parity with vercel.json)
+# /app is a vanity route → workspace shell. 200 = rewrite (URL stays /app).
+/app  /web.html  200
