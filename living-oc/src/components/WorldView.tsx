@@ -291,6 +291,8 @@ export default function WorldView() {
       if (nm === '范范兔') { im.onload = () => { named.current[nm] = recolorHairPurple(im); }; named.current[nm] = im; } // 主角女生:运行时把头发染紫
       else named.current[nm] = im;
     }
+    // 小智作为常驻居民时(玩家操控自创角色)用主角红衣渲染;独立于 NAMED_SPRITE(后者还兼作联机同步白名单,加入会与 OC 重名冲突)
+    { const xz = new Image(); xz.src = BASE + 'sprites/chr-red_normal.png'; named.current['小智'] = xz; }
     // 远端玩家精灵集(按玩家 id 哈希分配,玩家之间外观各异)
     for (const n of ['red_normal', 'green_normal', 'boy', 'lass', 'youngster', 'fat_man', 'beauty', 'gentleman']) {
       const im = new Image(); im.src = BASE + 'sprites/chr-' + n + '.png'; spriteByName.current[n] = im;
@@ -672,6 +674,10 @@ export default function WorldView() {
   const ctrl = controlId ?? ocId;
   const ctrlA = w && ctrl ? w.agents[ctrl] : undefined;
   const inspA = w && inspId ? w.agents[inspId] : undefined;
+  const ocName = w && ocId ? w.agents[ocId]?.name : null;
+  // 小智:可能就是玩家的 OC(默认),也可能是玩家操控自创角色时的常驻居民 —— 两种都能「回到小智」
+  const xiaozhiId = (w ? (w.order.find((id) => w.agents[id]?.name === '小智') ?? null) : null) ?? ocId;
+  const ocIsCustom = !!ocName && ocName !== '小智';
 
   return (
     <section className="world-fs" style={{ '--world-font': font } as CSSProperties}>
@@ -700,7 +706,8 @@ export default function WorldView() {
             {!GLOBAL && <button className="hud-btn" onClick={() => setRun(!worldRunning)}>{worldRunning ? '⏸' : '▶'}</button>}
             {!GLOBAL && <button className="hud-btn" onClick={() => { const n = window.prompt('克隆一个新居民(起个名字):', '@new_soul'); const v = n && n.trim(); if (v) addAgent(v); }}>＋人格</button>}
             {!GLOBAL && <button className="hud-btn" onClick={() => { reseed(); apos.current.clear(); affinity.current.clear(); meetLines.current.clear(); companionRef.current = null; meetRef.current = null; nextMeetAt.current = 0; talkRef.current = null; setControlId(null); setInspId(null); }}>↻ 重置</button>}
-            <button className="hud-btn" onClick={() => setControlId(ocId)}>回到小智 ★</button>
+            <button className="hud-btn" onClick={() => { setControlId(xiaozhiId); setInspId(xiaozhiId); }}>回到小智 ★</button>
+            {ocIsCustom && <button className="hud-btn" onClick={() => { setControlId(ocId); setInspId(ocId); }} title="回到你创建的角色">🧍 我 · {ocName}</button>}
             <button className="hud-btn live" onClick={() => setLive(true)}>⚡ 真 LLM/链</button>
             <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="温馨 8-bit 背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
             <button className="hud-btn" onClick={() => setShowHelp(true)} title="玩法说明">?</button>

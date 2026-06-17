@@ -59,6 +59,13 @@ export function createPrivateWorld(oc: Agent, seed: string) {
   const w = createWorld(seed);
   w.agents[oc.id] = oc;
   w.order.unshift(oc.id);
-  w.stats.supply = Math.round((w.stats.supply + oc.balance) * 100) / 100;
+  w.stats.supply = round2(w.stats.supply + oc.balance);
+  // 小智 是活世界的永久主角:当玩家操控自创角色时,仍把小智作为常驻居民加入,确保「小智」永不消失。
+  if (oc.name !== '小智') {
+    const xz = makeAgent('xiaozhi#og:' + seed, '小智', '@xiaozhi', '一个属于你的 AI 角色——话不多但都记得,在你的世界里慢慢长成自己的样子。', 'creator', seed);
+    w.agents[xz.id] = xz;
+    w.order.push(xz.id);
+    w.stats.supply = round2(w.stats.supply + xz.balance);
+  }
   return w;
 }
