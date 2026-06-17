@@ -7,7 +7,7 @@ import WorldGoLive from './WorldGoLive';
 import { liveSay, liveTalk } from '../live/liveProviders';
 import { toggleBgm, bgmPlaying } from '../live/bgm';
 import { makeNet, playerSelf, setPlayerName, netMode, netConfig, setNetConfig, clearNetConfig, type NetTransport, type NetSelf } from '../live/net';
-import { SPECIES, ITEMS, speciesById, drawSpirit } from '../world/spirits';
+import { SPECIES, ITEMS, speciesById, drawSpirit, SPIRIT_ART } from '../world/spirits';
 
 const BASE = import.meta.env.BASE_URL;
 // 访客观光模式(?visit=1):只读串门 —— 无操控/接管/互动,自动巡游 + 点角色聚焦查看 + 转化 CTA
@@ -202,6 +202,7 @@ export default function WorldView() {
   const ocSprite = useRef<HTMLImageElement | null>(null);
   const npcSprites = useRef<HTMLImageElement[]>([]);
   const named = useRef<Record<string, HTMLImageElement>>({});
+  const spiritImg = useRef<Record<string, HTMLImageElement>>({});   // 外部灵宠美术(SPIRIT_ART 登记的合规素材),未登记则回退程序化绘制
   const ctrlRef = useRef<string | null>(null); ctrlRef.current = VISIT ? null : (controlId ?? ocId);
   const spectateRef = useRef<string | null>(null);   // 访客观光:当前聚焦的居民
   const nextSpectateAt = useRef(0);
@@ -322,6 +323,8 @@ export default function WorldView() {
     }
     // 小智作为常驻居民时(玩家操控自创角色)用主角红衣渲染;独立于 NAMED_SPRITE(后者还兼作联机同步白名单,加入会与 OC 重名冲突)
     { const xz = new Image(); xz.src = BASE + 'sprites/chr-red_normal.png'; named.current['小智'] = xz; }
+    // 外部灵宠美术(可选):仅加载 SPIRIT_ART 登记项 → 默认空 = 零 404、用程序化美术
+    for (const sid in SPIRIT_ART) { const im = new Image(); im.src = BASE + 'sprites/spirits/' + SPIRIT_ART[sid]; spiritImg.current[sid] = im; }
     // 远端玩家精灵集(按玩家 id 哈希分配,玩家之间外观各异)
     for (const n of ['red_normal', 'green_normal', 'boy', 'lass', 'youngster', 'fat_man', 'beauty', 'gentleman']) {
       const im = new Image(); im.src = BASE + 'sprites/chr-' + n + '.png'; spriteByName.current[n] = im;
@@ -463,6 +466,15 @@ export default function WorldView() {
       const gx = Math.max(0, Math.min(c.cw - 1, mx / c.cs | 0)), gy = Math.max(0, Math.min(c.ch - 1, my / c.cs | 0));
       const i = (gy * c.cw + gx) * 4; if (c.d[i + 3] < 30) return false;
       return !(c.d[i] > 232 && c.d[i + 1] > 232 && c.d[i + 2] > 232);
+    };
+    // 灵宠绘制:登记了合规外部美术则用图片,否则回退内置原创程序化绘制
+    const drawCreature = (cx: number, cy: number, size: number, sid: string, frame: number, faceLeft: boolean) => {
+      const img = spiritImg.current[sid];
+      if (img && img.complete && img.naturalWidth) {
+        const s = size * 1.35, bob = frame ? -size * 0.06 : 0;
+        ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(cx, cy - s / 2 + bob); if (faceLeft) ctx.scale(-1, 1);
+        ctx.drawImage(img, -s / 2, -s / 2, s, s); ctx.restore();
+      } else drawSpirit(ctx, cx, cy, size, sid, frame, faceLeft);
     };
     const draw = (now: number) => {
       const dt = Math.min(0.05, (now - (lastT.current || now)) / 1000); lastT.current = now;
@@ -635,7 +647,7 @@ export default function WorldView() {
           if (cpp) { const d = (wx - cpp.mx) ** 2 + (wy - cpp.my) ** 2; if (d < wbd) { wbd = d; nearWild.current = wd.uid; } }
           const sz = TILE * 0.78;
           ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(sx, sy, sz * 0.32, sz * 0.13, 0, 0, 7); ctx.fill();
-          drawSpirit(ctx, sx, sy, sz, wd.species, Math.floor(now / 320) % 2, false);
+          drawCreature(sx, sy, sz, wd.species, Math.floor(now / 320) % 2, false);
           const sp = speciesById[wd.species];
           ctx.font = '10px ' + fam; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.8)';
           ctx.strokeText('野生·' + (sp?.name ?? ''), sx, sy + 13); ctx.fillStyle = 'rgba(220,255,220,.9)'; ctx.fillText('野生·' + (sp?.name ?? ''), sx, sy + 13);
@@ -650,7 +662,7 @@ export default function WorldView() {
           const idx = Math.max(0, trail.current.length - 1 - 14), f = trail.current[idx], fp = trail.current[Math.max(0, idx - 4)];
           const fx = SX(f.mx), fy = SY(f.my), sz = TILE * 0.82;
           ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.beginPath(); ctx.ellipse(fx, fy, sz * 0.32, sz * 0.13, 0, 0, 7); ctx.fill();
-          drawSpirit(ctx, fx, fy, sz, act.species, Math.floor(now / 280) % 2, f.mx < fp.mx - 0.5);
+          drawCreature(fx, fy, sz, act.species, Math.floor(now / 280) % 2, f.mx < fp.mx - 0.5);
         }
       }
       // 7a. 远端玩家(其他真人):插值移动 + 蓝圈 + 名牌 + 聊天气泡;12s 无更新视为离线

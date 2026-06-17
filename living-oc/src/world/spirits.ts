@@ -15,6 +15,13 @@ export const speciesById: Record<string, Species> = Object.fromEntries(SPECIES.m
 
 export interface Spirit { uid: string; species: string; name: string; level: number; xp: number; bond: number; }
 
+// 外部灵宠美术接入点(可选):把合规授权(CC0 / OGA-BY 等)的像素怪物 PNG 放到
+//   frontend-v4/world/sprites/spirits/<file>,并在此登记 物种id -> 文件名,即可替换程序化美术。
+// 留空 = 使用内置原创程序化美术(零版权风险、零 404)。切勿放入任何官方/受版权保护的素材。
+export const SPIRIT_ART: Record<string, string> = {
+  // 例:ember: 'ember.png', ripple: 'ripple.png',
+};
+
 export interface Item { id: string; name: string; icon: string; desc: string; }
 export const ITEMS: Item[] = [
   { id: 'stone', name: '灵石', icon: '🔮', desc: '收服野生灵宠所需的结晶。' },
