@@ -7,6 +7,7 @@ import WorldGoLive from './WorldGoLive';
 import { liveSay, liveTalk } from '../live/liveProviders';
 import { toggleBgm, bgmPlaying } from '../live/bgm';
 import { makeNet, playerSelf, setPlayerName, netMode, netConfig, setNetConfig, clearNetConfig, type NetTransport, type NetSelf } from '../live/net';
+import { SPECIES, ITEMS, speciesById, drawSpirit } from '../world/spirits';
 
 const BASE = import.meta.env.BASE_URL;
 // 访客观光模式(?visit=1):只读串门 —— 无操控/接管/互动,自动巡游 + 点角色聚焦查看 + 转化 CTA
@@ -22,6 +23,7 @@ const TILE = 16 * MAP_SCALE;           // 屏上一格 = 32
 const SPEED = 150;                     // 手控速度(地图 px/秒)
 const NPC_SPEED = 78;                  // 自治居民速度
 const INTERACT_R = 30;                 // 交互半径(地图 px)
+const TAME_R = 50;                     // 收服半径(略大于交互,容错更友好)
 // 6 个 ZEALWISH 地点 = 一处「活动区域」:活动中心点 + 固定相对偏移(成簇)。
 // 中心可自定义:选预设区域,或把当前位置「设为活动中心」;选择持久化到 localStorage。
 const REGION_DEFAULT: [number, number] = [0.9691, 0.5906];   // 默认:东海岸海景小屋绿地小岬
@@ -172,6 +174,13 @@ export default function WorldView() {
   const [live, setLive] = useState(false);
   const [controlId, setControlId] = useState<string | null>(null);
   const [inspId, setInspId] = useState<string | null>(null);
+  const [bagOpen, setBagOpen] = useState(false);
+  const [teamOpen, setTeamOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const ensureKit = useLiving((s) => s.ensureKit);
+  const tameSpirit = useLiving((s) => s.tameSpirit);
+  const useBagItem = useLiving((s) => s.useBagItem);
+  const setActiveSpirit = useLiving((s) => s.setActiveSpirit);
   const [feedOpen, setFeedOpen] = useState(true);
   const [bgmOn, setBgmOn] = useState(false);
   const [font, setFont] = useState<string>(() => {
@@ -204,6 +213,26 @@ export default function WorldView() {
   const regionRef = useRef(regionC); regionRef.current = regionC;
   const talkRef = useRef<{ withId: string; lines?: { name: string; text: string }[]; i: number; menu?: boolean } | null>(null);
   const bumpTalk = () => setTalkVer((v) => v + 1);
+  // 灵宠玩法本地态:随行轨迹、野生灵宠、临近野生、提示 toast
+  const trail = useRef<{ mx: number; my: number }[]>([]);
+  const wild = useRef<{ uid: string; species: string; bx: number; by: number; phase: number; r: number; spd: number }[]>([]);
+  const wildInit = useRef(false);
+  const nearWild = useRef<string | null>(null);
+  const toastTimer = useRef(0);
+  const showToast = (m: string) => { setToast(m); window.clearTimeout(toastTimer.current); toastTimer.current = window.setTimeout(() => setToast(null), 1800); };
+  const attemptTameRef = useRef<() => void>(() => {});
+  attemptTameRef.current = () => {
+    if (VISIT) return;
+    const id = ctrlRef.current; const cp = id ? apos.current.get(id) : null; if (!cp) return;
+    const nowt = performance.now(); let best: { uid: string; species: string } | null = null; let bd = TAME_R * TAME_R;
+    for (const wd of wild.current) {
+      const wx = wd.bx + Math.cos(nowt * wd.spd + wd.phase) * wd.r, wy = wd.by + Math.sin(nowt * wd.spd + wd.phase) * wd.r;
+      const d = (wx - cp.mx) ** 2 + (wy - cp.my) ** 2; if (d < bd) { bd = d; best = wd; }
+    }
+    if (!best) { showToast('附近没有野生灵宠'); return; }
+    if ((useLiving.getState().oc?.bag?.stone || 0) <= 0) { showToast('灵石不足 · 无法收服'); return; }
+    if (tameSpirit(best.species)) { const sp = speciesById[best.species]; const bu = best.uid; wild.current = wild.current.filter((x) => x.uid !== bu); showToast('收服成功 · ' + (sp?.name || '灵宠') + ' 加入队伍 ✦'); }
+  };
   // ── 互动:飘心表情 / 好感度 / 陪走 / NPC 亲密相会 ──
   const emotes = useRef<{ mx: number; my: number; glyph: string; born: number }[]>([]);
   const affinity = useRef<Map<string, number>>(new Map());
@@ -402,12 +431,16 @@ export default function WorldView() {
     talkRef.current = { withId: friendId, lines, i: 0 }; bumpTalk();
   };
 
+  useEffect(() => { if (!VISIT) ensureKit(); }, [ensureKit]);
+
   useEffect(() => {
     const dn = (e: KeyboardEvent) => {
       if (VISIT) return;                                 // 访客观光:只读,不接受键盘操控
       const ae = document.activeElement; if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return; // 输入框聚焦时不触发移动
       const k = e.key.toLowerCase();
       if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) { keys.current.add(k); e.preventDefault(); }
+      if (k === 'b') { setBagOpen((o) => !o); return; }        // 背包
+      if (k === 'c') { attemptTameRef.current(); return; }     // 收服临近野生灵宠
       if (k === ' ') {
         const tk = talkRef.current;
         if (tk) {
@@ -524,6 +557,7 @@ export default function WorldView() {
         cpp = spectateRef.current ? apos.current.get(spectateRef.current) || null : null;
       }
       if (cpp) { const f = Math.min(1, dt * (VISIT ? 3.5 : 8)); cam.current.cx += (cpp.mx - cam.current.cx) * f; cam.current.cy += (cpp.my - cam.current.cy) * f; }
+      if (!VISIT && cpp) { trail.current.push({ mx: cpp.mx, my: cpp.my }); if (trail.current.length > 60) trail.current.shift(); }   // 随行灵宠轨迹
       const sw = VW / MAP_SCALE, sh = VH / MAP_SCALE;
       const srcX = Math.max(0, Math.min(MAP_W - sw, cam.current.cx - sw / 2));
       const srcY = Math.max(0, Math.min(MAP_H - sh, cam.current.cy - sh / 2));
@@ -542,6 +576,12 @@ export default function WorldView() {
       const fam = fontRef.current;
       ctx.textAlign = 'center';
       if (!w) { raf = requestAnimationFrame(draw); return; }
+      // 6b. 野生灵宠初始化(围绕活动区域散布,玩家本地态)
+      if (!wildInit.current) {
+        wildInit.current = true;
+        const rc = GLOBAL ? REGION_DEFAULT : regionRef.current; const ccx = rc[0] * MAP_W, ccy = rc[1] * MAP_H;
+        for (let i = 0; i < 5; i++) { const sp = SPECIES[(i * 2 + 1) % SPECIES.length]; const ang = (i / 5) * Math.PI * 2; wild.current.push({ uid: 'w' + i, species: sp.id, bx: ccx + Math.cos(ang) * (84 + i * 22), by: ccy + Math.sin(ang) * (76 + i * 18), phase: i * 1.3, r: 14 + (i % 3) * 6, spd: 0.0006 + i * 0.0001 }); }
+      }
       // 6. 最近可交互居民
       let near: string | null = null;
       if (cpp && ctrl) { let bd = INTERACT_R * INTERACT_R; for (const id of w.order) { if (id === ctrl) continue; const p = apos.current.get(id); if (!p) continue; const d = (p.mx - cpp.mx) ** 2 + (p.my - cpp.my) ** 2; if (d < bd) { bd = d; near = id; } } }
@@ -583,6 +623,34 @@ export default function WorldView() {
         if (forced || (bank && bank.length)) {
           const bline = forced || (liveRef.current && liveLines.current.get(a.name)) || bank[(Math.floor(now / 9000) + hue(id)) % bank.length];
           if (talkRef.current?.withId !== id) bubble(ctx, sx, sy - cH - (isNear ? 18 : 6), bline, fam);
+        }
+      }
+      // 7b. 野生灵宠(原创 monster-tamer 玩法;玩家本地态,不入确定性世界)
+      nearWild.current = null;
+      { let wbd = TAME_R * TAME_R;
+        for (const wd of wild.current) {
+          const wx = wd.bx + Math.cos(now * wd.spd + wd.phase) * wd.r, wy = wd.by + Math.sin(now * wd.spd + wd.phase) * wd.r;
+          const sx = SX(wx), sy = SY(wy);
+          if (sx < -TILE * 2 || sx > VW + TILE * 2 || sy < -TILE * 3 || sy > VH + TILE * 2) continue;
+          if (cpp) { const d = (wx - cpp.mx) ** 2 + (wy - cpp.my) ** 2; if (d < wbd) { wbd = d; nearWild.current = wd.uid; } }
+          const sz = TILE * 0.78;
+          ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(sx, sy, sz * 0.32, sz * 0.13, 0, 0, 7); ctx.fill();
+          drawSpirit(ctx, sx, sy, sz, wd.species, Math.floor(now / 320) % 2, false);
+          const sp = speciesById[wd.species];
+          ctx.font = '10px ' + fam; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.8)';
+          ctx.strokeText('野生·' + (sp?.name ?? ''), sx, sy + 13); ctx.fillStyle = 'rgba(220,255,220,.9)'; ctx.fillText('野生·' + (sp?.name ?? ''), sx, sy + 13);
+          if (nearWild.current === wd.uid) { ctx.fillStyle = 'rgba(140,255,170,.96)'; ctx.font = '11px ' + fam; ctx.fillText('C · 收服 🔮', sx, sy - sz - 4); }
+        }
+      }
+      // 7c. 随行灵宠(玩家激活的灵宠,跟在控制角色身后)
+      if (!VISIT && cpp && trail.current.length > 6) {
+        const myoc = useLiving.getState().oc;
+        const act = myoc && myoc.team && myoc.team.length ? (myoc.team.find((s) => s.uid === myoc.active) ?? myoc.team[0]) : null;
+        if (act) {
+          const idx = Math.max(0, trail.current.length - 1 - 14), f = trail.current[idx], fp = trail.current[Math.max(0, idx - 4)];
+          const fx = SX(f.mx), fy = SY(f.my), sz = TILE * 0.82;
+          ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.beginPath(); ctx.ellipse(fx, fy, sz * 0.32, sz * 0.13, 0, 0, 7); ctx.fill();
+          drawSpirit(ctx, fx, fy, sz, act.species, Math.floor(now / 280) % 2, f.mx < fp.mx - 0.5);
         }
       }
       // 7a. 远端玩家(其他真人):插值移动 + 蓝圈 + 名牌 + 聊天气泡;12s 无更新视为离线
@@ -678,6 +746,8 @@ export default function WorldView() {
   // 小智:可能就是玩家的 OC(默认),也可能是玩家操控自创角色时的常驻居民 —— 两种都能「回到小智」
   const xiaozhiId = (w ? (w.order.find((id) => w.agents[id]?.name === '小智') ?? null) : null) ?? ocId;
   const ocIsCustom = !!ocName && ocName !== '小智';
+  const myOc = useLiving.getState().oc;
+  const activeSpirit = myOc && myOc.team && myOc.team.length ? (myOc.team.find((s) => s.uid === myOc.active) ?? myOc.team[0]) : null;
 
   return (
     <section className="world-fs" style={{ '--world-font': font } as CSSProperties}>
@@ -687,6 +757,14 @@ export default function WorldView() {
         {VISIT
           ? <div className="hud-ctrl visit">👁 访客观光 · 只读串门</div>
           : <div className="hud-ctrl">控制中 · <b>{ctrlA?.name ?? '—'}</b>{ctrl === ocId && ' ★'}</div>}
+        {!VISIT && (
+          <div className="hud-kit" title="随行灵宠 · 背包灵石">
+            {activeSpirit
+              ? <button className="kit-mon" onClick={() => setTeamOpen(true)}><span className="kit-dot" style={{ background: speciesById[activeSpirit.species]?.body }} />{activeSpirit.name} <i>Lv{activeSpirit.level}</i></button>
+              : <button className="kit-mon off" onClick={() => setTeamOpen(true)}>无随行灵宠</button>}
+            <button className="kit-stone" onClick={() => setBagOpen(true)}>🔮 {myOc?.bag?.stone ?? 0}</button>
+          </div>
+        )}
       </div>
 
       <div className="hud hud-tr">
@@ -708,6 +786,8 @@ export default function WorldView() {
             {!GLOBAL && <button className="hud-btn" onClick={() => { reseed(); apos.current.clear(); affinity.current.clear(); meetLines.current.clear(); companionRef.current = null; meetRef.current = null; nextMeetAt.current = 0; talkRef.current = null; setControlId(null); setInspId(null); }}>↻ 重置</button>}
             <button className="hud-btn" onClick={() => { setControlId(xiaozhiId); setInspId(xiaozhiId); }}>回到小智 ★</button>
             {ocIsCustom && <button className="hud-btn" onClick={() => { setControlId(ocId); setInspId(ocId); }} title="回到你创建的角色">🧍 我 · {ocName}</button>}
+            <button className="hud-btn" onClick={() => setBagOpen(true)} title="背包(B 键)">🎒 背包</button>
+            <button className="hud-btn" onClick={() => setTeamOpen(true)} title="灵宠队伍">✦ 灵宠</button>
             <button className="hud-btn live" onClick={() => setLive(true)}>⚡ 真 LLM/链</button>
             <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="温馨 8-bit 背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
             <button className="hud-btn" onClick={() => setShowHelp(true)} title="玩法说明">?</button>
@@ -798,6 +878,7 @@ export default function WorldView() {
                   <li><b>互动</b> · 走近伙伴按 空格,或<b>点一下身边的 TA</b>:闲聊 / 夸夸 / 约饭 / 抱抱 / 陪走</li>
                   <li><b>接管</b> · 点击远处任意居民,即可化身 TA 自由行走</li>
                   <li><b>飞向</b> · 点左侧 THE FEED 的动态,镜头会飞向当事人</li>
+                  <li><b>灵宠</b> · 走近野生灵宠按 <b>C</b> 收服(耗 🔮 灵石),激活的灵宠会<b>随行</b>;<b>B</b> 开背包,✦ 灵宠 管理队伍</li>
                   <li>伙伴们会自己相遇、说悄悄话、头顶冒 ♥ —— 一个自运转的小社会</li>
                 </ul>
                 <button className="world-help-go" onClick={dismissHelp}>开始 ▸</button>
@@ -835,6 +916,43 @@ export default function WorldView() {
             <div className="sp-edit-actions">
               <button className="btn primary" onClick={saveNet}>保存并重连 ✦</button>
               <button className="btn" onClick={() => setNetOpen(false)}>取消</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && <div className="world-toast">{toast}</div>}
+
+      {!VISIT && bagOpen && (
+        <div className="world-modal" onClick={() => setBagOpen(false)}>
+          <div className="world-card" onClick={(e) => e.stopPropagation()}>
+            <div className="wc-head">🎒 背包 · Backpack <button className="wc-x" onClick={() => setBagOpen(false)}>✕</button></div>
+            <div className="wc-items">
+              {ITEMS.map((it) => { const n = myOc?.bag?.[it.id] ?? 0; return (
+                <div key={it.id} className={'wc-item' + (n ? '' : ' off')}>
+                  <span className="wc-ic">{it.icon}</span>
+                  <div className="wc-it-main"><b>{it.name}</b> ×{n}<small>{it.desc}</small></div>
+                  {it.id === 'berry' && n > 0 && <button className="hud-btn" onClick={() => useBagItem('berry')}>喂食 +羁绊</button>}
+                </div>
+              ); })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!VISIT && teamOpen && (
+        <div className="world-modal" onClick={() => setTeamOpen(false)}>
+          <div className="world-card" onClick={(e) => e.stopPropagation()}>
+            <div className="wc-head">✦ 灵宠队伍 · Team <button className="wc-x" onClick={() => setTeamOpen(false)}>✕</button></div>
+            <div className="wc-team">
+              {(myOc?.team ?? []).map((s) => { const sp = speciesById[s.species]; const on = s.uid === myOc?.active; return (
+                <button key={s.uid} className={'wc-mon' + (on ? ' on' : '')} onClick={() => setActiveSpirit(s.uid)} title={on ? '随行中' : '设为随行'}>
+                  <span className="wc-mon-dot" style={{ background: sp?.body }} />
+                  <span className="wc-mon-main"><b>{s.name}</b><small>{sp?.element ?? '?'}系 · Lv{s.level} · 羁绊 {s.bond}</small></span>
+                  {on && <span className="wc-on">随行中</span>}
+                </button>
+              ); })}
+              {(!myOc?.team || myOc.team.length === 0) && <div className="wc-empty">还没有灵宠 —— 走近野生灵宠按 C 收服。</div>}
             </div>
           </div>
         </div>

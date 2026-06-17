@@ -1,4 +1,5 @@
 import type { Agent, Archetype } from '../sim/types';
+import type { Spirit } from '../world/spirits';
 import { makeAgent } from '../sim/world';
 
 export interface OcProfile {
@@ -7,7 +8,8 @@ export interface OcProfile {
   daysLived: number;
 }
 // sprite:玩家在世界里的「像素小人」身体(从工作台创建流程带入;见 App.tsx spawn 流程)
-export type OC = Agent & { profile: OcProfile; sprite?: string };
+// team/bag/active:玩家的灵宠队伍与背包(monster-tamer 玩法,见 world/spirits.ts);随角色持久化。
+export type OC = Agent & { profile: OcProfile; sprite?: string; team?: Spirit[]; bag?: Record<string, number>; active?: string };
 
 export function createOc(p: { name: string; handle: string; bio: string; arche: Archetype; seed: string }): OC {
   const a = makeAgent('oc#' + p.handle.replace('@', '') + ':' + p.seed, p.name, p.handle, p.bio, p.arche, p.seed);

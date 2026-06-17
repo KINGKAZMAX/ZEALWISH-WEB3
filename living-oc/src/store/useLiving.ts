@@ -5,6 +5,7 @@ import { createOc, sedimentGuidance, type OC } from '../oc/oc';
 import { runDay, step, flushInputs } from '../sim/step';
 import { createPrivateWorld } from '../sim/world';
 import { ARCHE_TRAITS } from '../sim/data';
+import { starterTeam, starterBag, newSpirit } from '../world/spirits';
 import { reflectToDiary } from '../sim/systems/memory';
 import { ScriptedCognitionProvider } from '../sim/providers/cognition';
 import { LiveCognitionProvider, LiveChainProvider } from '../live/liveProviders';
@@ -70,6 +71,10 @@ interface LivingState {
   send(text: string): void;
   guide(text: string): void;
   editOc(patch: { name?: string; bio?: string; arche?: Archetype }): void;
+  ensureKit(): void;
+  tameSpirit(speciesId: string): boolean;
+  useBagItem(itemId: string): void;
+  setActiveSpirit(uid: string): void;
   load(): void;
   setView(v: View): void;
   enterWorld(): void;
@@ -122,6 +127,41 @@ export const useLiving = create<LivingState>((set, get) => ({
     if (patch.arche && patch.arche !== oc.arche) { oc.arche = patch.arche; oc.traits = { ...ARCHE_TRAITS[patch.arche] }; }
     saveOc(oc);
     set({ version: get().version + 1 });
+  },
+  // ── 灵宠 / 背包(玩家本地态,随角色持久化;不入确定性世界,亦不参与联机权威)──
+  ensureKit() {
+    const oc = get().oc; if (!oc) return;
+    if (oc.team && oc.bag) return;
+    if (!oc.team) oc.team = starterTeam(oc.id);
+    if (!oc.bag) oc.bag = starterBag();
+    if (!oc.active && oc.team.length) oc.active = oc.team[0].uid;
+    saveOc(oc); set({ version: get().version + 1 });
+  },
+  tameSpirit(speciesId) {
+    const oc = get().oc; if (!oc) return false;
+    if (!oc.bag) oc.bag = starterBag();
+    if ((oc.bag.stone || 0) <= 0) return false;
+    if (!oc.team) oc.team = [];
+    oc.bag.stone -= 1;
+    const sp = newSpirit(speciesId, speciesId + ':' + oc.team.length + ':' + oc.id);
+    oc.team.push(sp);
+    if (!oc.active) oc.active = sp.uid;
+    saveOc(oc); set({ version: get().version + 1 });
+    return true;
+  },
+  useBagItem(itemId) {
+    const oc = get().oc; if (!oc || !oc.bag) return;
+    if ((oc.bag[itemId] || 0) <= 0) return;
+    if (itemId === 'berry' && oc.team && oc.active) {
+      const s = oc.team.find((x) => x.uid === oc.active) || oc.team[0];
+      if (s) { s.bond = Math.min(100, s.bond + 8); s.xp += 10; if (s.xp >= 20 + s.level * 10) { s.xp = 0; s.level += 1; } }
+    }
+    oc.bag[itemId] -= 1;
+    saveOc(oc); set({ version: get().version + 1 });
+  },
+  setActiveSpirit(uid) {
+    const oc = get().oc; if (!oc || !oc.team) return;
+    if (oc.team.some((x) => x.uid === uid)) { oc.active = uid; saveOc(oc); set({ version: get().version + 1 }); }
   },
   load() {
     const oc = loadOc(); if (oc) set({ oc, version: get().version + 1 });

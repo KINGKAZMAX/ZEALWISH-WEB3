@@ -256,6 +256,31 @@ html.oc-embed .world-fs{height:100vh}
 .world-chat-in{pointer-events:auto;width:100%;background:rgba(8,9,11,.7);border:1px solid var(--line-strong);border-radius:10px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;backdrop-filter:blur(8px);font-family:var(--world-font)}
 .world-chat-in:focus{border-color:#8cd2ff}
 .world-syncing{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;background:rgba(8,9,11,.82);border:1px solid #8cd2ff;border-radius:12px;padding:12px 18px;font-size:14px;color:#cde9ff;backdrop-filter:blur(6px)}
+/* 灵宠系统:HUD 随行胶囊、收服 toast、背包/队伍弹窗 */
+.hud-kit{display:flex;gap:6px;margin-top:6px;align-items:center}
+.hud-kit .kit-mon,.hud-kit .kit-stone{display:inline-flex;align-items:center;gap:5px;background:rgba(8,9,11,.62);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:3px 9px;font-size:12px;color:#f2f2f5;cursor:pointer}
+.hud-kit .kit-mon i{color:#ffd24d;font-style:normal;font-size:11px}
+.hud-kit .kit-mon.off{color:#9aa0aa}
+.hud-kit .kit-dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+.world-toast{position:absolute;left:50%;bottom:88px;transform:translateX(-50%);z-index:12;background:rgba(8,9,11,.88);border:1px solid #8cffa6;border-radius:999px;padding:9px 18px;font-size:13px;color:#dfffe6;white-space:nowrap}
+.world-modal{position:absolute;inset:0;z-index:14;display:flex;align-items:center;justify-content:center;background:rgba(4,5,7,.55);backdrop-filter:blur(3px)}
+.world-card{width:min(420px,86vw);max-height:78vh;overflow:auto;background:#101116;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:16px 18px;box-shadow:0 18px 60px rgba(0,0,0,.5)}
+.wc-head{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:15px;color:#f5f5f7;margin-bottom:12px}
+.wc-x{background:none;border:none;color:#9aa0aa;font-size:16px;cursor:pointer}
+.wc-items{display:flex;flex-direction:column;gap:8px}
+.wc-item{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:9px 11px}
+.wc-item.off{opacity:.45}
+.wc-ic{font-size:22px}
+.wc-it-main{flex:1;display:flex;flex-direction:column;font-size:13px;color:#f0f0f3}
+.wc-it-main small{color:#9aa0aa;font-size:11px;margin-top:2px}
+.wc-team{display:flex;flex-direction:column;gap:8px}
+.wc-mon{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:9px 11px;cursor:pointer;color:#f0f0f3}
+.wc-mon.on{border-color:#ff2d2d;background:rgba(255,45,45,.1)}
+.wc-mon-dot{width:18px;height:18px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+.wc-mon-main{flex:1;display:flex;flex-direction:column}
+.wc-mon-main small{color:#9aa0aa;font-size:11px;margin-top:2px}
+.wc-on{font-size:11px;color:#ff8a8a}
+.wc-empty{color:#9aa0aa;font-size:13px;padding:6px 2px}
 .net-card{width:min(460px,88vw)}
 .net-note{font-size:13px;line-height:1.6;color:var(--muted);margin-bottom:12px}
 .net-note b{color:var(--text)}
