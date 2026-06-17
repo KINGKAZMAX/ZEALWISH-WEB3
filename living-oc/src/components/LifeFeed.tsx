@@ -6,7 +6,7 @@ export default function LifeFeed() {
   return (
     <section className="lifefeed">
       <div className="col-head">中景 · 它今天的人生</div>
-      <button className="btn" onClick={() => live()}>▶ 让它过一天</button>
+      <button className="btn" onClick={() => live()}>让它过一天 ›</button>
       {day && (
         <>
           <ol className="feed">

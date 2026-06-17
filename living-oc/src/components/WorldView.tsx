@@ -102,7 +102,7 @@ const ACTIONS: { id: string; label: string; sub: string; glyph: string }[] = [
   { id: 'praise', label: '夸夸', sub: '+好感',   glyph: '✦' },
   { id: 'meal',   label: '约饭', sub: '去恰美食', glyph: '✿' },
   { id: 'hug',    label: '抱抱', sub: '+亲密',   glyph: '♥' },
-  { id: 'follow', label: '陪走', sub: '一起散步', glyph: '🚶' },
+  { id: 'follow', label: '陪走', sub: '一起散步', glyph: '⇢' },
 ];
 
 function hue(s: string): number { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h % 360; }
@@ -273,6 +273,7 @@ export default function WorldView() {
     try { localStorage.setItem('oc-world-region', JSON.stringify(c)); } catch { /* ignore */ }
     apos.current.clear();
     meetRef.current = null; meetLines.current.clear(); nextMeetAt.current = 0; companionRef.current = null;
+    wild.current = []; wildInit.current = false; trail.current = [];   // 随新区域重新散布野生灵宠 + 清随行轨迹
     cam.current.cx = c[0] * MAP_W; cam.current.cy = c[1] * MAP_H;
   };
 
@@ -367,8 +368,8 @@ export default function WorldView() {
     const snapIv = setInterval(() => {
       if (!isHostRef.current || peersCountRef.current <= 1) return;
       const w = useLiving.getState().world; if (!w) return;
-      const npc = w.order.map((id) => w.agents[id]).filter((a) => a && NAMED_SPRITE[a.name]).map((a) => ({ name: a.name, loc: a.loc, mood: a.mood, balance: a.balance, needs: a.needs as unknown as Record<string, number>, rng: a.rngState, rel: a.rel }));
-      const feed = w.feed.filter((p) => NAMED_SPRITE[p.name]).slice(0, 8).map((p) => ({ id: p.id, agentId: p.agentId, name: p.name, action: p.action as string, text: p.text, ev: p.ev?.kind ?? null }));
+      const npc = w.order.map((id) => w.agents[id]).filter((a) => a && NAMED_SPRITE[a.name] && a.id !== ocId).map((a) => ({ name: a.name, loc: a.loc, mood: a.mood, balance: a.balance, needs: a.needs as unknown as Record<string, number>, rng: a.rngState, rel: a.rel }));
+      const feed = w.feed.filter((p) => NAMED_SPRITE[p.name] && p.agentId !== ocId).slice(0, 8).map((p) => ({ id: p.id, agentId: p.agentId, name: p.name, action: p.action as string, text: p.text, ev: p.ev?.kind ?? null }));
       netRef.current?.sendWorld({ host: me.id, e: w.epoch, supply: w.stats.supply, npc, feed });
     }, 800);
     return () => { clearTimeout(electTimer); clearInterval(snapIv); try { net.disconnect(); } catch { /* ignore */ } netRef.current = null; remotes.current.clear(); };
@@ -435,6 +436,8 @@ export default function WorldView() {
   };
 
   useEffect(() => { if (!VISIT) ensureKit(); }, [ensureKit]);
+  // 切换操控角色时清空随行轨迹,避免灵宠从旧角色位置「拖影/瞬移」过来
+  useEffect(() => { trail.current = []; }, [controlId]);
 
   useEffect(() => {
     const dn = (e: KeyboardEvent) => {
@@ -536,7 +539,7 @@ export default function WorldView() {
         } else if (w.epoch !== lastMeetEp.current && w.epoch % 8 === 0) {
           // 相会按同步的 epoch 触发、用 epoch 哈希选配对 → 全球各端一致的相遇动态
           lastMeetEp.current = w.epoch;
-          const friends = w.order.filter((id) => w.agents[id] && NAMED_SPRITE[w.agents[id].name] && id !== companionRef.current).sort();
+          const friends = w.order.filter((id) => w.agents[id] && NAMED_SPRITE[w.agents[id].name] && id !== companionRef.current && id !== ocId).sort();
           if (friends.length >= 2) {
             const h = hue('m' + w.epoch);
             const a = friends[h % friends.length];
@@ -795,7 +798,7 @@ export default function WorldView() {
           <>
             {!GLOBAL && <button className="hud-btn" onClick={() => setRun(!worldRunning)}>{worldRunning ? '暂停' : '播放'}</button>}
             {!GLOBAL && <button className="hud-btn" onClick={() => { const n = window.prompt('克隆一个新居民(起个名字):', '@new_soul'); const v = n && n.trim(); if (v) addAgent(v); }}>＋人格</button>}
-            {!GLOBAL && <button className="hud-btn" onClick={() => { reseed(); apos.current.clear(); affinity.current.clear(); meetLines.current.clear(); companionRef.current = null; meetRef.current = null; nextMeetAt.current = 0; talkRef.current = null; setControlId(null); setInspId(null); }}>↻ 重置</button>}
+            {!GLOBAL && <button className="hud-btn" onClick={() => { reseed(); apos.current.clear(); affinity.current.clear(); meetLines.current.clear(); companionRef.current = null; meetRef.current = null; nextMeetAt.current = 0; talkRef.current = null; wild.current = []; wildInit.current = false; trail.current = []; setControlId(null); setInspId(null); }}>↻ 重置</button>}
             <button className="hud-btn" onClick={() => { setControlId(xiaozhiId); setInspId(xiaozhiId); }}>回到小智 ★</button>
             {ocIsCustom && <button className="hud-btn" onClick={() => { setControlId(ocId); setInspId(ocId); }} title="回到你创建的角色">我 · {ocName}</button>}
             <button className="hud-btn" onClick={() => setBagOpen(true)} title="背包(B 键)">背包</button>

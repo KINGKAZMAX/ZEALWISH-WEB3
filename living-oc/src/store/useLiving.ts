@@ -98,6 +98,9 @@ export const useLiving = create<LivingState>((set, get) => ({
     const a = livingActions(get().seed);
     const oc = a.create(input);
     if (input.sprite) oc.sprite = input.sprite;   // 工作台带入的像素小人身体
+    // 同名角色再次「进入活世界」= 同一角色重进:保留其灵宠/背包,避免再生覆盖抹掉养成进度
+    const prev = get().oc;
+    if (prev && prev.name === oc.name) { oc.team = prev.team; oc.bag = prev.bag; oc.active = prev.active; }
     saveOc(oc);
     set({ oc, day: null, chatLog: [], world: null, worldRunning: false, version: get().version + 1 });
   },

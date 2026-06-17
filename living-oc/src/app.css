@@ -294,7 +294,7 @@ html.oc-embed .world-fs{height:100vh}
 .wc-empty{color:#8a7f5e}
 .wc-on{color:#c0392b}
 .wc-ic{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:#fff;font-weight:700;font-size:15px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35),0 1px 0 rgba(0,0,0,.3)}
-.wc-item .hud-btn{background:var(--gba-navy);color:#fff;border-color:var(--gba-navy)}
+.wc-item .hud-btn{background:var(--gba-navy)!important;color:#fff!important;border-color:var(--gba-navy)!important}
 .wc-mon-dot{box-shadow:0 0 0 2px var(--gba-navy)}
 /* 弹窗/帮助/联机卡片统一框风 */
 .world-help-card{background:var(--gba-cream);border:3px solid var(--gba-navy);box-shadow:inset 0 0 0 2px var(--gba-hi),0 16px 50px rgba(0,0,0,.5);color:var(--gba-ink)}
@@ -308,7 +308,7 @@ html.oc-embed .world-fs{height:100vh}
 /* HUD 小标签/按钮:做成 GBA 菜单牌(米白 + 深蓝描边) */
 .hud-ctrl,.wstat,.hud-btn,.hud-sel,.hud-kit .kit-mon,.hud-kit .kit-stone{background:var(--gba-cream)!important;border:2px solid var(--gba-navy)!important;color:var(--gba-ink)!important;backdrop-filter:none!important;border-radius:8px}
 .hud-btn{font-weight:600}
-.wstat i,.hud-kit .kit-mon.off{color:#7a6f4e}
+.wstat.sm i,.wstat i,.hud-kit .kit-mon.off{color:#7a6f4e!important}
 .wstat.hot{color:#b8501f!important}
 .hud-ctrl b{color:var(--gba-navy)}
 .hud-kit .kit-mon i{color:#c0392b}
@@ -320,6 +320,7 @@ html.oc-embed .world-fs{height:100vh}
 .hud-feed-body .wtext{color:#3a3f52}
 .hud-feed-body b{color:var(--gba-navy)}
 .hud-feed-body .wact{color:#7a6f4e}
+.hud-feed .world-empty{color:#8a7f5e}
 /* 收服提示 toast + 进入共享世界 */
 .world-toast{background:var(--gba-cream);border:2px solid var(--gba-navy);color:var(--gba-ink)}
 /* 世界频道输入框 */

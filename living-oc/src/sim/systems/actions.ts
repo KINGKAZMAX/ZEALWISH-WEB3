@@ -133,7 +133,7 @@ export async function applyAction(
     }
     case 'bankrupt': {
       a.bankruptcies++; world.stats.bankruptCount++;
-      remember(a, world.epoch, `💥 第${a.bankruptcies}次破产,余额 ${a.balance.toFixed(2)}◈`);
+      remember(a, world.epoch, `第${a.bankruptcies}次破产,余额 ${a.balance.toFixed(2)}◈`);
       if (!post) post = tpl('broke', rnd, { bal: a.balance.toFixed(2) });
       ev = { kind: 'bankrupt', fromName: a.name, balance: a.balance };
       const give = round2(range(rnd, 0.5, 1.2));
