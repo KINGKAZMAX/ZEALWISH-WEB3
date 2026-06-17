@@ -76,6 +76,8 @@ const FONTS: { id: string; name: string; css: string }[] = [
   { id: 'kai', name: '楷体', css: '"Kaiti SC","STKaiti",KaiTi,"Noto Serif SC",serif' },
   { id: 'song', name: '宋体', css: '"Songti SC","Noto Serif SC",SimSun,serif' },
   { id: 'mono', name: '像素等宽', css: 'ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace' },
+  // 像素中文字体:自托管开放许可像素字(见 public/fonts/README);未放字体时回退到等宽,优雅降级
+  { id: 'pixel', name: '像素', css: '"PixelCJK","Fusion Pixel 12px","Ark Pixel 12px SC","Cubic 11",ui-monospace,monospace' },
 ];
 const FONT_DEFAULT = FONTS[0].css;
 // 角色之间的亲密相会:成对的「呼应」台词(a 说上句,b 接下句)
@@ -864,7 +866,8 @@ export default function WorldView() {
           <div className="hud hud-talk" onClick={() => { tk.i++; if (!tk.lines || tk.i >= tk.lines.length) talkRef.current = null; bumpTalk(); }}>
             <div className="talk-name">{ln.name}{liveRef.current && ' · ✦ Claude'}</div>
             <div className="talk-text">{ln.text}</div>
-            <div className="talk-hint">空格 / 点击 继续 ▸</div>
+            <div className="talk-hint">空格 / 点击 继续</div>
+            <span className="talk-next" aria-hidden="true" />
           </div>
         );
       })()}

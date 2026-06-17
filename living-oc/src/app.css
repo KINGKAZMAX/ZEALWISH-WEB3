@@ -326,6 +326,17 @@ html.oc-embed .world-fs{height:100vh}
 /* 世界频道输入框 */
 .world-chat-in{background:var(--gba-cream);border:2px solid var(--gba-navy);color:var(--gba-ink)}
 .world-chat-log{color:var(--gba-ink)}
+/* 互动对话框统一 GBA 框风 + 底部经典「▼ 继续」闪烁三角(CSS 三角,非 emoji) */
+.hud-talk{background:var(--gba-cream)!important;border:3px solid var(--gba-navy)!important;box-shadow:inset 0 0 0 2px var(--gba-hi),0 10px 40px rgba(0,0,0,.5)!important;color:var(--gba-ink);backdrop-filter:none!important}
+.hud-talk .talk-name{color:var(--gba-navy)}
+.hud-talk .talk-text,.hud-talk .talk-prompt{color:var(--gba-ink)}
+.hud-talk .talk-hint{color:#8a7f5e}
+.hud-talk .talk-act{background:#fffdf5;border:2px solid var(--gba-line);color:var(--gba-ink)}
+.hud-talk .talk-act small{color:#8a7f5e}
+.talk-next{position:absolute;right:14px;bottom:11px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid var(--gba-navy);animation:talkblink 1.05s steps(1,end) infinite}
+@keyframes talkblink{0%,55%{opacity:1}55.01%,100%{opacity:0}}
+/* 自托管开放许可像素中文字体:把 OFL 字体的 woff2 放到 public/fonts/pixel.woff2 即生效(见该目录 README);未放置则字体选「像素」时回退等宽,优雅降级 */
+@font-face{font-family:'PixelCJK';src:url('/world/fonts/pixel.woff2') format('woff2');font-display:swap}
 .net-card{width:min(460px,88vw)}
 .net-note{font-size:13px;line-height:1.6;color:var(--muted);margin-bottom:12px}
 .net-note b{color:var(--text)}
