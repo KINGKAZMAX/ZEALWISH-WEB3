@@ -326,8 +326,11 @@ export default function WorldView() {
     }
     // 小智作为常驻居民时(玩家操控自创角色)用主角红衣渲染;独立于 NAMED_SPRITE(后者还兼作联机同步白名单,加入会与 OC 重名冲突)
     { const xz = new Image(); xz.src = BASE + 'sprites/chr-red_normal.png'; named.current['小智'] = xz; }
-    // 外部灵宠美术(可选):仅加载 SPIRIT_ART 登记项 → 默认空 = 零 404、用程序化美术
-    for (const sid in SPIRIT_ART) { const im = new Image(); im.src = BASE + 'sprites/spirits/' + SPIRIT_ART[sid]; spiritImg.current[sid] = im; }
+    // 外部灵宠美术(可选):SPIRIT_ART 登记项 + 本地 localStorage 覆盖('oc-spirit-art' = {id:文件名})。
+    // 默认两者皆空 = 零 404、用程序化美术。localStorage 覆盖仅供本地自测(不入代码、不影响线上)。
+    const artMap: Record<string, string> = { ...SPIRIT_ART };
+    try { const ov = JSON.parse(localStorage.getItem('oc-spirit-art') || 'null'); if (ov && typeof ov === 'object') Object.assign(artMap, ov); } catch { /* ignore */ }
+    for (const sid in artMap) { const im = new Image(); im.src = BASE + 'sprites/spirits/' + artMap[sid]; spiritImg.current[sid] = im; }
     // 远端玩家精灵集(按玩家 id 哈希分配,玩家之间外观各异)
     for (const n of ['red_normal', 'green_normal', 'boy', 'lass', 'youngster', 'fat_man', 'beauty', 'gentleman']) {
       const im = new Image(); im.src = BASE + 'sprites/chr-' + n + '.png'; spriteByName.current[n] = im;
