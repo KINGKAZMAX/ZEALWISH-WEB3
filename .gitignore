@@ -22,3 +22,14 @@ tmp-env-test-*/
 outputs/
 UCWS-2026/
 artifacts/
+
+# 本地测试用的灵宠/字体素材:绝不进公开仓 / 不部署(只保留 README 文档)
+# 你可在本地往这些目录丢任意素材自行测试,git 永远不会提交它们。
+frontend-v4/world/sprites/spirits/*
+!frontend-v4/world/sprites/spirits/README.md
+frontend-v4/world/fonts/*
+!frontend-v4/world/fonts/README.md
+living-oc/public/sprites/spirits/*
+!living-oc/public/sprites/spirits/README.md
+living-oc/public/fonts/*
+!living-oc/public/fonts/README.md
