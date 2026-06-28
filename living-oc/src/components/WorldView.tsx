@@ -184,6 +184,9 @@ export default function WorldView() {
   const [bagOpen, setBagOpen] = useState(false);
   const [teamOpen, setTeamOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [petHidden, setPetHidden] = useState<boolean>(() => { try { return localStorage.getItem('oc-pet-hidden') === '1'; } catch { return false; } });
+  const togglePet = () => setPetHidden((h) => { const n = !h; try { localStorage.setItem('oc-pet-hidden', n ? '1' : '0'); } catch { /* ignore */ } return n; });
+  const petHiddenRef = useRef(petHidden); petHiddenRef.current = petHidden;
   const ensureKit = useLiving((s) => s.ensureKit);
   const tameSpirit = useLiving((s) => s.tameSpirit);
   const useBagItem = useLiving((s) => s.useBagItem);
@@ -668,8 +671,8 @@ export default function WorldView() {
           if (nearWild.current === wd.uid) { ctx.fillStyle = 'rgba(140,255,170,.96)'; ctx.font = '11px ' + fam; ctx.fillText('C · 收服', sx, sy - sz - 4); }
         }
       }
-      // 7c. 随行灵宠(玩家激活的灵宠,跟在控制角色身后)
-      if (!VISIT && cpp && trail.current.length > 6) {
+      // 7c. 随行灵宠(玩家激活的灵宠,跟在控制角色身后;可在灵宠面板隐藏)
+      if (!VISIT && !petHiddenRef.current && cpp && trail.current.length > 6) {
         const myoc = useLiving.getState().oc;
         const act = myoc && myoc.team && myoc.team.length ? (myoc.team.find((s) => s.uid === myoc.active) ?? myoc.team[0]) : null;
         if (act) {
@@ -981,6 +984,7 @@ export default function WorldView() {
               ); })}
               {(!myOc?.team || myOc.team.length === 0) && <div className="wc-empty">还没有灵宠 —— 走近野生灵宠按 C 收服。</div>}
             </div>
+            <button className="wc-toggle" onClick={togglePet}>随身宠物:{petHidden ? '已隐藏 —— 点此显示' : '显示中 —— 点此隐藏'}</button>
           </div>
         </div>
       )}

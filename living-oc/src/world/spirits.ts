@@ -2,8 +2,10 @@
 // 美术全程序化生成、命名与道具全原创,不含任何第三方版权素材或商标。
 // 为玩家本地态:不进入确定性世界引擎,也不参与联机主机权威,故对世界一致性/确定性零影响。
 
-export interface Species { id: string; name: string; element: string; body: string; accent: string; }
+export interface Species { id: string; name: string; element: string; body: string; accent: string; round?: boolean; }
 export const SPECIES: Species[] = [
+  // 泡芙:圆滚滚的粉色团子萌宠(原创设计,圆身大眼腮红小脚丫;默认随身宠)
+  { id: 'puff', name: '泡芙', element: '梦', body: '#ffb0d4', accent: '#f47ba8', round: true },
   { id: 'ember', name: '焰狐', element: '火', body: '#ff8a3d', accent: '#ffe08a' },
   { id: 'ripple', name: '涟漪', element: '水', body: '#57b6ff', accent: '#d6f0ff' },
   { id: 'moss', name: '苔团', element: '草', body: '#6fcf6f', accent: '#e2ffcf' },
@@ -32,10 +34,9 @@ export const itemById: Record<string, Item> = Object.fromEntries(ITEMS.map((i) =
 
 function h(s: string): number { let n = 0; for (let i = 0; i < s.length; i++) n = (n * 31 + s.charCodeAt(i)) >>> 0; return n; }
 
-// 起始队伍 / 背包(每个角色一份,确定性地由角色 id 派生 → 不同角色起始灵宠各异)
+// 起始队伍 / 背包:默认随身宠是可爱的「泡芙」(圆滚滚粉团子),人人起手都有它。
 export function starterTeam(seed: string): Spirit[] {
-  const sp = SPECIES[h(seed) % SPECIES.length];
-  return [{ uid: 'sp_' + (h(seed) >>> 0).toString(16), species: sp.id, name: sp.name, level: 5, xp: 0, bond: 25 }];
+  return [{ uid: 'sp_puff_' + (h(seed) >>> 0).toString(16), species: 'puff', name: '泡芙', level: 5, xp: 0, bond: 30 }];
 }
 export function starterBag(): Record<string, number> { return { stone: 3, berry: 5 }; }
 
@@ -52,6 +53,19 @@ export function drawSpirit(ctx: CanvasRenderingContext2D, cx: number, cy: number
   ctx.translate(cx, cy - r + bob);
   if (faceLeft) ctx.scale(-1, 1);
   ctx.imageSmoothingEnabled = false;
+  if (sp.round) {
+    // ── 圆滚滚萌宠(泡芙):圆身 + 大眼 + 腮红 + 小脚丫(原创可爱设计)──
+    ctx.fillStyle = sp.accent;
+    ctx.beginPath(); ctx.ellipse(-r * 0.4, r * 0.82, r * 0.3, r * 0.16, 0, 0, 7); ctx.fill();        // 左脚
+    ctx.beginPath(); ctx.ellipse(r * 0.4, r * 0.82, r * 0.3, r * 0.16, 0, 0, 7); ctx.fill();         // 右脚
+    ctx.beginPath(); ctx.ellipse(-r * 0.84, r * 0.06, r * 0.2, r * 0.3, 0.25, 0, 7); ctx.ellipse(r * 0.84, r * 0.06, r * 0.2, r * 0.3, -0.25, 0, 7); ctx.fill();  // 小手
+    ctx.fillStyle = sp.body; ctx.beginPath(); ctx.ellipse(0, 0, r * 0.94, r * 0.9, 0, 0, 7); ctx.fill();  // 圆身
+    ctx.fillStyle = '#3a2336'; ctx.beginPath(); ctx.ellipse(-r * 0.3, -r * 0.12, r * 0.13, r * 0.26, 0, 0, 7); ctx.ellipse(r * 0.3, -r * 0.12, r * 0.13, r * 0.26, 0, 0, 7); ctx.fill();  // 大眼
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-r * 0.26, -r * 0.22, r * 0.05, 0, 7); ctx.arc(r * 0.34, -r * 0.22, r * 0.05, 0, 7); ctx.fill();  // 眼高光
+    ctx.fillStyle = 'rgba(255,110,150,.5)'; ctx.beginPath(); ctx.ellipse(-r * 0.5, r * 0.2, r * 0.17, r * 0.1, 0, 0, 7); ctx.ellipse(r * 0.5, r * 0.2, r * 0.17, r * 0.1, 0, 0, 7); ctx.fill();  // 腮红
+    ctx.strokeStyle = '#9a3a52'; ctx.lineWidth = Math.max(1, r * 0.07); ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(0, r * 0.06, r * 0.13, 0.18 * Math.PI, 0.82 * Math.PI); ctx.stroke();  // 微笑
+    ctx.restore(); return;
+  }
   ctx.fillStyle = sp.body;
   // 耳朵
   ctx.beginPath(); ctx.moveTo(-r * 0.55, -r * 0.45); ctx.lineTo(-r * 0.28, -r * 1.15); ctx.lineTo(-r * 0.02, -r * 0.5); ctx.closePath(); ctx.fill();

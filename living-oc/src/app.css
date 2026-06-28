@@ -281,6 +281,7 @@ html.oc-embed .world-fs{height:100vh}
 .wc-mon-main small{color:#9aa0aa;font-size:11px;margin-top:2px}
 .wc-on{font-size:11px;color:#ff8a8a}
 .wc-empty{color:#9aa0aa;font-size:13px;padding:6px 2px}
+.wc-toggle{width:100%;margin-top:10px;padding:9px;border-radius:8px;cursor:pointer;font-size:13px;background:var(--gba-cream,#f7f3e3);border:2px solid var(--gba-navy,#1c2547);color:var(--gba-ink,#27314f);font-weight:600}
 
 /* ── GBA 复古 RPG 框风(原创复刻观感:米白框 + 深蓝双描边 + 深色字)——覆盖默认暗色玻璃皮 ── */
 :root{--gba-cream:#f7f3e3;--gba-ink:#27314f;--gba-navy:#1c2547;--gba-line:#c9c0a0;--gba-hi:#8aa0d8}

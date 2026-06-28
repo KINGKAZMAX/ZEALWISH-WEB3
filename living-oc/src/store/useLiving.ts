@@ -134,11 +134,13 @@ export const useLiving = create<LivingState>((set, get) => ({
   // ── 灵宠 / 背包(玩家本地态,随角色持久化;不入确定性世界,亦不参与联机权威)──
   ensureKit() {
     const oc = get().oc; if (!oc) return;
-    if (oc.team && oc.bag) return;
-    if (!oc.team) oc.team = starterTeam(oc.id);
-    if (!oc.bag) oc.bag = starterBag();
-    if (!oc.active && oc.team.length) oc.active = oc.team[0].uid;
-    saveOc(oc); set({ version: get().version + 1 });
+    let changed = false;
+    if (!oc.team) { oc.team = starterTeam(oc.id); changed = true; }
+    if (!oc.bag) { oc.bag = starterBag(); changed = true; }
+    // 保证人人都有可爱随身宠「泡芙」并默认随行(新老角色都迁移到位)
+    if (!oc.team.some((s) => s.species === 'puff')) { const p = newSpirit('puff', 'puff:' + oc.id); p.name = '泡芙'; oc.team.unshift(p); oc.active = p.uid; changed = true; }
+    if (!oc.active && oc.team.length) { oc.active = oc.team[0].uid; changed = true; }
+    if (changed) { saveOc(oc); set({ version: get().version + 1 }); }
   },
   tameSpirit(speciesId) {
     const oc = get().oc; if (!oc) return false;
