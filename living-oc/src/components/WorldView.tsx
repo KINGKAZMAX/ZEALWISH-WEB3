@@ -49,7 +49,7 @@ const NPC_CHARS = ['green_normal', 'boy', 'lass', 'youngster', 'fat_man', 'beaut
 const PLAYER_SPRITES = ['red_normal', ...NPC_CHARS];
 // 命名角色专属精灵(小智=Red 另外处理;5 个新加坡留学伙伴用对应 chr-*.png)
 const NAMED_SPRITE: Record<string, string> = {
-  '范范兔': 'fanfan', '熊熊': 'xiongxiong', '鹿鹿鹅': 'lulu', '猪猪仔': 'zhuzhu', '冰冰雁': 'bingbing',
+  '范范兔': 'fanfan', '熊熊': 'xiongxiong', '鹿鹿鹅': 'lulu', '猪猪仔': 'zhuzhu', '冰冰雁': 'bingbing', '杏子': 'beauty',
 };
 // 头顶气泡台词库(联网研究:新加坡留学日常 + 夜间动物园)。LLM 接入后由后端实时生成替换。
 const LINE_BANKS: Record<string, string[]> = {
@@ -65,6 +65,8 @@ const LINE_BANKS: Record<string, string[]> = {
   '猪猪仔': ['食阁一餐才 3 块,太香了 (๑´ڡ`๑)', '辣椒蟹满手酱,再来一份!(＞ڡ＜)', '沙爹配花生酱,绝了 (｡◕‿◕｡)', '佛系攒钱…美食面前破功 (´∀`)', '夜间动物园穿山甲太可爱 (♡˙︶˙♡)', '小贩中心是非遗,骄傲 ✧', '吃饱才有力气省钱 (ง•̀_•́)ง', '快乐由海南鸡饭赞助 (˶ᵔ ᵕ ᵔ˶)', 'teh tarik 拉得越高越甜 (ᵔᴥᵔ)', '今天恰三餐,一顿都不少 (๑˃̵ᴗ˂̵)', '攒钱是为了…请大家恰一顿大的 (๑˃̵ᴗ˂̵)', '谁不开心?我知道哪摊最治愈', '冰冰雁考砸了,我偷塞她份鸡饭', '美食面前众生平等 (´∀`)', '熊熊跟我抢最后一只蟹…让她 (´︶`)', '省下的每一块,都记在小本本里', '今天 auntie 多给我一勺,赚到!'],
   // 冰冰雁:高冷理科;嘴硬心软,只在夜行动物和数据面前卸防
   '冰冰雁': ['通宵 mugging,bell curve 必赢 (¬‿¬)', '高冷如我…只对夜行动物笑 (・_・)', 'MRT 早高峰,挤成 2D 了 (；￣Д￣)', '闪光灯别开!会吓到动物 (`へ´)', '波动率万岁,但叻沙更稳 (￣ω￣)', '别吵,我在算实验数据 (-ω-、)', '…那只豹子,有点可爱 (//ω//)', '考完试再说话 (´-﹏-`)', '叻沙性价比,我已建模 (¬_¬)ﾉ', '夜里我才会解冻一点点 (˶′◡‵˶)', '数据不会骗人…但人会让我心软 (-ω-、)', '才、才不是担心你们考试 (//ω//)', '熊熊的外套…我还没还,挺暖的', '夜行动物不评判我,所以我笑', '小智不吵,我能安心算题', '把焦虑做成 Excel,就没那么怕了', '范范兔的中二…理论上不可能,但有点想信'],
+  // 杏子:黑长直发 · INFP 调停者 —— 内敛、理想主义、温柔、把心事写进小本子
+  '杏子': ['把今天的心情,悄悄写进小本子 (｡･ω･｡)', '不太会说…但我都认真听着 (˶ᵕ ᵕ˶)', '每个人心里,应该都有一束光吧 ✧', '滨海湾的风,把烦恼吹软了 (´ω`)', '我想做的事,好像和世界有点不一样 (｡-‿-｡)', '一个人也挺好…但有你们更好 (˶˃ ᵕ ˂˶)', '范范兔的中二,其实我觉得很浪漫', '熊熊抱我的时候,眼泪差点没忍住 (ノω`*)', '夜里写诗的鹿鹿鹅,我懂那种安静', '不想赢过谁,只想成为更温柔的自己 (˘︶˘)', '理想主义总会碰壁…但我还是想信 (｡•́︿•̀｡)', '叻沙太辣,我小口小口地吃 (>﹏<)', '没说出口的话,都画成了小漫画', '今天也想,温柔地对待这个世界', '冰冰雁嘴硬,可她记得我怕黑', '和小智待着,很安心,不用硬找话 (˶ᵔ ᵕ ᵔ˶)', '难过的话,就允许自己难过一会儿吧'],
 };
 const FRAME: Record<string, { idle: number; walk: [number, number] }> = {
   down: { idle: 0, walk: [3, 4] }, up: { idle: 5, walk: [6, 5] }, side: { idle: 2, walk: [7, 8] },
@@ -122,24 +124,27 @@ function bubble(c: CanvasRenderingContext2D, cx: number, by: number, text: strin
   c.fillStyle = '#27314f'; c.textAlign = 'center'; lines.forEach((l, i) => c.fillText(l, cx, y + 4 + i * lh));
   c.textBaseline = 'alphabetic';
 }
-// 运行时把金棕发染成紫色(给范范兔=主角女生);返回新 Image,避免文件 base64 round-trip 损坏
-function recolorHairPurple(img: HTMLImageElement): HTMLImageElement {
+// 运行时给命名女生角色改发色;src=该精灵图的原发色档(不同精灵发色不同),dst=目标发色档(一一对应)。
+// 返回新 Image,避免文件 base64 round-trip 损坏。
+function recolorHair(img: HTMLImageElement, src: number[][], dst: number[][]): HTMLImageElement {
   const out = new Image();
   const c = document.createElement('canvas'); c.width = img.naturalWidth || 144; c.height = img.naturalHeight || 32;
   const cx = c.getContext('2d'); if (!cx) { out.src = img.src; return out; }
   cx.imageSmoothingEnabled = false; cx.drawImage(img, 0, 0);
   try {
     const id = cx.getImageData(0, 0, c.width, c.height), d = id.data;
-    const HAIR = [[57, 57, 24], [123, 115, 65], [205, 172, 98], [156, 140, 90]];
-    const PURP = [[74, 44, 104], [138, 84, 176], [198, 154, 232], [168, 118, 205]];
     for (let i = 0; i < d.length; i += 4) {
       if (d[i + 3] < 40) continue; const r = d[i], g = d[i + 1], b = d[i + 2];
-      for (let h = 0; h < HAIR.length; h++) { if (Math.hypot(r - HAIR[h][0], g - HAIR[h][1], b - HAIR[h][2]) < 26) { d[i] = PURP[h][0]; d[i + 1] = PURP[h][1]; d[i + 2] = PURP[h][2]; break; } }
+      for (let h = 0; h < src.length; h++) { if (Math.hypot(r - src[h][0], g - src[h][1], b - src[h][2]) < 34) { d[i] = dst[h][0]; d[i + 1] = dst[h][1]; d[i + 2] = dst[h][2]; break; } }
     }
     cx.putImageData(id, 0, 0); out.src = c.toDataURL('image/png');
   } catch { out.src = img.src; }
   return out;
 }
+// 范范兔 = 主角精灵(fanfan)金棕发 → 紫
+const recolorHairPurple = (img: HTMLImageElement) => recolorHair(img, [[57, 57, 24], [123, 115, 65], [205, 172, 98], [156, 140, 90]], [[74, 44, 104], [138, 84, 176], [198, 154, 232], [168, 118, 205]]);
+// 杏子 = beauty 精灵金发(及垂落的长发)→ 黑(黑长直)
+const recolorHairBlack = (img: HTMLImageElement) => recolorHair(img, [[255, 222, 74], [213, 172, 32], [131, 98, 0]], [[86, 86, 100], [42, 42, 52], [20, 20, 26]]);
 
 interface PP { mx: number; my: number; dir: string; moving: boolean; flip?: boolean }
 
@@ -322,6 +327,7 @@ export default function WorldView() {
     for (const nm in NAMED_SPRITE) {
       const im = new Image(); im.src = BASE + 'sprites/chr-' + NAMED_SPRITE[nm] + '.png';
       if (nm === '范范兔') { im.onload = () => { named.current[nm] = recolorHairPurple(im); }; named.current[nm] = im; } // 主角女生:运行时把头发染紫
+      else if (nm === '杏子') { im.onload = () => { named.current[nm] = recolorHairBlack(im); }; named.current[nm] = im; } // 黑长直发
       else named.current[nm] = im;
     }
     // 小智作为常驻居民时(玩家操控自创角色)用主角红衣渲染;独立于 NAMED_SPRITE(后者还兼作联机同步白名单,加入会与 OC 重名冲突)
