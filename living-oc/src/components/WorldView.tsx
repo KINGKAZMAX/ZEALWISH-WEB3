@@ -7,7 +7,7 @@ import WorldGoLive from './WorldGoLive';
 import { liveSay, liveTalk } from '../live/liveProviders';
 import { toggleBgm, bgmPlaying } from '../live/bgm';
 import { makeNet, playerSelf, setPlayerName, netMode, netConfig, setNetConfig, clearNetConfig, type NetTransport, type NetSelf } from '../live/net';
-import { SPECIES, ITEMS, speciesById, drawSpirit, SPIRIT_ART } from '../world/spirits';
+import { SPECIES, ITEMS, speciesById, drawSpirit, SPIRIT_ART, type Spirit } from '../world/spirits';
 
 const BASE = import.meta.env.BASE_URL;
 // 访客观光模式(?visit=1):只读串门 —— 无操控/接管/互动,自动巡游 + 点角色聚焦查看 + 转化 CTA
@@ -187,6 +187,7 @@ export default function WorldView() {
   const [petHidden, setPetHidden] = useState<boolean>(() => { try { return localStorage.getItem('oc-pet-hidden') === '1'; } catch { return false; } });
   const togglePet = () => setPetHidden((h) => { const n = !h; try { localStorage.setItem('oc-pet-hidden', n ? '1' : '0'); } catch { /* ignore */ } return n; });
   const petHiddenRef = useRef(petHidden); petHiddenRef.current = petHidden;
+  const activeSpiritRef = useRef<Spirit | null>(null);   // 随行灵宠当前激活项,render 时同步,RAF 循环只读不查
   const ensureKit = useLiving((s) => s.ensureKit);
   const tameSpirit = useLiving((s) => s.tameSpirit);
   const useBagItem = useLiving((s) => s.useBagItem);
@@ -226,7 +227,7 @@ export default function WorldView() {
   const bumpTalk = () => setTalkVer((v) => v + 1);
   // 灵宠玩法本地态:随行轨迹、野生灵宠、临近野生、提示 toast
   const trail = useRef<{ mx: number; my: number }[]>([]);
-  const wild = useRef<{ uid: string; species: string; bx: number; by: number; phase: number; r: number; spd: number }[]>([]);
+  const wild = useRef<{ uid: string; species: string; bx: number; by: number; phase: number; r: number; spd: number; label?: string }[]>([]);
   const wildInit = useRef(false);
   const nearWild = useRef<string | null>(null);
   const toastTimer = useRef(0);
@@ -656,7 +657,9 @@ export default function WorldView() {
       }
       // 7b. 野生灵宠(原创 monster-tamer 玩法;玩家本地态,不入确定性世界)
       nearWild.current = null;
-      { let wbd = TAME_R * TAME_R;
+      if (wild.current.length) {
+        let wbd = TAME_R * TAME_R;
+        const labelFont = '10px ' + fam;   // 循环体内每只灵宠都一样,提到循环外设一次,省 canvas 状态切换
         for (const wd of wild.current) {
           const wx = wd.bx + Math.cos(now * wd.spd + wd.phase) * wd.r, wy = wd.by + Math.sin(now * wd.spd + wd.phase) * wd.r;
           const sx = SX(wx), sy = SY(wy);
@@ -665,16 +668,15 @@ export default function WorldView() {
           const sz = TILE * 0.78;
           ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(sx, sy, sz * 0.32, sz * 0.13, 0, 0, 7); ctx.fill();
           drawCreature(sx, sy, sz, wd.species, Math.floor(now / 320) % 2, false);
-          const sp = speciesById[wd.species];
-          ctx.font = '10px ' + fam; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.8)';
-          ctx.strokeText('野生·' + (sp?.name ?? ''), sx, sy + 13); ctx.fillStyle = 'rgba(220,255,220,.9)'; ctx.fillText('野生·' + (sp?.name ?? ''), sx, sy + 13);
+          const sp = speciesById[wd.species]; const label = wd.label ?? (wd.label = '野生·' + (sp?.name ?? ''));   // 标签字符串按个体缓存,免每帧拼接
+          ctx.font = labelFont; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.8)';
+          ctx.strokeText(label, sx, sy + 13); ctx.fillStyle = 'rgba(220,255,220,.9)'; ctx.fillText(label, sx, sy + 13);
           if (nearWild.current === wd.uid) { ctx.fillStyle = 'rgba(140,255,170,.96)'; ctx.font = '11px ' + fam; ctx.fillText('C · 收服', sx, sy - sz - 4); }
         }
       }
       // 7c. 随行灵宠(玩家激活的灵宠,跟在控制角色身后;可在灵宠面板隐藏)
       if (!VISIT && !petHiddenRef.current && cpp && trail.current.length > 6) {
-        const myoc = useLiving.getState().oc;
-        const act = myoc && myoc.team && myoc.team.length ? (myoc.team.find((s) => s.uid === myoc.active) ?? myoc.team[0]) : null;
+        const act = activeSpiritRef.current;   // render 时同步好的 ref,免每帧 getState()+find()
         if (act) {
           const idx = Math.max(0, trail.current.length - 1 - 14), f = trail.current[idx], fp = trail.current[Math.max(0, idx - 4)];
           const fx = SX(f.mx), fy = SY(f.my), sz = TILE * 0.82;
@@ -777,6 +779,7 @@ export default function WorldView() {
   const ocIsCustom = !!ocName && ocName !== '小智';
   const myOc = useLiving.getState().oc;
   const activeSpirit = myOc && myOc.team && myOc.team.length ? (myOc.team.find((s) => s.uid === myOc.active) ?? myOc.team[0]) : null;
+  activeSpiritRef.current = activeSpirit;   // RAF 循环读这个 ref,避免每帧重复 getState()+find()
 
   return (
     <section className="world-fs" style={{ '--world-font': font } as CSSProperties}>
