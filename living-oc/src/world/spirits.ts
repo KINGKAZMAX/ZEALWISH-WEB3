@@ -46,9 +46,10 @@ export function newSpirit(speciesId: string, seedHint: string): Spirit {
 }
 
 // 程序化绘制一只原创灵宠(无外部美术)。cx,cy = 脚底中心点,size = 体高(px)。
+// frame:连续浮点「呼吸相位」(典型取值 sin(...)∈[-1,1]),用于静止站立时也有的轻微上下浮动(idle bob)。
 export function drawSpirit(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number, speciesId: string, frame: number, faceLeft: boolean) {
   const sp = speciesById[speciesId] || SPECIES[0];
-  const r = size / 2; const bob = frame ? -size * 0.06 : 0;
+  const r = size / 2; const bob = -frame * size * 0.06;
   ctx.save();
   ctx.translate(cx, cy - r + bob);
   if (faceLeft) ctx.scale(-1, 1);
