@@ -7,6 +7,11 @@
   `chr-youngster.png` / `chr-fat_man.png` / `chr-beauty.png` / `chr-gentleman.png`
   —— FRLG 主角、对手与 NPC 的行走精灵,取自反汇编工程 `pret/pokefirered`
   (https://github.com/pret/pokefirered)。
+- `chr-fanfan.png` / `chr-xiongxiong.png` / `chr-lulu.png` / `chr-zhuzhu.png` / `chr-bingbing.png`
+  —— 世界里 5 位原创角色(范范兔/熊熊/鹿鹿鹅/猪猪仔/冰冰雁)的精灵图,分别是对 FRLG 女性 NPC
+  行走素材(crush_girl / lass / beauty / picnicker / cooltrainer_f)的重新配色(recolor)。
+  角色的人设、姓名、台词均为原创;精灵**图形本体**仍是上述 FRLG 素材的衍生作品。
+- 「杏子」运行时复用 `chr-beauty.png`(已在上方列出)并程序化重染发色为黑色,不额外存新文件。
 
 ## 版权 / Copyright
 
