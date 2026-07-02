@@ -745,6 +745,18 @@ export default function WorldView() {
           if (Math.abs(ddx) > 1 || Math.abs(ddy) > 1) continue;
           ctx.fillStyle = 'rgba(110,200,255,.95)'; ctx.beginPath(); ctx.arc(mx0 + MM / 2 + ddx * MM / 2, my0 + MM / 2 + ddy * MM / 2, 3, 0, 7); ctx.fill();
         }
+        // 区域预设标记:绿色菱形;范围外贴雷达边缘指方向(整张大地图可导航)。当前区(≈聚落中心)不画,避免糊住中心。
+        const curRc = GLOBAL ? REGION_DEFAULT : regionRef.current;
+        for (const rg of REGIONS) {
+          if (rg.c[0] === curRc[0] && rg.c[1] === curRc[1]) continue;
+          let ddx = (rg.c[0] * MAP_W - cpp.mx) / RR, ddy = (rg.c[1] * MAP_H - cpp.my) / RR;
+          const far = Math.max(Math.abs(ddx), Math.abs(ddy));
+          const out = far > 0.92; if (out) { ddx = ddx / far * 0.92; ddy = ddy / far * 0.92; }   // 贴边:等比缩到方形边界,保方向
+          const px = mx0 + MM / 2 + ddx * MM / 2, py = my0 + MM / 2 + ddy * MM / 2, rr2 = out ? 2.6 : 3.4;
+          ctx.fillStyle = out ? 'rgba(140,230,160,.75)' : 'rgba(140,230,160,.95)';
+          ctx.beginPath(); ctx.moveTo(px, py - rr2); ctx.lineTo(px + rr2, py); ctx.lineTo(px, py + rr2); ctx.lineTo(px - rr2, py); ctx.closePath(); ctx.fill();
+          if (!out) { ctx.strokeStyle = 'rgba(8,9,11,.7)'; ctx.lineWidth = 1; ctx.stroke(); }
+        }
         ctx.restore();
         ctx.strokeStyle = 'rgba(255,45,45,.5)'; ctx.lineWidth = 1.5; rrect(ctx, mx0, my0, MM, MM, 10); ctx.stroke();
       }
