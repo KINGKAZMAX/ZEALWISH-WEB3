@@ -1,9 +1,12 @@
-# 像素中文字体接入(仅限开放许可字体)
+# 像素中文字体(已内置开放许可字体)
 
-世界 HUD/对话框的「字体」选择里有一项 **像素**(`FONTS` 里 id=`pixel`)。它走
-`@font-face { font-family: 'PixelCJK'; src: url('/world/fonts/pixel.woff2') }`(见 `src/app.css`)。
-把一份**开放许可(OFL/MIT)**的像素中文字体改名为 `pixel.woff2` 放进**本目录**,
-`vite build` 后即生效;未放置时「像素」选项会优雅回退到等宽字体,不报错。
+世界 HUD/对话框/引导卡走 `@font-face { font-family: 'PixelCJK'; src: url('/world/fonts/pixel.woff2') }`
+(见 `src/app.css`;`--pixel-font` 变量与 `FONTS` 里 id=`pixel` 均以此为首选)。
+
+**本目录已内置** `pixel.woff2` —— **Fusion Pixel 10px(proportional / zh_hans)**,
+作者 TakWolf,**OFL-1.1** 开放许可(可商用 + 可再分发),许可全文见同目录 `pixel.OFL.txt`。
+来源:https://github.com/TakWolf/fusion-pixel-font (release 2026.07.01)。
+如需替换成其它开放许可像素字体,改名为 `pixel.woff2` 覆盖本文件即可;缺失时「像素」优雅回退等宽,不报错。
 
 ## 推荐字体(均为开放许可,可商用 + 可再分发)
 

@@ -5,6 +5,8 @@
   --font-display:'Teko','Archivo','Noto Sans SC',system-ui,sans-serif;
   --font-body:'Archivo','Noto Sans SC',system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
   --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  /* 像素字体栈:自托管 OFL/MIT 像素中文字体优先,缺失则优雅回退等宽 */
+  --pixel-font:'PixelCJK','Fusion Pixel 10px','Ark Pixel 10px SC','JetBrains Mono',ui-monospace,monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--ink);color:var(--text);font-family:var(--font-body);-webkit-font-smoothing:antialiased}
@@ -203,13 +205,14 @@ html.oc-embed .world-fs{height:100vh}
 /* 触屏/窄屏:点击地面寻路 + 点居民互动/接管(无 overlay 控件);仅隐藏 feed 避免遮挡 */
 @media (pointer:coarse),(max-width:820px){.hud-feed{display:none}}
 /* 一次性玩法引导卡 */
-.world-help{position:absolute;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;background:rgba(8,8,11,.55);backdrop-filter:blur(3px)}
-.world-help-card{width:min(440px,86vw);background:rgba(16,16,20,.97);border:2px solid var(--red);border-radius:16px;padding:22px 24px;box-shadow:0 18px 60px rgba(0,0,0,.6);font-family:var(--world-font)}
-.world-help-card h3{font-size:20px;margin-bottom:13px;color:var(--text);font-weight:700}
+.world-help{position:absolute;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;background:rgba(6,6,9,.6);backdrop-filter:blur(6px)}
+/* 半透明暗色玻璃 —— 与 ZEALWISH 前端一致(玻璃拟态 + 红色点缀),像素字体 */
+.world-help-card{position:relative;width:min(440px,86vw);background:linear-gradient(180deg,rgba(20,20,26,.72),rgba(11,11,15,.8));border:1px solid rgba(255,255,255,.1);border-top:2px solid var(--red);border-radius:16px;padding:22px 24px;box-shadow:0 24px 70px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.05);-webkit-backdrop-filter:blur(18px) saturate(1.1);backdrop-filter:blur(18px) saturate(1.1);font-family:var(--pixel-font);letter-spacing:.2px}
+.world-help-card h3{font-size:19px;margin-bottom:13px;color:var(--text);font-weight:700;letter-spacing:.6px}
 .world-help-card ul{list-style:none;display:flex;flex-direction:column;gap:9px;margin:0 0 16px}
-.world-help-card li{font-size:13.5px;line-height:1.5;color:var(--muted)}
+.world-help-card li{font-size:13px;line-height:1.6;color:var(--muted)}
 .world-help-card li b{color:var(--red)}
-.world-help-go{width:100%;padding:11px;border-radius:10px;background:var(--red);border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--world-font)}
+.world-help-go{width:100%;padding:11px;border-radius:10px;background:var(--red);border:1px solid var(--red);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--pixel-font);letter-spacing:1px}
 .world-help-go:hover{background:var(--red-deep)}
 
 /* ── 个人空间(OC 的家)── */
@@ -297,15 +300,12 @@ html.oc-embed .world-fs{height:100vh}
 .wc-ic{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:#fff;font-weight:700;font-size:15px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35),0 1px 0 rgba(0,0,0,.3)}
 .wc-item .hud-btn{background:var(--gba-navy)!important;color:#fff!important;border-color:var(--gba-navy)!important}
 .wc-mon-dot{box-shadow:0 0 0 2px var(--gba-navy)}
-/* 弹窗/帮助/联机卡片统一框风 */
-.world-help-card{background:var(--gba-cream);border:3px solid var(--gba-navy);box-shadow:inset 0 0 0 2px var(--gba-hi),0 16px 50px rgba(0,0,0,.5);color:var(--gba-ink)}
-.world-help-card h3{color:var(--gba-navy)}
-.world-help-card li,.world-help-card p,.world-help-card .net-note,.world-help-card .net-hint{color:var(--gba-ink)}
-.world-help-card b{color:var(--gba-navy)}
-.world-help-card .sp-field span{color:#5a5238}
-.world-help-card .sp-field input{background:#fffdf5;border:2px solid var(--gba-line);color:var(--gba-ink)}
-.world-help-go,.world-help-card .btn.primary{background:var(--gba-navy);color:#fff;border:2px solid var(--gba-navy)}
-.world-help-card .btn{background:#fffdf5;border:2px solid var(--gba-line);color:var(--gba-ink)}
+/* 弹窗/帮助/联机卡片:不走 GBA 米白框,保留 ZEALWISH 半透明暗色玻璃(见上方 .world-help-card),此处仅统一表单/按钮为暗色玻璃控件 */
+.world-help-card p,.world-help-card .net-note,.world-help-card .net-hint{color:var(--muted)}
+.world-help-card .sp-field span{color:var(--muted)}
+.world-help-card .sp-field input{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:var(--text);font-family:var(--pixel-font)}
+.world-help-card .btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);color:var(--text);font-family:var(--pixel-font)}
+.world-help-card .btn.primary{background:var(--red);border:1px solid var(--red);color:#fff}
 /* HUD 小标签/按钮:做成 GBA 菜单牌(米白 + 深蓝描边) */
 .hud-ctrl,.wstat,.hud-btn,.hud-sel,.hud-kit .kit-mon,.hud-kit .kit-stone{background:var(--gba-cream)!important;border:2px solid var(--gba-navy)!important;color:var(--gba-ink)!important;backdrop-filter:none!important;border-radius:8px}
 .hud-btn{font-weight:600}

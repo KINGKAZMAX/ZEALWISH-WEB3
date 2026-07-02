@@ -26,9 +26,9 @@ export const SPIRIT_ART: Record<string, string> = {
 
 export interface Item { id: string; name: string; tag: string; color: string; desc: string; }
 export const ITEMS: Item[] = [
-  { id: 'stone', name: '灵石', tag: '石', color: '#caa84a', desc: '收服野生灵宠所需的结晶。' },
-  { id: 'berry', name: '能量果', tag: '果', color: '#d9534f', desc: '喂给随行灵宠,提升羁绊与经验。' },
-  { id: 'charm', name: '羁绊符', tag: '符', color: '#9b6dde', desc: '稀有信物,见证你与灵宠的旅程。' },
+  { id: 'stone', name: '灵石', tag: '石', color: '#caa84a', desc: '收服野生宠物所需的结晶。' },
+  { id: 'berry', name: '能量果', tag: '果', color: '#d9534f', desc: '喂给随行宠物,提升羁绊与经验。' },
+  { id: 'charm', name: '羁绊符', tag: '符', color: '#9b6dde', desc: '稀有信物,见证你与宠物的旅程。' },
 ];
 export const itemById: Record<string, Item> = Object.fromEntries(ITEMS.map((i) => [i.id, i]));
 

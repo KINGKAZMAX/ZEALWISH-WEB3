@@ -29,7 +29,12 @@ frontend-v4/world/sprites/spirits/*
 !frontend-v4/world/sprites/spirits/README.md
 frontend-v4/world/fonts/*
 !frontend-v4/world/fonts/README.md
+# 例外:自托管的开放许可(OFL-1.1)像素中文字体 Fusion Pixel —— 合规,随产品发布
+!frontend-v4/world/fonts/pixel.woff2
+!frontend-v4/world/fonts/pixel.OFL.txt
 living-oc/public/sprites/spirits/*
 !living-oc/public/sprites/spirits/README.md
 living-oc/public/fonts/*
 !living-oc/public/fonts/README.md
+!living-oc/public/fonts/pixel.woff2
+!living-oc/public/fonts/pixel.OFL.txt

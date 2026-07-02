@@ -247,9 +247,9 @@ export default function WorldView() {
       const wx = wd.bx + Math.cos(nowt * wd.spd + wd.phase) * wd.r, wy = wd.by + Math.sin(nowt * wd.spd + wd.phase) * wd.r;
       const d = (wx - cp.mx) ** 2 + (wy - cp.my) ** 2; if (d < bd) { bd = d; best = wd; }
     }
-    if (!best) { showToast('附近没有野生灵宠'); return; }
+    if (!best) { showToast('附近没有野生宠物'); return; }
     if ((useLiving.getState().oc?.bag?.stone || 0) <= 0) { showToast('灵石不足 · 无法收服'); return; }
-    if (tameSpirit(best.species)) { const sp = speciesById[best.species]; const bu = best.uid; wild.current = wild.current.filter((x) => x.uid !== bu); showToast('收服成功 · ' + (sp?.name || '灵宠') + ' 加入队伍 ✦'); }
+    if (tameSpirit(best.species)) { const sp = speciesById[best.species]; const bu = best.uid; wild.current = wild.current.filter((x) => x.uid !== bu); showToast('收服成功 · ' + (sp?.name || '宠物') + ' 加入队伍 ✦'); }
   };
   // ── 互动:飘心表情 / 好感度 / 陪走 / NPC 亲密相会 ──
   const emotes = useRef<{ mx: number; my: number; glyph: string; born: number }[]>([]);
@@ -815,10 +815,10 @@ export default function WorldView() {
           ? <div className="hud-ctrl visit">访客观光 · 只读串门</div>
           : <div className="hud-ctrl">控制中 · <b>{ctrlA?.name ?? '—'}</b>{ctrl === ocId && ' ★'}</div>}
         {!VISIT && (
-          <div className="hud-kit" title="随行灵宠 · 背包灵石">
+          <div className="hud-kit" title="随行宠物 · 背包灵石">
             {activeSpirit
               ? <button className="kit-mon" onClick={() => setTeamOpen(true)}><span className="kit-dot" style={{ background: speciesById[activeSpirit.species]?.body }} />{activeSpirit.name} <i>Lv{activeSpirit.level}</i></button>
-              : <button className="kit-mon off" onClick={() => setTeamOpen(true)}>无随行灵宠</button>}
+              : <button className="kit-mon off" onClick={() => setTeamOpen(true)}>无随行宠物</button>}
             <button className="kit-stone" onClick={() => setBagOpen(true)}>灵石 {myOc?.bag?.stone ?? 0}</button>
           </div>
         )}
@@ -844,7 +844,7 @@ export default function WorldView() {
             <button className="hud-btn" onClick={() => { setControlId(xiaozhiId); setInspId(xiaozhiId); }}>回到小智 ★</button>
             {ocIsCustom && <button className="hud-btn" onClick={() => { setControlId(ocId); setInspId(ocId); }} title="回到你创建的角色">我 · {ocName}</button>}
             <button className="hud-btn" onClick={() => setBagOpen(true)} title="背包(B 键)">背包</button>
-            <button className="hud-btn" onClick={() => setTeamOpen(true)} title="灵宠队伍">灵宠</button>
+            <button className="hud-btn" onClick={() => setTeamOpen(true)} title="宠物队伍">宠物</button>
             <button className="hud-btn live" onClick={() => setLive(true)}>真 LLM/链</button>
             <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="温馨 8-bit 背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
             <button className="hud-btn" onClick={() => setShowHelp(true)} title="玩法说明">?</button>
@@ -936,7 +936,7 @@ export default function WorldView() {
                   <li><b>互动</b> · 走近伙伴按 空格,或<b>点一下身边的 TA</b>:闲聊 / 夸夸 / 约饭 / 抱抱 / 陪走</li>
                   <li><b>接管</b> · 点击远处任意居民,即可化身 TA 自由行走</li>
                   <li><b>飞向</b> · 点左侧 THE FEED 的动态,镜头会飞向当事人</li>
-                  <li><b>灵宠</b> · 走近野生灵宠按 <b>C</b> 收服(耗 1 灵石),激活的灵宠会<b>随行</b>;<b>B</b> 开背包,点「灵宠」管理队伍</li>
+                  <li><b>宠物</b> · 走近野生宠物按 <b>C</b> 收服(耗 1 灵石),激活的宠物会<b>随行</b>;<b>B</b> 开背包,点「宠物」管理队伍</li>
                   <li>伙伴们会自己相遇、说悄悄话、头顶冒 ♥ —— 一个自运转的小社会</li>
                 </ul>
                 <button className="world-help-go" onClick={dismissHelp}>开始 ▸</button>
@@ -1001,7 +1001,7 @@ export default function WorldView() {
       {!VISIT && teamOpen && (
         <div className="world-modal" onClick={() => setTeamOpen(false)}>
           <div className="world-card" onClick={(e) => e.stopPropagation()}>
-            <div className="wc-head">灵宠队伍 · TEAM <button className="wc-x" onClick={() => setTeamOpen(false)}>✕</button></div>
+            <div className="wc-head">宠物队伍 · TEAM <button className="wc-x" onClick={() => setTeamOpen(false)}>✕</button></div>
             <div className="wc-team">
               {(myOc?.team ?? []).map((s) => { const sp = speciesById[s.species]; const on = s.uid === myOc?.active; return (
                 <button key={s.uid} className={'wc-mon' + (on ? ' on' : '')} onClick={() => setActiveSpirit(s.uid)} title={on ? '随行中' : '设为随行'}>
@@ -1010,7 +1010,7 @@ export default function WorldView() {
                   {on && <span className="wc-on">随行中</span>}
                 </button>
               ); })}
-              {(!myOc?.team || myOc.team.length === 0) && <div className="wc-empty">还没有灵宠 —— 走近野生灵宠按 C 收服。</div>}
+              {(!myOc?.team || myOc.team.length === 0) && <div className="wc-empty">还没有宠物 —— 走近野生宠物按 C 收服。</div>}
             </div>
             <button className="wc-toggle" onClick={togglePet}>随身宠物:{petHidden ? '已隐藏 —— 点此显示' : '显示中 —— 点此隐藏'}</button>
           </div>
