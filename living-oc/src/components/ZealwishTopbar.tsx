@@ -17,7 +17,7 @@ export default function ZealwishTopbar({ view, setView }: { view: View; setView:
       <div className="zw-left">
         <a className="zw-back" href="/web.html#/world" title="返回 ZEALWISH 工作台">←</a>
         <span className="zw-brand">ZEALWISH</span>
-        <span className="zw-product">LIVING OC</span>
+        <span className="zw-product">OCWORLD</span>
       </div>
       {oc && (
         <nav className="zw-nav">

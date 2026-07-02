@@ -834,7 +834,7 @@ export default function WorldView() {
           <>
             <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
             <button className="hud-btn" onClick={() => setShowHelp(true)} title="说明">?</button>
-            <a className="hud-btn hud-cta" href="/web.html#/create">✦ 创建你的活世界 →</a>
+            <a className="hud-btn hud-cta" href="/web.html#/create">✦ 创建你的 OCWORLD →</a>
           </>
         ) : (
           <>
@@ -919,18 +919,18 @@ export default function WorldView() {
           <div className="world-help-card" onClick={(e) => e.stopPropagation()}>
             {VISIT ? (
               <>
-                <h3>你正在串门一座活世界 ✦</h3>
+                <h3>你正在串门一座 OCWORLD ✦</h3>
                 <ul>
-                  <li>这是别人拥有的 AI 活世界 —— 你以<b>访客</b>身份<b>只读观光</b>。</li>
+                  <li>这是别人拥有的 OCWORLD —— 你以<b>访客</b>身份<b>只读观光</b>。</li>
                   <li>镜头会自动巡游;<b>点任意 TA</b> 可聚焦并查看它的人格与记忆。</li>
                   <li>居民们自己生活:走动、相遇、说悄悄话、头顶冒 ♥ —— 一个自运转的小社会。</li>
-                  <li>喜欢?<b>创建你自己的活世界</b>,养一个属于你、归你钱包的 AI 角色。</li>
+                  <li>喜欢?<b>创建你自己的 OCWORLD</b>,养一个属于你、归你钱包的 AI 角色。</li>
                 </ul>
                 <button className="world-help-go" onClick={dismissHelp}>开始观光 ▸</button>
               </>
             ) : (
               <>
-                <h3>欢迎来到活世界 ✦</h3>
+                <h3>欢迎来到 OCWORLD ✦</h3>
                 <ul>
                   <li><b>移动</b> · WASD / 方向键 · 或<b>点击地面</b>走过去(手机轻点即可)</li>
                   <li><b>互动</b> · 走近伙伴按 空格,或<b>点一下身边的 TA</b>:闲聊 / 夸夸 / 约饭 / 抱抱 / 陪走</li>

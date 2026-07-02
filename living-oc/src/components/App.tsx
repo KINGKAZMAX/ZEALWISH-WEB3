@@ -61,7 +61,7 @@ export default function App() {
         <ZealwishTopbar view={view} setView={setView} />
         <div className="app create">
           <div className="create-kicker">CREATE · GROW · OWN YOUR AI CHARACTER</div>
-          <h1>活世界 <span>Living OC</span></h1>
+          <h1>OCWORLD <span>by ZEALWISH</span></h1>
           <p>创建一个属于你的 OC——它有自己的身份与钱包,会自己过日子,你看着它成长。</p>
           <div className="create-row">
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="给它起个名字" />
