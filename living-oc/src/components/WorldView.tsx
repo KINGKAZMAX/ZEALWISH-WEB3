@@ -617,7 +617,9 @@ export default function WorldView() {
       if (!wildInit.current) {
         wildInit.current = true;
         const rc = GLOBAL ? REGION_DEFAULT : regionRef.current; const ccx = rc[0] * MAP_W, ccy = rc[1] * MAP_H;
-        for (let i = 0; i < 5; i++) { const sp = SPECIES[(i * 2 + 1) % SPECIES.length]; const ang = (i / 5) * Math.PI * 2; wild.current.push({ uid: 'w' + i, species: sp.id, bx: ccx + Math.cos(ang) * (84 + i * 22), by: ccy + Math.sin(ang) * (76 + i * 18), phase: i * 1.3, r: 14 + (i % 3) * 6, spd: 0.0006 + i * 0.0001 }); }
+        // 区域指纹 → 本区物种池:不同活动区域出没不同灵宠组合(SPECIES 共 7 种、7 为质数,任意步长都能取满不重复),换区有探索感
+        const rh = hue('wild:' + rc[0].toFixed(4) + ',' + rc[1].toFixed(4)); const stride = (rh % 3) + 1;
+        for (let i = 0; i < 5; i++) { const sp = SPECIES[(rh + i * stride) % SPECIES.length]; const ang = (i / 5) * Math.PI * 2; wild.current.push({ uid: 'w' + i, species: sp.id, bx: ccx + Math.cos(ang) * (84 + i * 22), by: ccy + Math.sin(ang) * (76 + i * 18), phase: i * 1.3, r: 14 + (i % 3) * 6, spd: 0.0006 + i * 0.0001 }); }
       }
       // 6. 最近可交互居民
       let near: string | null = null;
