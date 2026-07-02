@@ -218,33 +218,33 @@ function toApiMessages(messages) {
 
 // --- Identity (character record) ---
 
-// 「化为像素小人，进入活世界」交接用：人格原型 + 像素身体（须与 living-oc 的 Archetype / 精灵保持一致）
+// "Spawn as pixel avatar, enter OCWORLD" handoff: personality archetype + pixel body (must match living-oc Archetype / sprite ids)
 const WORLD_SPAWN_KEY = 'zealwish.world.spawn.v1';
 const WORLD_ARCHES = [
-  { id: 'creator', cn: '创作者', en: 'Creator' },
-  { id: 'trader', cn: '投机者', en: 'Trader' },
-  { id: 'helper', cn: '守护者', en: 'Guardian' },
-  { id: 'worker', cn: '匠人', en: 'Maker' },
-  { id: 'socialite', cn: '社交动物', en: 'Socialite' },
-  { id: 'gambler', cn: '赌徒', en: 'Gambler' },
-  { id: 'saver', cn: '积攒者', en: 'Saver' }
+  { id: 'creator', en: 'Creator' },
+  { id: 'trader', en: 'Trader' },
+  { id: 'helper', en: 'Guardian' },
+  { id: 'worker', en: 'Maker' },
+  { id: 'socialite', en: 'Socialite' },
+  { id: 'gambler', en: 'Gambler' },
+  { id: 'saver', en: 'Saver' }
 ];
 const WORLD_BODIES = [
-  { id: 'red_normal', label: '红衣主角' },
-  { id: 'green_normal', label: '绿衣' },
-  { id: 'boy', label: '男孩' },
-  { id: 'lass', label: '少女' },
-  { id: 'youngster', label: '少年' },
-  { id: 'beauty', label: '美人' },
-  { id: 'gentleman', label: '绅士' },
-  { id: 'fat_man', label: '壮汉' }
+  { id: 'red_normal', label: 'Red Hero' },
+  { id: 'green_normal', label: 'Rival Green' },
+  { id: 'boy', label: 'Boy' },
+  { id: 'lass', label: 'Lass' },
+  { id: 'youngster', label: 'Youngster' },
+  { id: 'beauty', label: 'Beauty' },
+  { id: 'gentleman', label: 'Gentleman' },
+  { id: 'fat_man', label: 'Big Guy' }
 ];
 
 function defaultIdentity() {
   return {
     id: 'ZEALWISH-0001',
     name: '小智',
-    prompt: '一个属于你的 AI 角色——话不多但都记得,在你的世界里慢慢长成自己的样子。',
+    prompt: 'An AI character of your own — quiet, but remembers everything. It slowly grows into itself in your world.',
     gender: 'female',
     artStyle: 'pixel',
     arche: 'creator',
@@ -991,9 +991,9 @@ function CreateView({ identity, wallet, onSaveIdentity, onGeneratePortrait, port
     setSaveStatus('Passport saved. Your companion is live — go talk.');
   }, [name, prompt, gender, artStyle, lookSeeds, backdrop, customColor, arche, sprite, onSaveIdentity]);
 
-  // 化为像素小人，进入活世界：持久化人设 + 身体，写入交接 intent，跳到 World 模块，世界即以此角色出生
+  // Spawn as pixel avatar, enter OCWORLD: persist identity + body, write the handoff intent, jump to World — the world spawns as this character
   const handleEnterWorld = useCallback(async () => {
-    setSaveStatus('Spawning your pixel avatar in the Living World...');
+    setSaveStatus('Spawning your pixel avatar in OCWORLD...');
     await onSaveIdentity({ name, prompt, gender, artStyle, lookSeeds, backdrop, customColor, arche, sprite });
     try {
       localStorage.setItem(WORLD_SPAWN_KEY, JSON.stringify({
@@ -1135,12 +1135,12 @@ function CreateView({ identity, wallet, onSaveIdentity, onGeneratePortrait, port
             <option value="male">Male voice</option>
           </select>
 
-          <label className="field-label">人格原型 · Personality（决定它在活世界里怎么生活）</label>
+          <label className="field-label">Personality archetype — how they live in OCWORLD</label>
           <select id="create-arche" className="field" value={arche} onChange={(event) => setArche(event.target.value)}>
-            {WORLD_ARCHES.map((a) => <option key={a.id} value={a.id}>{a.cn} · {a.en}</option>)}
+            {WORLD_ARCHES.map((a) => <option key={a.id} value={a.id}>{a.en}</option>)}
           </select>
 
-          <label className="field-label">像素小人 · 你在世界里的身体（头像仍是护照 PFP）</label>
+          <label className="field-label">Pixel body — how you appear in OCWORLD (portrait stays your passport PFP)</label>
           <div className="seed-chips" style={{ gap: 10 }}>
             {WORLD_BODIES.map((b) => (
               <button
@@ -1168,7 +1168,7 @@ function CreateView({ identity, wallet, onSaveIdentity, onGeneratePortrait, port
             </button>
           </div>
           <div className="create-actions" style={{ marginTop: 10 }}>
-            <button className="button-primary edge" style={{ width: '100%' }} onClick={handleEnterWorld}>化为像素小人 · 进入活世界 →</button>
+            <button className="button-primary edge" style={{ width: '100%' }} onClick={handleEnterWorld}>SPAWN AS PIXEL AVATAR · ENTER OCWORLD →</button>
           </div>
           <div className="create-meta mono">AI IMAGE / 4-UP / {activeStyle.label} STYLE / STEPFUN · SPAWN AS PIXEL AVATAR</div>
           <div className="action-status mono" role="status" aria-live="polite">{saveStatus}</div>
@@ -1595,26 +1595,26 @@ const CREATOR_SKINS = [
 function WorldView({ activeScene, signedPassport, portraitState, onApplySkin, onEnterScene, onRunTask, onOpenOwnership }) {
   const [worldStatus, setWorldStatus] = useState('Every route below is live: skins restyle the portrait, scenes and tasks land in Talk.');
   const skinBusy = portraitState === 'rendering' || portraitState === 'slow';
-  // 若工作台刚「化为像素小人」交接了角色，带上 ?spawn=<ts>，内嵌世界即以该角色出生
+  // If Create just handed off a character ("spawn as pixel avatar"), pass ?spawn=<ts> so the embedded world spawns as it
   const spawnTs = (() => { try { return JSON.parse(localStorage.getItem(WORLD_SPAWN_KEY) || 'null')?.ts || null; } catch { return null; } })();
   const worldSrc = '/world/?embed=1' + (spawnTs ? `&spawn=${spawnTs}` : '');
 
   return (
     <>
-      <PageTitle eyebrow="World · 活世界" title="Living World">
-        你的角色在「活世界」里自由生活、与伙伴相遇 —— 走近交互、接管任意居民、看它们的日常。同一外壳里,下方还能换皮肤、进场景、派任务、带着护照跨世界。
+      <PageTitle eyebrow="World · OCWORLD" title="OCWORLD">
+        Your character lives freely in OCWORLD — meets companions, walks up to interact, takes over any resident, and lets you watch their days unfold. In the same shell below: restyle skins, enter scenes, run tasks, and carry your passport across worlds.
       </PageTitle>
 
       <section className="panel edge living-embed-panel">
         <div className="living-embed-head">
           <div>
-            <div className="code mono">00 / LIVING OC · 活世界</div>
-            <h2>进入活世界</h2>
+            <div className="code mono">00 / LIVING OC · OCWORLD</div>
+            <h2>ENTER OCWORLD</h2>
           </div>
-          <a className="button-secondary edge" href="/world/" target="_blank" rel="noopener noreferrer">全屏打开 ⤢</a>
+          <a className="button-secondary edge" href="/world/" target="_blank" rel="noopener noreferrer">OPEN FULLSCREEN ⤢</a>
         </div>
         <div className="living-embed-frame">
-          <iframe src={worldSrc} title="LIVING OC · 活世界" loading="lazy" allow="autoplay"></iframe>
+          <iframe src={worldSrc} title="LIVING OC · OCWORLD" loading="lazy" allow="autoplay"></iframe>
         </div>
       </section>
 

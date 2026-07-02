@@ -245,7 +245,7 @@
   }
   .seed-chip:hover { border-color: rgba(255,45,45,.6); color: var(--white); }
   .seed-chip.is-active { border-color: var(--red); color: var(--white); background: rgba(255,45,45,.14); }
-  /* 像素身体选择器:选中的身体播放行走动画(精灵条 down-walk 帧 3/4;帧宽 16px × 缩放 84/32 = 42px);尊重系统减弱动态偏好 */
+  /* Pixel-body picker: selected body plays a walk cycle (sprite-strip down-walk frames 3/4; frame width 16px x scale 84/32 = 42px); respects reduced-motion */
   @keyframes body-walk { 0%, 100% { background-position-x: -126px; } 50% { background-position-x: -168px; } }
   @media (prefers-reduced-motion: no-preference) {
     button[aria-label^="Pixel body"][aria-pressed="true"] { animation: body-walk .55s steps(1, end) infinite; }
@@ -494,7 +494,7 @@
 </div>
 <script src="vendor/react.production.min.js"></script>
 <script src="vendor/react-dom.production.min.js"></script>
-<script src="src/v4/wallet-service.js?v=20260702-1257"></script>
-<script src="src/v6/zealwish-web-app.js?v=20260702-1257"></script>
+<script src="src/v4/wallet-service.js?v=20260702-1508"></script>
+<script src="src/v6/zealwish-web-app.js?v=20260702-1508"></script>
 </body>
 </html>
