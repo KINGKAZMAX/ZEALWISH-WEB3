@@ -594,7 +594,12 @@ export default function WorldView() {
         cpp = spectateRef.current ? apos.current.get(spectateRef.current) || null : null;
       }
       if (cpp) { const f = Math.min(1, dt * (VISIT ? 3.5 : 8)); cam.current.cx += (cpp.mx - cam.current.cx) * f; cam.current.cy += (cpp.my - cam.current.cy) * f; }
-      if (!VISIT && cpp) { trail.current.push({ mx: cpp.mx, my: cpp.my }); if (trail.current.length > 60) trail.current.shift(); }   // 随行灵宠轨迹
+      // 随行宠物轨迹:仅在「实际移动」时按空间间隔记录点(去重),静止时不再堆积 →
+      // 随行宠始终稳定停在身后固定距离、不会缩到人物身上,也不会盖住人物。
+      if (!VISIT && cpp) {
+        const tl = trail.current, last = tl[tl.length - 1];
+        if (!last || (cpp.mx - last.mx) ** 2 + (cpp.my - last.my) ** 2 > 16) { tl.push({ mx: cpp.mx, my: cpp.my }); if (tl.length > 60) tl.shift(); }
+      }
       const sw = VW / MAP_SCALE, sh = VH / MAP_SCALE;
       const srcX = Math.max(0, Math.min(MAP_W - sw, cam.current.cx - sw / 2));
       const srcY = Math.max(0, Math.min(MAP_H - sh, cam.current.cy - sh / 2));
@@ -628,6 +633,16 @@ export default function WorldView() {
       let near: string | null = null;
       if (cpp && ctrl) { let bd = INTERACT_R * INTERACT_R; for (const id of w.order) { if (id === ctrl) continue; const p = apos.current.get(id); if (!p) continue; const d = (p.mx - cpp.mx) ** 2 + (p.my - cpp.my) ** 2; if (d < bd) { bd = d; near = id; } } }
       nearRef.current = near;
+      // 7c. 随行宠物:先于居民绘制 → 永远画在人物「身后」,不遮挡任何角色;跟在控制角色轨迹后方一段(留足间距,避免叠到身上)。
+      if (!VISIT && !petHiddenRef.current && cpp && trail.current.length > 6) {
+        const act = activeSpiritRef.current;   // render 时同步好的 ref,免每帧 getState()+find()
+        if (act) {
+          const idx = Math.max(0, trail.current.length - 1 - 7), f = trail.current[idx], fp = trail.current[Math.max(0, idx - 2)];
+          const fx = SX(f.mx), fy = SY(f.my), sz = TILE * 0.82;
+          ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.beginPath(); ctx.ellipse(fx, fy, sz * 0.32, sz * 0.13, 0, 0, 7); ctx.fill();
+          drawCreature(fx, fy, sz, act.species, Math.sin(now / 420), f.mx < fp.mx - 0.5);
+        }
+      }
       // 7. 居民(按 y 排序)
       const t = Math.floor(now / 180);
       const order = [...w.order].sort((a, b) => (apos.current.get(a)?.my ?? 0) - (apos.current.get(b)?.my ?? 0));
@@ -686,16 +701,7 @@ export default function WorldView() {
           if (nearWild.current === wd.uid) { ctx.fillStyle = 'rgba(140,255,170,.96)'; ctx.font = '11px ' + fam; ctx.fillText('C · 收服', sx, sy - sz - 4); }
         }
       }
-      // 7c. 随行灵宠(玩家激活的灵宠,跟在控制角色身后;可在灵宠面板隐藏)
-      if (!VISIT && !petHiddenRef.current && cpp && trail.current.length > 6) {
-        const act = activeSpiritRef.current;   // render 时同步好的 ref,免每帧 getState()+find()
-        if (act) {
-          const idx = Math.max(0, trail.current.length - 1 - 14), f = trail.current[idx], fp = trail.current[Math.max(0, idx - 4)];
-          const fx = SX(f.mx), fy = SY(f.my), sz = TILE * 0.82;
-          ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.beginPath(); ctx.ellipse(fx, fy, sz * 0.32, sz * 0.13, 0, 0, 7); ctx.fill();
-          drawCreature(fx, fy, sz, act.species, Math.sin(now / 420), f.mx < fp.mx - 0.5);
-        }
-      }
+      // (随行宠物已移至居民绘制之前,见 7c —— 确保永远画在人物身后,不遮挡角色)
       // 7a. 远端玩家(其他真人):插值移动 + 蓝圈 + 名牌 + 聊天气泡;12s 无更新视为离线
       for (const [rid, r] of remotes.current) {
         if (now - r.last > 12000) { remotes.current.delete(rid); continue; }

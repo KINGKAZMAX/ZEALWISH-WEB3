@@ -17,11 +17,18 @@ export const speciesById: Record<string, Species> = Object.fromEntries(SPECIES.m
 
 export interface Spirit { uid: string; species: string; name: string; level: number; xp: number; bond: number; }
 
-// 外部灵宠美术接入点(可选):把合规授权(CC0 / OGA-BY 等)的像素怪物 PNG 放到
-//   frontend-v4/world/sprites/spirits/<file>,并在此登记 物种id -> 文件名,即可替换程序化美术。
-// 留空 = 使用内置原创程序化美术(零版权风险、零 404)。切勿放入任何官方/受版权保护的素材。
+// 随行宠物美术:采用开源怪物收集游戏 Tuxemon 的像素立绘(CC BY-SA 4.0,合法可再分发,
+// 署名见 public/sprites/spirits/ATTRIBUTION.md)。物种id -> 文件名,文件位于
+//   frontend-v4/world/sprites/spirits/<file>(由 living-oc/public/sprites/spirits 构建拷入)。
+// 切勿放入任何官方/受版权保护(如 Pokémon)的素材。缺图时回退到下方极简占位绘制。
 export const SPIRIT_ART: Record<string, string> = {
-  // 例:ember: 'ember.png', ripple: 'ripple.png',
+  puff: 'puff.png',        // Cochini
+  ember: 'ember.png',      // Criniotherme
+  ripple: 'ripple.png',    // Dollfin
+  moss: 'moss.png',        // Viviphyta
+  breeze: 'breeze.png',    // Dandicub
+  pebble: 'pebble.png',    // Dune Pincher
+  glimmer: 'glimmer.png',  // Axylightl
 };
 
 export interface Item { id: string; name: string; tag: string; color: string; desc: string; }
@@ -45,40 +52,18 @@ export function newSpirit(speciesId: string, seedHint: string): Spirit {
   return { uid: 'sp_' + (h(speciesId + ':' + seedHint) >>> 0).toString(16), species: sp.id, name: sp.name, level: 2 + (h(seedHint) % 6), xp: 0, bond: 8 };
 }
 
-// 程序化绘制一只原创灵宠(无外部美术)。cx,cy = 脚底中心点,size = 体高(px)。
-// frame:连续浮点「呼吸相位」(典型取值 sin(...)∈[-1,1]),用于静止站立时也有的轻微上下浮动(idle bob)。
-export function drawSpirit(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number, speciesId: string, frame: number, faceLeft: boolean) {
+// 极简占位绘制(fallback):正常情况下 7 系均有 SPIRIT_ART 像素立绘,此函数不会被触发;
+// 仅当某张精灵图加载失败时兜底,画一个按元素配色的柔和小团 + 阴影,避免空白/报错。
+// 旧的程序化「原创灵宠」多形状画法已移除(改用 Tuxemon 像素素材)。
+// cx,cy = 脚底中心点;size = 体高(px);frame = 呼吸相位 sin∈[-1,1]。
+export function drawSpirit(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number, speciesId: string, frame: number, _faceLeft: boolean) {
   const sp = speciesById[speciesId] || SPECIES[0];
   const r = size / 2; const bob = -frame * size * 0.06;
   ctx.save();
-  ctx.translate(cx, cy - r + bob);
-  if (faceLeft) ctx.scale(-1, 1);
   ctx.imageSmoothingEnabled = false;
-  if (sp.round) {
-    // ── 圆滚滚萌宠(泡芙):圆身 + 大眼 + 腮红 + 小脚丫(原创可爱设计)──
-    ctx.fillStyle = sp.accent;
-    ctx.beginPath(); ctx.ellipse(-r * 0.4, r * 0.82, r * 0.3, r * 0.16, 0, 0, 7); ctx.fill();        // 左脚
-    ctx.beginPath(); ctx.ellipse(r * 0.4, r * 0.82, r * 0.3, r * 0.16, 0, 0, 7); ctx.fill();         // 右脚
-    ctx.beginPath(); ctx.ellipse(-r * 0.84, r * 0.06, r * 0.2, r * 0.3, 0.25, 0, 7); ctx.ellipse(r * 0.84, r * 0.06, r * 0.2, r * 0.3, -0.25, 0, 7); ctx.fill();  // 小手
-    ctx.fillStyle = sp.body; ctx.beginPath(); ctx.ellipse(0, 0, r * 0.94, r * 0.9, 0, 0, 7); ctx.fill();  // 圆身
-    ctx.fillStyle = '#3a2336'; ctx.beginPath(); ctx.ellipse(-r * 0.3, -r * 0.12, r * 0.13, r * 0.26, 0, 0, 7); ctx.ellipse(r * 0.3, -r * 0.12, r * 0.13, r * 0.26, 0, 0, 7); ctx.fill();  // 大眼
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-r * 0.26, -r * 0.22, r * 0.05, 0, 7); ctx.arc(r * 0.34, -r * 0.22, r * 0.05, 0, 7); ctx.fill();  // 眼高光
-    ctx.fillStyle = 'rgba(255,110,150,.5)'; ctx.beginPath(); ctx.ellipse(-r * 0.5, r * 0.2, r * 0.17, r * 0.1, 0, 0, 7); ctx.ellipse(r * 0.5, r * 0.2, r * 0.17, r * 0.1, 0, 0, 7); ctx.fill();  // 腮红
-    ctx.strokeStyle = '#9a3a52'; ctx.lineWidth = Math.max(1, r * 0.07); ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(0, r * 0.06, r * 0.13, 0.18 * Math.PI, 0.82 * Math.PI); ctx.stroke();  // 微笑
-    ctx.restore(); return;
-  }
   ctx.fillStyle = sp.body;
-  // 耳朵
-  ctx.beginPath(); ctx.moveTo(-r * 0.55, -r * 0.45); ctx.lineTo(-r * 0.28, -r * 1.15); ctx.lineTo(-r * 0.02, -r * 0.5); ctx.closePath(); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(r * 0.55, -r * 0.45); ctx.lineTo(r * 0.28, -r * 1.15); ctx.lineTo(r * 0.02, -r * 0.5); ctx.closePath(); ctx.fill();
-  // 身体
-  ctx.beginPath(); ctx.ellipse(0, 0, r * 0.88, r * 0.98, 0, 0, 7); ctx.fill();
-  // 肚皮
-  ctx.fillStyle = sp.accent; ctx.beginPath(); ctx.ellipse(0, r * 0.22, r * 0.5, r * 0.6, 0, 0, 7); ctx.fill();
-  // 眼睛
-  ctx.fillStyle = '#1a1a22'; ctx.beginPath(); ctx.arc(-r * 0.33, -r * 0.08, r * 0.15, 0, 7); ctx.arc(r * 0.33, -r * 0.08, r * 0.15, 0, 7); ctx.fill();
-  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-r * 0.28, -r * 0.13, r * 0.06, 0, 7); ctx.arc(r * 0.38, -r * 0.13, r * 0.06, 0, 7); ctx.fill();
-  // 腮红
-  ctx.fillStyle = 'rgba(255,120,120,.45)'; ctx.beginPath(); ctx.arc(-r * 0.5, r * 0.2, r * 0.12, 0, 7); ctx.arc(r * 0.5, r * 0.2, r * 0.12, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx, cy - r * 0.7 + bob, r * 0.7, r * 0.7, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = sp.accent;
+  ctx.beginPath(); ctx.ellipse(cx, cy - r * 0.55 + bob, r * 0.34, r * 0.34, 0, 0, 7); ctx.fill();
   ctx.restore();
 }

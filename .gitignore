@@ -27,6 +27,16 @@ artifacts/
 # 你可在本地往这些目录丢任意素材自行测试,git 永远不会提交它们。
 frontend-v4/world/sprites/spirits/*
 !frontend-v4/world/sprites/spirits/README.md
+# 例外:随行宠物 Tuxemon 像素素材(CC BY-SA 4.0,合规,随产品发布)
+!frontend-v4/world/sprites/spirits/puff.png
+!frontend-v4/world/sprites/spirits/ember.png
+!frontend-v4/world/sprites/spirits/ripple.png
+!frontend-v4/world/sprites/spirits/moss.png
+!frontend-v4/world/sprites/spirits/breeze.png
+!frontend-v4/world/sprites/spirits/pebble.png
+!frontend-v4/world/sprites/spirits/glimmer.png
+!frontend-v4/world/sprites/spirits/ATTRIBUTION.md
+!frontend-v4/world/sprites/spirits/LICENSE-CC-BY-SA-4.0.txt
 frontend-v4/world/fonts/*
 !frontend-v4/world/fonts/README.md
 # 例外:自托管的开放许可(OFL-1.1)像素中文字体 Fusion Pixel —— 合规,随产品发布
@@ -34,6 +44,16 @@ frontend-v4/world/fonts/*
 !frontend-v4/world/fonts/pixel.OFL.txt
 living-oc/public/sprites/spirits/*
 !living-oc/public/sprites/spirits/README.md
+# 例外:随行宠物 Tuxemon 像素素材(CC BY-SA 4.0,合规,随产品发布)
+!living-oc/public/sprites/spirits/puff.png
+!living-oc/public/sprites/spirits/ember.png
+!living-oc/public/sprites/spirits/ripple.png
+!living-oc/public/sprites/spirits/moss.png
+!living-oc/public/sprites/spirits/breeze.png
+!living-oc/public/sprites/spirits/pebble.png
+!living-oc/public/sprites/spirits/glimmer.png
+!living-oc/public/sprites/spirits/ATTRIBUTION.md
+!living-oc/public/sprites/spirits/LICENSE-CC-BY-SA-4.0.txt
 living-oc/public/fonts/*
 !living-oc/public/fonts/README.md
 !living-oc/public/fonts/pixel.woff2
