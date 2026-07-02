@@ -38,10 +38,10 @@ const REGIONS: { id: string; name: string; c: [number, number] }[] = [
   { id: 'cove',    name: '海湾绿岛', c: [0.9560, 0.6320] },
   { id: 'town',    name: '红顶小镇', c: [0.5588, 0.3300] },
   { id: 'meadow',  name: '林间空地', c: [0.5833, 0.3450] },
-  // 全图勘景新增(用足整张大地图;坐标经全图裁片核验为可行走地块)
+  // 全图勘景新增(用足整张大地图;坐标经全图裁片 + 像素采样复核:中心落在可行走且视觉合理的地块)
   { id: 'bridge',  name: '金桥湖畔', c: [0.7050, 0.1350] },
-  { id: 'beach',   name: '南滨沙滩', c: [0.5120, 0.8280] },
-  { id: 'isles',   name: '群岛浅滩', c: [0.1700, 0.8680] },
+  { id: 'beach',   name: '南滨沙滩', c: [0.5120, 0.8363] },   // 商铺排屋以南的开阔街面(原坐标落在店面上,审查修正)
+  { id: 'isles',   name: '群岛浅滩', c: [0.1693, 0.8828] },   // 最大沙洲岛心(原坐标落在外海,审查修正;边缘锚点在浅水,符合「浅滩」主题)
 ];
 function loadRegion(): [number, number] {
   try { const s = localStorage.getItem('oc-world-region'); if (s) { const v = JSON.parse(s); if (Array.isArray(v) && v.length === 2 && typeof v[0] === 'number' && typeof v[1] === 'number') return [v[0], v[1]]; } } catch { /* ignore */ }
@@ -617,9 +617,12 @@ export default function WorldView() {
       if (!wildInit.current) {
         wildInit.current = true;
         const rc = GLOBAL ? REGION_DEFAULT : regionRef.current; const ccx = rc[0] * MAP_W, ccy = rc[1] * MAP_H;
-        // 区域指纹 → 本区物种池:不同活动区域出没不同灵宠组合(SPECIES 共 7 种、7 为质数,任意步长都能取满不重复),换区有探索感
-        const rh = hue('wild:' + rc[0].toFixed(4) + ',' + rc[1].toFixed(4)); const stride = (rh % 3) + 1;
-        for (let i = 0; i < 5; i++) { const sp = SPECIES[(rh + i * stride) % SPECIES.length]; const ang = (i / 5) * Math.PI * 2; wild.current.push({ uid: 'w' + i, species: sp.id, bx: ccx + Math.cos(ang) * (84 + i * 22), by: ccy + Math.sin(ang) * (76 + i * 18), phase: i * 1.3, r: 14 + (i % 3) * 6, spd: 0.0006 + i * 0.0001 }); }
+        // 区域指纹 → 本区物种池:不同活动区域出没不同灵宠组合(SPECIES 共 7 种、7 为质数,任意步长都能取满不重复),换区有探索感。
+        // 用完整 32 位哈希且起点/步长取自不同位段 —— hue() 会 %360 丢熵,曾致林海码头与南滨沙滩物种池完全相同(审查修正)。
+        const key = 'wild:' + rc[0].toFixed(4) + ',' + rc[1].toFixed(4);
+        let rh = 0; for (let k = 0; k < key.length; k++) rh = (rh * 31 + key.charCodeAt(k)) >>> 0;
+        const start = rh % SPECIES.length, stride = 1 + ((rh >>> 8) % 3);
+        for (let i = 0; i < 5; i++) { const sp = SPECIES[(start + i * stride) % SPECIES.length]; const ang = (i / 5) * Math.PI * 2; wild.current.push({ uid: 'w' + i, species: sp.id, bx: ccx + Math.cos(ang) * (84 + i * 22), by: ccy + Math.sin(ang) * (76 + i * 18), phase: i * 1.3, r: 14 + (i % 3) * 6, spd: 0.0006 + i * 0.0001 }); }
       }
       // 6. 最近可交互居民
       let near: string | null = null;
@@ -746,8 +749,9 @@ export default function WorldView() {
           ctx.fillStyle = 'rgba(110,200,255,.95)'; ctx.beginPath(); ctx.arc(mx0 + MM / 2 + ddx * MM / 2, my0 + MM / 2 + ddy * MM / 2, 3, 0, 7); ctx.fill();
         }
         // 区域预设标记:绿色菱形;范围外贴雷达边缘指方向(整张大地图可导航)。当前区(≈聚落中心)不画,避免糊住中心。
-        const curRc = GLOBAL ? REGION_DEFAULT : regionRef.current;
-        for (const rg of REGIONS) {
+        // 全球模式不画:共享世界固定在 REGION_DEFAULT,不能换区,标记会指向去不了的地方(审查修正)。
+        const curRc = regionRef.current;
+        if (!GLOBAL) for (const rg of REGIONS) {
           if (rg.c[0] === curRc[0] && rg.c[1] === curRc[1]) continue;
           let ddx = (rg.c[0] * MAP_W - cpp.mx) / RR, ddy = (rg.c[1] * MAP_H - cpp.my) / RR;
           const far = Math.max(Math.abs(ddx), Math.abs(ddy));
