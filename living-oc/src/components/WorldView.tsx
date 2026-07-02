@@ -38,6 +38,10 @@ const REGIONS: { id: string; name: string; c: [number, number] }[] = [
   { id: 'cove',    name: '海湾绿岛', c: [0.9560, 0.6320] },
   { id: 'town',    name: '红顶小镇', c: [0.5588, 0.3300] },
   { id: 'meadow',  name: '林间空地', c: [0.5833, 0.3450] },
+  // 全图勘景新增(用足整张大地图;坐标经全图裁片核验为可行走地块)
+  { id: 'bridge',  name: '金桥湖畔', c: [0.7050, 0.1350] },
+  { id: 'beach',   name: '南滨沙滩', c: [0.5120, 0.8280] },
+  { id: 'isles',   name: '群岛浅滩', c: [0.1700, 0.8680] },
 ];
 function loadRegion(): [number, number] {
   try { const s = localStorage.getItem('oc-world-region'); if (s) { const v = JSON.parse(s); if (Array.isArray(v) && v.length === 2 && typeof v[0] === 'number' && typeof v[1] === 'number') return [v[0], v[1]]; } } catch { /* ignore */ }
