@@ -55,7 +55,10 @@ const PLAYER_SPRITES = ['red_normal', ...NPC_CHARS];
 // 命名角色专属精灵(小智=Red 另外处理;5 个新加坡留学伙伴用对应 chr-*.png)
 const NAMED_SPRITE: Record<string, string> = {
   '范范兔': 'fanfan', '熊熊': 'xiongxiong', '鹿鹿鹅': 'lulu', '猪猪仔': 'zhuzhu', '冰冰雁': 'bingbing', '杏子': 'beauty',
+  '许恒': 'youngster', '俊烨': 'boy', '小树老师': 'beauty',
 };
+// 戴眼镜的角色:渲染时在面部叠一副像素眼镜(见 drawResident 中的 GLASSES 叠加)
+const GLASSES = new Set<string>(['许恒', '俊烨']);
 // 头顶气泡台词库:已抽到 ../world/lines.ts(每角色约 60~70 条原创性格语料)。
 const FRAME: Record<string, { idle: number; walk: [number, number] }> = {
   down: { idle: 0, walk: [3, 4] }, up: { idle: 5, walk: [6, 5] }, side: { idle: 2, walk: [7, 8] },
@@ -136,6 +139,14 @@ function recolorHair(img: HTMLImageElement, src: number[][], dst: number[][]): H
 const recolorHairPurple = (img: HTMLImageElement) => recolorHair(img, [[57, 57, 24], [123, 115, 65], [205, 172, 98], [156, 140, 90]], [[74, 44, 104], [138, 84, 176], [198, 154, 232], [168, 118, 205]]);
 // 杏子 = beauty 精灵金发(及垂落的长发)→ 黑(黑长直)
 const recolorHairBlack = (img: HTMLImageElement) => recolorHair(img, [[255, 222, 74], [213, 172, 32], [131, 98, 0]], [[86, 86, 100], [42, 42, 52], [20, 20, 26]]);
+// 小树老师:beauty 底 → 柔棕长发 + 白色裙子(金发档→棕;橙/红/蓝衣饰档→白/浅灰)
+const recolorTeacher = (img: HTMLImageElement) => recolorHair(img,
+  [[255, 222, 74], [213, 172, 32], [131, 98, 0], [238, 115, 65], [172, 65, 57], [65, 57, 98], [74, 49, 49]],
+  [[176, 132, 92], [132, 92, 58], [92, 60, 36], [246, 247, 250], [216, 218, 228], [228, 230, 238], [150, 152, 164]]);
+// 许恒:youngster 底 → 黑发 + 黑色衣服(金发档→深发;紫衫档→墨黑;棕裤档→深灰)
+const recolorXuheng = (img: HTMLImageElement) => recolorHair(img,
+  [[255, 222, 74], [213, 172, 32], [131, 98, 0], [106, 82, 189], [164, 139, 238], [123, 65, 65]],
+  [[78, 78, 90], [44, 44, 54], [24, 24, 30], [40, 40, 50], [74, 74, 88], [52, 50, 58]]);
 
 interface PP { mx: number; my: number; dir: string; moving: boolean; flip?: boolean }
 
@@ -323,6 +334,8 @@ export default function WorldView() {
       const im = new Image(); im.src = BASE + 'sprites/chr-' + NAMED_SPRITE[nm] + '.png';
       if (nm === '范范兔') { im.onload = () => { named.current[nm] = recolorHairPurple(im); }; named.current[nm] = im; } // 主角女生:运行时把头发染紫
       else if (nm === '杏子') { im.onload = () => { named.current[nm] = recolorHairBlack(im); }; named.current[nm] = im; } // 黑长直发
+      else if (nm === '小树老师') { im.onload = () => { named.current[nm] = recolorTeacher(im); }; named.current[nm] = im; } // 长发白裙老師
+      else if (nm === '许恒') { im.onload = () => { named.current[nm] = recolorXuheng(im); }; named.current[nm] = im; } // 黑发黑衣(俊烨用 boy 原绿衫,无需改色)
       else named.current[nm] = im;
     }
     // 小智作为常驻居民时(玩家操控自创角色)用主角红衣渲染;独立于 NAMED_SPRITE(后者还兼作联机同步白名单,加入会与 OC 重名冲突)
@@ -647,6 +660,20 @@ export default function WorldView() {
           ctx.imageSmoothingEnabled = false; const dy0 = sy + 2 - cH;
           if (flip) { ctx.save(); ctx.translate(sx + cW / 2, dy0); ctx.scale(-1, 1); ctx.drawImage(img, fi * 16, 0, 16, 32, 0, 0, cW, cH); ctx.restore(); }
           else ctx.drawImage(img, fi * 16, 0, 16, 32, sx - cW / 2, dy0, cW, cH);
+          // 戴眼镜角色:在面部叠一副像素眼镜(正面=双镜片+鼻梁,侧面=单镜片,背面不画)
+          if (GLASSES.has(a.name) && pp.dir !== 'up') {
+            const eyeY = dy0 + cH * 0.30, lw = cW * 0.14, lh = Math.max(2, Math.round(cH * 0.045));
+            ctx.fillStyle = '#20242e';
+            if (pp.dir === 'down') {
+              const gap = cW * 0.06;
+              ctx.fillRect(Math.round(sx - gap / 2 - lw), Math.round(eyeY), Math.round(lw), lh);
+              ctx.fillRect(Math.round(sx + gap / 2), Math.round(eyeY), Math.round(lw), lh);
+              ctx.fillRect(Math.round(sx - gap / 2), Math.round(eyeY + lh * 0.2), Math.round(gap), 1);
+            } else { // side
+              const off = flip ? cW * 0.02 : -cW * 0.02 - lw;
+              ctx.fillRect(Math.round(sx + off), Math.round(eyeY), Math.round(lw * 1.1), lh);
+            }
+          }
         }
         const label = a.name + (isOc ? ' ★' : '');
         ctx.font = (isCtrl ? '600 ' : '') + '12px ' + fam;
