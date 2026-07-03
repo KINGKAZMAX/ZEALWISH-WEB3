@@ -185,6 +185,11 @@ export default function WorldView() {
   const [inspId, setInspId] = useState<string | null>(null);
   const [bagOpen, setBagOpen] = useState(false);
   const [teamOpen, setTeamOpen] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);              // 合照馆
+  const [photoSel, setPhotoSel] = useState<Set<string>>(new Set());
+  const [photoBg, setPhotoBg] = useState(0);
+  const [photoPet, setPhotoPet] = useState(true);
+  const photoCanvas = useRef<HTMLCanvasElement | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [petHidden, setPetHidden] = useState<boolean>(() => { try { return localStorage.getItem('oc-pet-hidden') === '1'; } catch { return false; } });
   const togglePet = () => setPetHidden((h) => { const n = !h; try { localStorage.setItem('oc-pet-hidden', n ? '1' : '0'); } catch { /* ignore */ } return n; });
@@ -824,6 +829,65 @@ export default function WorldView() {
   const activeSpirit = myOc && myOc.team && myOc.team.length ? (myOc.team.find((s) => s.uid === myOc.active) ?? myOc.team[0]) : null;
   activeSpiritRef.current = activeSpirit;   // RAF 循环读这个 ref,避免每帧重复 getState()+find()
 
+  // ── 合照:把选中的角色画进一张宝丽来照片,可保存 PNG(复用已加载/已改色的 named.current 精灵)──
+  const PHOTO_ROSTER = ['小智', ...Object.keys(NAMED_SPRITE), ...(ocIsCustom && ocName ? [ocName] : [])].filter((n, i, a) => a.indexOf(n) === i);
+  const photoSprite = (name: string): HTMLImageElement | null => (ocIsCustom && name === ocName && ocSprite.current) ? ocSprite.current : (named.current[name] || null);
+  const togglePhoto = (name: string) => setPhotoSel((prev) => { const n = new Set(prev); if (n.has(name)) n.delete(name); else n.add(name); return n; });
+  const drawPhoto = (cv: HTMLCanvasElement) => {
+    const sel = PHOTO_ROSTER.filter((n) => photoSel.has(n));
+    const n = sel.length;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = 640, ix = 22, itop = 22, iw = W - ix * 2, ih = 300, capH = 66, H = itop + ih + capH;
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    const c = cv.getContext('2d'); if (!c) return; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.imageSmoothingEnabled = false;
+    c.fillStyle = '#f7f3e3'; c.fillRect(0, 0, W, H);   // 宝丽来白卡
+    c.save(); c.beginPath(); c.rect(ix, itop, iw, ih); c.clip();
+    const bg = photoBg % 3;
+    if (bg === 0) {          // 海边黄昏
+      const g = c.createLinearGradient(0, itop, 0, itop + ih); g.addColorStop(0, '#7ec3ec'); g.addColorStop(.5, '#ffd9a8'); g.addColorStop(.72, '#f2a172'); g.addColorStop(.72, '#3f78b0'); g.addColorStop(1, '#2f5f96');
+      c.fillStyle = g; c.fillRect(ix, itop, iw, ih);
+      c.fillStyle = '#ffe08a'; c.beginPath(); c.arc(ix + iw * .78, itop + ih * .42, 20, 0, 7); c.fill();
+      c.fillStyle = '#e8d19a'; c.fillRect(ix, itop + ih - 46, iw, 46);
+    } else if (bg === 1) {   // 夜间动物园
+      const g = c.createLinearGradient(0, itop, 0, itop + ih); g.addColorStop(0, '#0e1330'); g.addColorStop(1, '#26325e');
+      c.fillStyle = g; c.fillRect(ix, itop, iw, ih);
+      c.fillStyle = 'rgba(255,255,255,.85)'; for (let i = 0; i < 44; i++) c.fillRect(ix + ((i * 97) % iw), itop + ((i * 53) % (ih - 70)), 1, 1);
+      c.fillStyle = '#ffe9a8'; c.beginPath(); c.arc(ix + iw * .18, itop + ih * .2, 14, 0, 7); c.fill();
+      c.fillStyle = '#1c2b22'; c.fillRect(ix, itop + ih - 44, iw, 44);
+    } else {                 // 樱花粉
+      const g = c.createLinearGradient(0, itop, 0, itop + ih); g.addColorStop(0, '#ffd9e6'); g.addColorStop(1, '#fff2e0');
+      c.fillStyle = g; c.fillRect(ix, itop, iw, ih);
+      c.fillStyle = '#e7c58a'; c.fillRect(ix, itop + ih - 42, iw, 42);
+    }
+    const groundY = itop + ih - (bg === 0 ? 20 : bg === 1 ? 18 : 16);
+    if (n > 0) {
+      const gap0 = 6;
+      let scale = Math.max(2.2, Math.min(5, (iw - 16 - (n - 1) * gap0) / (n * 16)));
+      const cw = 16 * scale, ch = 32 * scale, gap = gap0;
+      const total = n * cw + (n - 1) * gap;
+      let x = ix + (iw - total) / 2;
+      sel.forEach((name, i) => {
+        const img = photoSprite(name);
+        const y = groundY - ch + (i % 2 ? -ch * 0.04 : 0);
+        c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(x + cw / 2, groundY - 1, cw * 0.32, cw * 0.12, 0, 0, 7); c.fill();
+        if (img && img.complete && img.naturalWidth) {
+          c.drawImage(img, 0, 0, 16, 32, x, y, cw, ch);
+          if (GLASSES.has(name)) { const ey = y + ch * 0.30, lw = cw * 0.14, lh = Math.max(2, Math.round(ch * 0.045)), gp = cw * 0.06; c.fillStyle = '#20242e'; c.fillRect(Math.round(x + cw / 2 - gp / 2 - lw), Math.round(ey), Math.round(lw), lh); c.fillRect(Math.round(x + cw / 2 + gp / 2), Math.round(ey), Math.round(lw), lh); c.fillRect(Math.round(x + cw / 2 - gp / 2), Math.round(ey + lh * 0.2), Math.round(gp), 1); }
+        } else { c.fillStyle = 'hsl(' + hue(name) + ',45%,60%)'; c.fillRect(x + cw * 0.2, y + ch * 0.3, cw * 0.6, ch * 0.6); }
+        c.font = '10px ' + font; c.textAlign = 'center'; c.fillStyle = 'rgba(0,0,0,.55)'; c.fillText(name, x + cw / 2 + 1, groundY + 13); c.fillStyle = '#fff'; c.fillText(name, x + cw / 2, groundY + 12);
+        x += cw + gap;
+      });
+      if (photoPet && activeSpirit) { const sp = spiritImg.current[activeSpirit.species]; const ps = Math.min(26, ch * 0.34), px = x - cw * 0.4, py = groundY - ps; if (sp && sp.complete && sp.naturalWidth) { c.fillStyle = 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(px + ps / 2, groundY - 1, ps * 0.34, ps * 0.13, 0, 0, 7); c.fill(); c.drawImage(sp, px, py, ps, ps); } }
+    }
+    c.restore();
+    c.strokeStyle = 'rgba(40,53,98,.25)'; c.lineWidth = 1; c.strokeRect(ix + .5, itop + .5, iw - 1, ih - 1);
+    const d = new Date(); const stamp = d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0');
+    c.fillStyle = '#27314f'; c.textAlign = 'center'; c.font = '600 18px ' + font; c.fillText('夜间动物园 · 合照', W / 2, itop + ih + 28);
+    c.font = '12px ' + font; c.fillStyle = '#7a6f4e'; c.fillText(stamp + (n ? '  ·  ' + n + ' 位' : '  ·  选几个人一起拍吧'), W / 2, itop + ih + 48);
+  };
+  useEffect(() => { if (photoOpen && photoCanvas.current) drawPhoto(photoCanvas.current); }, [photoOpen, photoSel, photoBg, photoPet, font]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const savePhoto = () => { const cv = photoCanvas.current; if (!cv) return; try { const d = new Date(), p2 = (x: number) => String(x).padStart(2, '0'); const a = document.createElement('a'); a.download = '夜间动物园合照-' + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + '-' + p2(d.getHours()) + p2(d.getMinutes()) + '.png'; a.href = cv.toDataURL('image/png'); a.click(); } catch { /* ignore */ } };
+
   return (
     <section className="world-fs" style={{ '--world-font': font } as CSSProperties}>
       <canvas ref={ref} className="world-canvas2" onClick={onClick} tabIndex={0} />
@@ -863,6 +927,7 @@ export default function WorldView() {
             {ocIsCustom && <button className="hud-btn" onClick={() => { setControlId(ocId); setInspId(ocId); }} title="回到你创建的角色">我 · {ocName}</button>}
             <button className="hud-btn" onClick={() => setBagOpen(true)} title="背包(B 键)">背包</button>
             <button className="hud-btn" onClick={() => setTeamOpen(true)} title="宠物队伍">宠物</button>
+            <button className="hud-btn" onClick={() => { setPhotoSel((p) => p.size ? p : new Set(['小智'])); setPhotoOpen(true); }} title="合照:选角色拍张合影">📷 合照</button>
             <button className="hud-btn live" onClick={() => setLive(true)}>真 LLM/链</button>
             <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="温馨 8-bit 背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
             <button className="hud-btn" onClick={() => setShowHelp(true)} title="玩法说明">?</button>
@@ -1031,6 +1096,35 @@ export default function WorldView() {
               {(!myOc?.team || myOc.team.length === 0) && <div className="wc-empty">还没有宠物 —— 走近野生宠物按 C 收服。</div>}
             </div>
             <button className="wc-toggle" onClick={togglePet}>随身宠物:{petHidden ? '已隐藏 —— 点此显示' : '显示中 —— 点此隐藏'}</button>
+          </div>
+        </div>
+      )}
+
+      {!VISIT && photoOpen && (
+        <div className="world-modal" onClick={() => setPhotoOpen(false)}>
+          <div className="world-card wc-photo" onClick={(e) => e.stopPropagation()}>
+            <div className="wc-head">📷 合照馆 · PHOTO <button className="wc-x" onClick={() => setPhotoOpen(false)}>✕</button></div>
+            <div className="ph-pick">
+              {PHOTO_ROSTER.map((name) => (
+                <button key={name} className={'ph-chip' + (photoSel.has(name) ? ' on' : '')} onClick={() => togglePhoto(name)} title={name}>
+                  <canvas width={16} height={32} className="ph-th" ref={(el) => { if (!el) return; const cx = el.getContext('2d'); const img = photoSprite(name); if (cx) { cx.imageSmoothingEnabled = false; cx.clearRect(0, 0, 16, 32); if (img && img.complete && img.naturalWidth) cx.drawImage(img, 0, 0, 16, 32, 0, 0, 16, 32); } }} />
+                  <span>{name}</span>
+                </button>
+              ))}
+            </div>
+            <div className="ph-row">
+              <div className="ph-bgs">
+                {['海边', '夜园', '樱花'].map((nm, i) => <button key={nm} className={'ph-bg' + (photoBg === i ? ' on' : '')} onClick={() => setPhotoBg(i)}>{nm}</button>)}
+                <button className={'ph-bg' + (photoPet ? ' on' : '')} onClick={() => setPhotoPet(!photoPet)}>带宠物</button>
+              </div>
+              <div className="ph-acts">
+                <button className="ph-mini" onClick={() => setPhotoSel(new Set())}>清空</button>
+                <button className="ph-mini" onClick={() => setPhotoSel(new Set(PHOTO_ROSTER))}>全选</button>
+                <button className="ph-save" onClick={savePhoto} disabled={photoSel.size === 0}>保存合照</button>
+              </div>
+            </div>
+            <div className="ph-preview"><canvas ref={photoCanvas} /></div>
+            <div className="ph-tip">选人 → 挑背景 → 保存合照(PNG 下载到本地){photoSel.size ? ` · 已选 ${photoSel.size} 位` : ''}</div>
           </div>
         </div>
       )}
