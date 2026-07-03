@@ -280,6 +280,7 @@ html.oc-embed .world-fs{height:100vh}
 .wc-mon{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:9px 11px;cursor:pointer;color:#f0f0f3}
 .wc-mon.on{border-color:#ff2d2d;background:rgba(255,45,45,.1)}
 .wc-mon-dot{width:18px;height:18px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+.wc-none-dot{background:transparent!important;box-shadow:none!important;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1}
 .wc-mon-main{flex:1;display:flex;flex-direction:column}
 .wc-mon-main small{color:#9aa0aa;font-size:11px;margin-top:2px}
 .wc-on{font-size:11px;color:#ff8a8a}

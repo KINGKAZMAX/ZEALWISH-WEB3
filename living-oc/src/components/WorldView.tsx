@@ -851,7 +851,7 @@ export default function WorldView() {
   const xiaozhiId = (w ? (w.order.find((id) => w.agents[id]?.name === '小智') ?? null) : null) ?? ocId;
   const ocIsCustom = !!ocName && ocName !== '小智';
   const myOc = useLiving.getState().oc;
-  const activeSpirit = myOc && myOc.team && myOc.team.length ? (myOc.team.find((s) => s.uid === myOc.active) ?? myOc.team[0]) : null;
+  const activeSpirit = myOc?.active === 'none' ? null : (myOc && myOc.team && myOc.team.length ? (myOc.team.find((s) => s.uid === myOc.active) ?? myOc.team[0]) : null);   // active==='none' = 取消跟随
   activeSpiritRef.current = activeSpirit;   // RAF 循环读这个 ref,避免每帧重复 getState()+find()
 
   // ── 合照:把选中的角色画进一张宝丽来照片,可保存 PNG(复用已加载/已改色的 named.current 精灵)──
@@ -1120,7 +1120,7 @@ export default function WorldView() {
                 <div key={it.id} className={'wc-item' + (n ? '' : ' off')}>
                   <span className="wc-ic" style={{ background: it.color }}>{it.tag}</span>
                   <div className="wc-it-main"><b>{it.name}</b> ×{n}<small>{it.desc}</small></div>
-                  {it.id === 'berry' && n > 0 && <button className="hud-btn" onClick={() => useBagItem('berry')}>{L('喂食 +羁绊', 'Feed +bond')}</button>}
+                  {it.id === 'berry' && n > 0 && <button className="hud-btn" onClick={() => useBagItem('berry')} disabled={myOc?.active === 'none'} title={myOc?.active === 'none' ? L('先在「宠物」里选一只随行,才能喂食', 'Pick a following pet first') : undefined}>{L('喂食 +羁绊', 'Feed +bond')}</button>}
                 </div>
               ); })}
             </div>
@@ -1133,8 +1133,15 @@ export default function WorldView() {
           <div className="world-card" onClick={(e) => e.stopPropagation()}>
             <div className="wc-head">{L('宠物队伍 · TEAM', 'PET TEAM')} <button className="wc-x" onClick={() => setTeamOpen(false)}>✕</button></div>
             <div className="wc-team">
-              {(myOc?.team ?? []).map((s) => { const sp = speciesById[s.species]; const on = s.uid === myOc?.active; return (
-                <button key={s.uid} className={'wc-mon' + (on ? ' on' : '')} onClick={() => setActiveSpirit(s.uid)} title={on ? L('随行中', 'Following') : L('设为随行', 'Set as follower')}>
+              {myOc?.team && myOc.team.length > 0 && (() => { const none = myOc?.active === 'none'; return (
+                <button className={'wc-mon wc-none' + (none ? ' on' : '')} onClick={() => setActiveSpirit('none')} title={L('取消跟随 —— 谁都不随行', 'Unfollow — no pet follows')}>
+                  <span className="wc-mon-dot wc-none-dot">🚫</span>
+                  <span className="wc-mon-main"><b>{L('不跟随', 'No follower')}</b><small>{L('取消随行,谁都不跟着你', 'no pet follows you')}</small></span>
+                  {none && <span className="wc-on">{L('当前', 'Current')}</span>}
+                </button>
+              ); })()}
+              {(myOc?.team ?? []).map((s) => { const sp = speciesById[s.species]; const on = myOc?.active !== 'none' && s.uid === myOc?.active; return (
+                <button key={s.uid} className={'wc-mon' + (on ? ' on' : '')} onClick={() => setActiveSpirit(s.uid)} title={on ? L('随行中(点「不跟随」可取消)', 'Following (tap "No follower" to unfollow)') : L('设为随行', 'Set as follower')}>
                   <span className="wc-mon-dot" style={{ background: sp?.body }} />
                   <span className="wc-mon-main"><b>{s.name}</b><small>{sp?.element ?? '?'}{L('系', '')} · Lv{s.level} · {L('羁绊', 'Bond')} {s.bond}</small></span>
                   {on && <span className="wc-on">{L('随行中', 'Following')}</span>}

@@ -138,7 +138,8 @@ export const useLiving = create<LivingState>((set, get) => ({
     if (!oc.team) { oc.team = starterTeam(oc.id); changed = true; }
     if (!oc.bag) { oc.bag = starterBag(); changed = true; }
     // 保证人人都有可爱随身宠「泡芙」并默认随行(新老角色都迁移到位)
-    if (!oc.team.some((s) => s.species === 'puff')) { const p = newSpirit('puff', 'puff:' + oc.id); p.name = '泡芙'; oc.team.unshift(p); oc.active = p.uid; changed = true; }
+    // 注:active 赋值加 `!oc.active` 守卫,避免覆盖用户已设的「取消跟随」哨兵('none' 为 truthy → 不覆盖)
+    if (!oc.team.some((s) => s.species === 'puff')) { const p = newSpirit('puff', 'puff:' + oc.id); p.name = '泡芙'; oc.team.unshift(p); if (!oc.active) oc.active = p.uid; changed = true; }
     if (!oc.active && oc.team.length) { oc.active = oc.team[0].uid; changed = true; }
     if (changed) { saveOc(oc); set({ version: get().version + 1 }); }
   },
@@ -157,16 +158,19 @@ export const useLiving = create<LivingState>((set, get) => ({
   useBagItem(itemId) {
     const oc = get().oc; if (!oc || !oc.bag) return;
     if ((oc.bag[itemId] || 0) <= 0) return;
-    if (itemId === 'berry' && oc.team && oc.active) {
-      const s = oc.team.find((x) => x.uid === oc.active) || oc.team[0];
-      if (s) { s.bond = Math.min(100, s.bond + 8); s.xp += 10; if (s.xp >= 20 + s.level * 10) { s.xp = 0; s.level += 1; } }
+    if (itemId === 'berry') {
+      // 只喂给「当前随行」的宠物;取消跟随('none')或无有效随行宠时,无喂食对象 → 不消耗浆果
+      const s = (oc.team && oc.active && oc.active !== 'none') ? oc.team.find((x) => x.uid === oc.active) : undefined;
+      if (!s) return;
+      s.bond = Math.min(100, s.bond + 8); s.xp += 10; if (s.xp >= 20 + s.level * 10) { s.xp = 0; s.level += 1; }
     }
     oc.bag[itemId] -= 1;
     saveOc(oc); set({ version: get().version + 1 });
   },
   setActiveSpirit(uid) {
     const oc = get().oc; if (!oc || !oc.team) return;
-    if (oc.team.some((x) => x.uid === uid)) { oc.active = uid; saveOc(oc); set({ version: get().version + 1 }); }
+    // uid==='none' = 取消跟随(哨兵值,truthy 故不会被 ensureKit 的 `!oc.active` 兜底覆盖,可持久化)
+    if (uid === 'none' || oc.team.some((x) => x.uid === uid)) { oc.active = uid; saveOc(oc); set({ version: get().version + 1 }); }
   },
   load() {
     const oc = loadOc(); if (oc) set({ oc, version: get().version + 1 });
