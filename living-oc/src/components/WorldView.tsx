@@ -33,16 +33,16 @@ const ANCHOR_OFFSETS: Record<string, [number, number]> = {
   bazaar: [-0.0048, 0.0028], commons: [-0.0079, -0.0047], forge: [-0.0079, 0.0116],
 };
 // 预设活动区域(中心归一化坐标;由地图像素扫描挑出)
-const REGIONS: { id: string; name: string; c: [number, number] }[] = [
-  { id: 'seaside', name: '海边小屋', c: [0.9691, 0.5906] },
-  { id: 'pier',    name: '林海码头', c: [0.9632, 0.5200] },
-  { id: 'cove',    name: '海湾绿岛', c: [0.9560, 0.6320] },
-  { id: 'town',    name: '红顶小镇', c: [0.5588, 0.3300] },
-  { id: 'meadow',  name: '林间空地', c: [0.5833, 0.3450] },
+const REGIONS: { id: string; name: string; en: string; c: [number, number] }[] = [
+  { id: 'seaside', name: '海边小屋', en: 'Seaside Hut', c: [0.9691, 0.5906] },
+  { id: 'pier',    name: '林海码头', en: 'Forest Pier', c: [0.9632, 0.5200] },
+  { id: 'cove',    name: '海湾绿岛', en: 'Green Cove', c: [0.9560, 0.6320] },
+  { id: 'town',    name: '红顶小镇', en: 'Redroof Town', c: [0.5588, 0.3300] },
+  { id: 'meadow',  name: '林间空地', en: 'Meadow', c: [0.5833, 0.3450] },
   // 全图勘景新增(用足整张大地图;坐标经全图裁片 + 像素采样复核:中心落在可行走且视觉合理的地块)
-  { id: 'bridge',  name: '金桥湖畔', c: [0.7050, 0.1350] },
-  { id: 'beach',   name: '南滨沙滩', c: [0.5120, 0.8363] },   // 商铺排屋以南的开阔街面(原坐标落在店面上,审查修正)
-  { id: 'isles',   name: '群岛浅滩', c: [0.1693, 0.8828] },   // 最大沙洲岛心(原坐标落在外海,审查修正;边缘锚点在浅水,符合「浅滩」主题)
+  { id: 'bridge',  name: '金桥湖畔', en: 'Bridge Lake', c: [0.7050, 0.1350] },
+  { id: 'beach',   name: '南滨沙滩', en: 'South Beach', c: [0.5120, 0.8363] },   // 商铺排屋以南的开阔街面(原坐标落在店面上,审查修正)
+  { id: 'isles',   name: '群岛浅滩', en: 'Shoal Isles', c: [0.1693, 0.8828] },   // 最大沙洲岛心(原坐标落在外海,审查修正;边缘锚点在浅水,符合「浅滩」主题)
 ];
 function loadRegion(): [number, number] {
   try { const s = localStorage.getItem('oc-world-region'); if (s) { const v = JSON.parse(s); if (Array.isArray(v) && v.length === 2 && typeof v[0] === 'number' && typeof v[1] === 'number') return [v[0], v[1]]; } } catch { /* ignore */ }
@@ -64,16 +64,16 @@ const FRAME: Record<string, { idle: number; walk: [number, number] }> = {
   down: { idle: 0, walk: [3, 4] }, up: { idle: 5, walk: [6, 5] }, side: { idle: 2, walk: [7, 8] },
 };
 // 可自由选择的世界字体(系统中文字体栈,无需联网加载;同时作用于 canvas 文字与 HTML HUD)
-const FONTS: { id: string; name: string; css: string }[] = [
-  { id: 'rounded', name: '圆体', css: '"Yuanti SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif' },
-  { id: 'sans', name: '黑体', css: '"PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif' },
-  { id: 'kai', name: '楷体', css: '"Kaiti SC","STKaiti",KaiTi,"Noto Serif SC",serif' },
-  { id: 'song', name: '宋体', css: '"Songti SC","Noto Serif SC",SimSun,serif' },
-  { id: 'mono', name: '像素等宽', css: 'ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace' },
+const FONTS: { id: string; name: string; en: string; css: string }[] = [
+  { id: 'rounded', name: '圆体', en: 'Rounded', css: '"Yuanti SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif' },
+  { id: 'sans', name: '黑体', en: 'Sans', css: '"PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif' },
+  { id: 'kai', name: '楷体', en: 'Kai', css: '"Kaiti SC","STKaiti",KaiTi,"Noto Serif SC",serif' },
+  { id: 'song', name: '宋体', en: 'Song', css: '"Songti SC","Noto Serif SC",SimSun,serif' },
+  { id: 'mono', name: '像素等宽', en: 'Mono', css: 'ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace' },
   // 像素中文字体:自托管开放许可像素字(见 public/fonts/README);未放字体时回退到等宽,优雅降级
-  { id: 'pixel', name: '像素', css: '"PixelCJK","Fusion Pixel 12px","Ark Pixel 12px SC","Cubic 11",ui-monospace,monospace' },
+  { id: 'pixel', name: '像素', en: 'Pixel', css: '"PixelCJK","Fusion Pixel 12px","Ark Pixel 12px SC","Cubic 11",ui-monospace,monospace' },
 ];
-const FONT_DEFAULT = FONTS[0].css;
+const FONT_DEFAULT = FONTS.find((f) => f.id === 'sans')?.css ?? FONTS[1].css;  // 默认黑体
 // 角色之间的亲密相会:成对的「呼应」台词(a 说上句,b 接下句)
 const PAIR_LINES: [string, string][] = [
   ['一起去恰叻沙好不好~ (´▽`)', '好呀好呀,今天我请客!(つ≧▽≦)つ'],
@@ -95,12 +95,12 @@ const PAIR_LINES: [string, string][] = [
   ['不太会说,但我都记着呢', '有人记着,就不怕走丢了 (´ω`)'],
 ];
 // 玩家走近伙伴后的互动动作菜单
-const ACTIONS: { id: string; label: string; sub: string; glyph: string }[] = [
-  { id: 'chat',   label: '闲聊', sub: '唠唠日常', glyph: '♪' },
-  { id: 'praise', label: '夸夸', sub: '+好感',   glyph: '✦' },
-  { id: 'meal',   label: '约饭', sub: '去恰美食', glyph: '✿' },
-  { id: 'hug',    label: '抱抱', sub: '+亲密',   glyph: '♥' },
-  { id: 'follow', label: '陪走', sub: '一起散步', glyph: '⇢' },
+const ACTIONS: { id: string; label: string; labelEn: string; sub: string; subEn: string; glyph: string }[] = [
+  { id: 'chat',   label: '闲聊', labelEn: 'Chat',   sub: '唠唠日常', subEn: 'small talk',  glyph: '♪' },
+  { id: 'praise', label: '夸夸', labelEn: 'Praise', sub: '+好感',   subEn: '+liking',    glyph: '✦' },
+  { id: 'meal',   label: '约饭', labelEn: 'Meal',   sub: '去恰美食', subEn: 'go eat',     glyph: '✿' },
+  { id: 'hug',    label: '抱抱', labelEn: 'Hug',    sub: '+亲密',   subEn: '+closeness', glyph: '♥' },
+  { id: 'follow', label: '陪走', labelEn: 'Walk',   sub: '一起散步', subEn: 'stroll',     glyph: '⇢' },
 ];
 
 function hue(s: string): number { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h % 360; }
@@ -204,6 +204,9 @@ export default function WorldView() {
   const [font, setFont] = useState<string>(() => {
     try { const id = localStorage.getItem('oc-world-font'); return FONTS.find((f) => f.id === id)?.css || FONT_DEFAULT; } catch { return FONT_DEFAULT; }
   });
+  const [lang, setLang] = useState<'zh' | 'en'>(() => { try { return localStorage.getItem('oc-lang') === 'en' ? 'en' : 'zh'; } catch { return 'zh'; } });
+  const L = (zh: string, en: string) => (lang === 'en' ? en : zh);   // JSX 界面文案(角色名/台词/物种名等「内容」保持原样,只翻 UI 外壳)
+  const toggleLang = () => setLang((p) => { const n = p === 'en' ? 'zh' : 'en'; try { localStorage.setItem('oc-lang', n); } catch { /* ignore */ } return n; });
   const [regionC, setRegionC] = useState<[number, number]>(() => (GLOBAL ? REGION_DEFAULT : loadRegion()));  // 全球模式固定同一个镇
   const [showHelp, setShowHelp] = useState<boolean>(() => { try { return !localStorage.getItem('oc-world-seen'); } catch { return true; } });
   const dismissHelp = () => { setShowHelp(false); try { localStorage.setItem('oc-world-seen', '1'); } catch { /* ignore */ } };
@@ -229,6 +232,8 @@ export default function WorldView() {
   const liveLines = useRef<Map<string, string>>(new Map());  // 真 LLM 气泡台词缓存
   const liveRef = useRef(false); liveRef.current = liveMode.cognition === 'live';
   const fontRef = useRef(font); fontRef.current = font;
+  const langRef = useRef(lang); langRef.current = lang;
+  const Lr = (zh: string, en: string) => (langRef.current === 'en' ? en : zh);   // canvas 内文字(RAF 循环读 ref)
   const regionRef = useRef(regionC); regionRef.current = regionC;
   const talkRef = useRef<{ withId: string; lines?: { name: string; text: string }[]; i: number; menu?: boolean } | null>(null);
   const bumpTalk = () => setTalkVer((v) => v + 1);
@@ -248,9 +253,9 @@ export default function WorldView() {
       const wx = wd.bx + Math.cos(nowt * wd.spd + wd.phase) * wd.r, wy = wd.by + Math.sin(nowt * wd.spd + wd.phase) * wd.r;
       const d = (wx - cp.mx) ** 2 + (wy - cp.my) ** 2; if (d < bd) { bd = d; best = wd; }
     }
-    if (!best) { showToast('附近没有野生宠物'); return; }
-    if ((useLiving.getState().oc?.bag?.stone || 0) <= 0) { showToast('灵石不足 · 无法收服'); return; }
-    if (tameSpirit(best.species)) { const sp = speciesById[best.species]; const bu = best.uid; wild.current = wild.current.filter((x) => x.uid !== bu); showToast('收服成功 · ' + (sp?.name || '宠物') + ' 加入队伍 ✦'); }
+    if (!best) { showToast(Lr('附近没有野生宠物', 'No wild pet nearby')); return; }
+    if ((useLiving.getState().oc?.bag?.stone || 0) <= 0) { showToast(Lr('灵石不足 · 无法收服', 'Not enough stones to catch')); return; }
+    if (tameSpirit(best.species)) { const sp = speciesById[best.species]; const bu = best.uid; wild.current = wild.current.filter((x) => x.uid !== bu); showToast(Lr('收服成功 · ' + (sp?.name || '宠物') + ' 加入队伍 ✦', 'Caught · ' + (sp?.name || 'pet') + ' joined the team ✦')); }
   };
   // ── 互动:飘心表情 / 好感度 / 陪走 / NPC 亲密相会 ──
   const emotes = useRef<{ mx: number; my: number; glyph: string; born: number }[]>([]);
@@ -684,11 +689,11 @@ export default function WorldView() {
         ctx.font = (isCtrl ? '600 ' : '') + '12px ' + fam;
         ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.85)'; ctx.strokeText(label, sx, sy + 14);
         ctx.fillStyle = isCtrl ? '#ff2d2d' : 'rgba(245,245,247,.95)'; ctx.fillText(label, sx, sy + 14);
-        if (isNear) { ctx.fillStyle = 'rgba(255,210,80,.95)'; ctx.font = '11px ' + fam; ctx.fillText('空格 · 互动 ♥', sx, sy - cH - 4); }
+        if (isNear) { ctx.fillStyle = 'rgba(255,210,80,.95)'; ctx.font = '11px ' + fam; ctx.fillText(Lr('空格 · 互动 ♥', 'Space · interact ♥'), sx, sy - cH - 4); }
         // 与玩家的好感 / 陪走 标记
         if (!isCtrl) {
           const aff = (ocId && affinity.current.get(pairKey(ocId, id))) || 0;
-          const mark = companionRef.current === id ? '✦ 陪走' : aff >= 6 ? '♥♥' : aff >= 3 ? '♥' : '';
+          const mark = companionRef.current === id ? Lr('✦ 陪走', '✦ walking') : aff >= 6 ? '♥♥' : aff >= 3 ? '♥' : '';
           if (mark) { ctx.font = '11px ' + fam; ctx.fillStyle = mark[0] === '✦' ? '#ffd24d' : '#ff5d8f'; ctx.fillText(mark, sx, sy + 27); }
         }
         // 头顶对话气泡(相会悄悄话优先 → 真 LLM → 离线台词库)
@@ -712,10 +717,10 @@ export default function WorldView() {
           const sz = TILE * 0.78;
           ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(sx, sy, sz * 0.32, sz * 0.13, 0, 0, 7); ctx.fill();
           drawCreature(sx, sy, sz, wd.species, Math.sin(now / 420 + wd.phase * 3), false);   // 各自相位错开,呼吸不同步更自然
-          const sp = speciesById[wd.species]; const label = wd.label ?? (wd.label = '野生·' + (sp?.name ?? ''));   // 标签字符串按个体缓存,免每帧拼接
+          const sp = speciesById[wd.species]; const label = Lr('野生·', 'Wild·') + (sp?.name ?? '');   // 中英随语言切换,故不缓存(短字符串每帧拼接开销可忽略)
           ctx.font = labelFont; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.8)';
           ctx.strokeText(label, sx, sy + 13); ctx.fillStyle = 'rgba(220,255,220,.9)'; ctx.fillText(label, sx, sy + 13);
-          if (nearWild.current === wd.uid) { ctx.fillStyle = 'rgba(140,255,170,.96)'; ctx.font = '11px ' + fam; ctx.fillText('C · 收服', sx, sy - sz - 4); }
+          if (nearWild.current === wd.uid) { ctx.fillStyle = 'rgba(140,255,170,.96)'; ctx.font = '11px ' + fam; ctx.fillText(Lr('C · 收服', 'C · catch'), sx, sy - sz - 4); }
         }
       }
       // (随行宠物已移至居民绘制之前,见 7c —— 确保永远画在人物身后,不遮挡角色)
@@ -882,10 +887,10 @@ export default function WorldView() {
     c.restore();
     c.strokeStyle = 'rgba(40,53,98,.25)'; c.lineWidth = 1; c.strokeRect(ix + .5, itop + .5, iw - 1, ih - 1);
     const d = new Date(); const stamp = d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0');
-    c.fillStyle = '#27314f'; c.textAlign = 'center'; c.font = '600 18px ' + font; c.fillText('夜间动物园 · 合照', W / 2, itop + ih + 28);
-    c.font = '12px ' + font; c.fillStyle = '#7a6f4e'; c.fillText(stamp + (n ? '  ·  ' + n + ' 位' : '  ·  选几个人一起拍吧'), W / 2, itop + ih + 48);
+    c.fillStyle = '#27314f'; c.textAlign = 'center'; c.font = '600 18px ' + font; c.fillText(Lr('夜间动物园 · 合照', 'Night Zoo · Group Photo'), W / 2, itop + ih + 28);
+    c.font = '12px ' + font; c.fillStyle = '#7a6f4e'; c.fillText(stamp + (n ? Lr('  ·  ' + n + ' 位', '  ·  ' + n + ' people') : Lr('  ·  选几个人一起拍吧', '  ·  pick some people to snap')), W / 2, itop + ih + 48);
   };
-  useEffect(() => { if (photoOpen && photoCanvas.current) drawPhoto(photoCanvas.current); }, [photoOpen, photoSel, photoBg, photoPet, font]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (photoOpen && photoCanvas.current) drawPhoto(photoCanvas.current); }, [photoOpen, photoSel, photoBg, photoPet, font, lang]);   // eslint-disable-line react-hooks/exhaustive-deps
   const savePhoto = () => { const cv = photoCanvas.current; if (!cv) return; try { const d = new Date(), p2 = (x: number) => String(x).padStart(2, '0'); const a = document.createElement('a'); a.download = '夜间动物园合照-' + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + '-' + p2(d.getHours()) + p2(d.getMinutes()) + '.png'; a.href = cv.toDataURL('image/png'); a.click(); } catch { /* ignore */ } };
 
   return (
@@ -894,67 +899,69 @@ export default function WorldView() {
 
       <div className="hud hud-tl">
         {VISIT
-          ? <div className="hud-ctrl visit">访客观光 · 只读串门</div>
-          : <div className="hud-ctrl">控制中 · <b>{ctrlA?.name ?? '—'}</b>{ctrl === ocId && ' ★'}</div>}
+          ? <div className="hud-ctrl visit">{L('访客观光 · 只读串门', 'Visiting · read-only')}</div>
+          : <div className="hud-ctrl">{L('控制中', 'Controlling')} · <b>{ctrlA?.name ?? '—'}</b>{ctrl === ocId && ' ★'}</div>}
         {!VISIT && (
-          <div className="hud-kit" title="随行宠物 · 背包灵石">
+          <div className="hud-kit" title={L('随行宠物 · 背包灵石', 'Pet · bag stones')}>
             {activeSpirit
               ? <button className="kit-mon" onClick={() => setTeamOpen(true)}><span className="kit-dot" style={{ background: speciesById[activeSpirit.species]?.body }} />{activeSpirit.name} <i>Lv{activeSpirit.level}</i></button>
-              : <button className="kit-mon off" onClick={() => setTeamOpen(true)}>无随行宠物</button>}
-            <button className="kit-stone" onClick={() => setBagOpen(true)}>灵石 {myOc?.bag?.stone ?? 0}</button>
+              : <button className="kit-mon off" onClick={() => setTeamOpen(true)}>{L('无随行宠物', 'No pet')}</button>}
+            <button className="kit-stone" onClick={() => setBagOpen(true)}>{L('灵石', 'Stones')} {myOc?.bag?.stone ?? 0}</button>
           </div>
         )}
       </div>
 
       <div className="hud hud-tr">
         <span className="wstat sm"><i>EPOCH</i> {w?.epoch ?? 0}</span>
-        <span className="wstat sm"><i>居民</i> {w ? w.order.length : 0}</span>
-        <span className="wstat sm hot"><i>供给</i> {(w ? Math.round(w.stats.supply) : 0)}◈</span>
-        <span className="wstat sm" title={GLOBAL ? (isHost ? '全球联机中 · 本端为世界主机' : '全球联机中 · 镜像主机世界') : '本机多窗口(配置 Supabase 即全球联机)'}>在线 {online}{GLOBAL && isHost && online > 1 ? ' · 主机' : ''}</span>
-        <button className="hud-btn" onClick={openNet} title="联机设置">联机</button>
+        <span className="wstat sm"><i>{L('居民', 'People')}</i> {w ? w.order.length : 0}</span>
+        <span className="wstat sm hot"><i>{L('供给', 'Supply')}</i> {(w ? Math.round(w.stats.supply) : 0)}◈</span>
+        <span className="wstat sm" title={GLOBAL ? (isHost ? L('全球联机中 · 本端为世界主机', 'Global online · this端 is host') : L('全球联机中 · 镜像主机世界', 'Global online · mirroring host')) : L('本机多窗口(配置 Supabase 即全球联机)', 'Local multi-window (add Supabase for global)')}>{L('在线', 'Online')} {online}{GLOBAL && isHost && online > 1 ? ' · ' + L('主机', 'Host') : ''}</span>
+        <button className="hud-btn" onClick={openNet} title={L('联机设置', 'Multiplayer settings')}>{L('联机', 'Online')}</button>
         {VISIT ? (
           <>
-            <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
-            <button className="hud-btn" onClick={() => setShowHelp(true)} title="说明">?</button>
-            <a className="hud-btn hud-cta" href="/web.html#/create">✦ 创建你的 OCWORLD →</a>
+            <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title={L('背景音乐', 'Music')}>♪ BGM {bgmOn ? L('开', 'On') : L('关', 'Off')}</button>
+            <button className="hud-btn" onClick={() => setShowHelp(true)} title={L('说明', 'Help')}>?</button>
+            <button className="hud-btn" onClick={toggleLang} title={L('切换中/英界面', 'Switch language')}>{lang === 'en' ? '中' : 'EN'}</button>
+            <a className="hud-btn hud-cta" href="/web.html#/create">{L('✦ 创建你的 OCWORLD →', '✦ Create your OCWORLD →')}</a>
           </>
         ) : (
           <>
-            {!GLOBAL && <button className="hud-btn" onClick={() => setRun(!worldRunning)}>{worldRunning ? '暂停' : '播放'}</button>}
-            {!GLOBAL && <button className="hud-btn" onClick={() => { const n = window.prompt('克隆一个新居民(起个名字):', '@new_soul'); const v = n && n.trim(); if (v) addAgent(v); }}>＋人格</button>}
-            {!GLOBAL && <button className="hud-btn" onClick={() => { reseed(); apos.current.clear(); affinity.current.clear(); meetLines.current.clear(); companionRef.current = null; meetRef.current = null; nextMeetAt.current = 0; talkRef.current = null; wild.current = []; wildInit.current = false; trail.current = []; setControlId(null); setInspId(null); }}>↻ 重置</button>}
-            <button className="hud-btn" onClick={() => { setControlId(xiaozhiId); setInspId(xiaozhiId); }}>回到小智 ★</button>
-            {ocIsCustom && <button className="hud-btn" onClick={() => { setControlId(ocId); setInspId(ocId); }} title="回到你创建的角色">我 · {ocName}</button>}
-            <button className="hud-btn" onClick={() => setBagOpen(true)} title="背包(B 键)">背包</button>
-            <button className="hud-btn" onClick={() => setTeamOpen(true)} title="宠物队伍">宠物</button>
-            <button className="hud-btn" onClick={() => { setPhotoSel((p) => p.size ? p : new Set(['小智'])); setPhotoOpen(true); }} title="合照:选角色拍张合影">📷 合照</button>
-            <button className="hud-btn live" onClick={() => setLive(true)}>真 LLM/链</button>
-            <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title="温馨 8-bit 背景音乐">♪ BGM {bgmOn ? '开' : '关'}</button>
-            <button className="hud-btn" onClick={() => setShowHelp(true)} title="玩法说明">?</button>
-            <button className="hud-btn" title="复制只读观光链接,发给朋友来串门" onClick={() => { const url = window.location.origin + '/world/?visit=1'; try { void navigator.clipboard?.writeText(url); } catch { /* ignore */ } window.prompt('把这个只读观光链接发给朋友来串门:', url); }}>分享观光</button>
-            <select className="hud-sel" value={FONTS.find((f) => f.css === font)?.id ?? FONTS[0].id} title="选择字体" onChange={(e) => { const f = FONTS.find((x) => x.id === e.target.value) ?? FONTS[0]; setFont(f.css); try { localStorage.setItem('oc-world-font', f.id); } catch { /* ignore */ } }}>
-              {FONTS.map((f) => <option key={f.id} value={f.id}>字 · {f.name}</option>)}
+            {!GLOBAL && <button className="hud-btn" onClick={() => setRun(!worldRunning)}>{worldRunning ? L('暂停', 'Pause') : L('播放', 'Play')}</button>}
+            {!GLOBAL && <button className="hud-btn" onClick={() => { const n = window.prompt(L('克隆一个新居民(起个名字):', 'Clone a new resident (name it):'), '@new_soul'); const v = n && n.trim(); if (v) addAgent(v); }}>{L('＋人格', '+Persona')}</button>}
+            {!GLOBAL && <button className="hud-btn" onClick={() => { reseed(); apos.current.clear(); affinity.current.clear(); meetLines.current.clear(); companionRef.current = null; meetRef.current = null; nextMeetAt.current = 0; talkRef.current = null; wild.current = []; wildInit.current = false; trail.current = []; setControlId(null); setInspId(null); }}>{L('↻ 重置', '↻ Reset')}</button>}
+            <button className="hud-btn" onClick={() => { setControlId(xiaozhiId); setInspId(xiaozhiId); }}>{L('回到小智', 'Back to 小智')} ★</button>
+            {ocIsCustom && <button className="hud-btn" onClick={() => { setControlId(ocId); setInspId(ocId); }} title={L('回到你创建的角色', 'Back to your character')}>{L('我', 'Me')} · {ocName}</button>}
+            <button className="hud-btn" onClick={() => setBagOpen(true)} title={L('背包(B 键)', 'Bag (B)')}>{L('背包', 'Bag')}</button>
+            <button className="hud-btn" onClick={() => setTeamOpen(true)} title={L('宠物队伍', 'Pet team')}>{L('宠物', 'Pets')}</button>
+            <button className="hud-btn" onClick={() => { setPhotoSel((p) => p.size ? p : new Set(['小智'])); setPhotoOpen(true); }} title={L('合照:选角色拍张合影', 'Group photo')}>📷 {L('合照', 'Photo')}</button>
+            <button className="hud-btn live" onClick={() => setLive(true)}>{L('真 LLM/链', 'Real LLM')}</button>
+            <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title={L('温馨 8-bit 背景音乐', 'Cozy 8-bit BGM')}>♪ BGM {bgmOn ? L('开', 'On') : L('关', 'Off')}</button>
+            <button className="hud-btn" onClick={() => setShowHelp(true)} title={L('玩法说明', 'How to play')}>?</button>
+            <button className="hud-btn" title={L('复制只读观光链接,发给朋友来串门', 'Copy read-only tour link for friends')} onClick={() => { const url = window.location.origin + '/world/?visit=1'; try { void navigator.clipboard?.writeText(url); } catch { /* ignore */ } window.prompt(L('把这个只读观光链接发给朋友来串门:', 'Send this read-only tour link to a friend:'), url); }}>{L('分享观光', 'Share tour')}</button>
+            <select className="hud-sel" value={FONTS.find((f) => f.css === font)?.id ?? FONTS[0].id} title={L('选择字体', 'Font')} onChange={(e) => { const f = FONTS.find((x) => x.id === e.target.value) ?? FONTS[0]; setFont(f.css); try { localStorage.setItem('oc-world-font', f.id); } catch { /* ignore */ } }}>
+              {FONTS.map((f) => <option key={f.id} value={f.id}>{L('字', 'Font')} · {L(f.name, f.en)}</option>)}
             </select>
-            {!GLOBAL && <select className="hud-sel" value={REGIONS.find((r) => r.c[0] === regionC[0] && r.c[1] === regionC[1])?.id ?? 'custom'} title="活动区域(角色聚居的地图区域)" onChange={(e) => { const r = REGIONS.find((x) => x.id === e.target.value); if (r) applyRegion(r.c); }}>
-              {REGIONS.map((r) => <option key={r.id} value={r.id}>区 · {r.name}</option>)}
-              {!REGIONS.some((r) => r.c[0] === regionC[0] && r.c[1] === regionC[1]) && <option value="custom">区 · 自定义</option>}
+            {!GLOBAL && <select className="hud-sel" value={REGIONS.find((r) => r.c[0] === regionC[0] && r.c[1] === regionC[1])?.id ?? 'custom'} title={L('活动区域(角色聚居的地图区域)', 'Active zone')} onChange={(e) => { const r = REGIONS.find((x) => x.id === e.target.value); if (r) applyRegion(r.c); }}>
+              {REGIONS.map((r) => <option key={r.id} value={r.id}>{L('区', 'Zone')} · {L(r.name, r.en ?? r.name)}</option>)}
+              {!REGIONS.some((r) => r.c[0] === regionC[0] && r.c[1] === regionC[1]) && <option value="custom">{L('区', 'Zone')} · {L('自定义', 'Custom')}</option>}
             </select>}
-            {!GLOBAL && <button className="hud-btn" title="把当前所在位置设为活动区域中心(整簇居民迁过来)" onClick={() => { const id = ctrlRef.current; const p = id ? apos.current.get(id) : null; if (p) applyRegion([+(p.mx / MAP_W).toFixed(4), +(p.my / MAP_H).toFixed(4)]); }}>设此为区</button>}
+            {!GLOBAL && <button className="hud-btn" title={L('把当前所在位置设为活动区域中心(整簇居民迁过来)', 'Set current spot as zone center')} onClick={() => { const id = ctrlRef.current; const p = id ? apos.current.get(id) : null; if (p) applyRegion([+(p.mx / MAP_W).toFixed(4), +(p.my / MAP_H).toFixed(4)]); }}>{L('设此为区', 'Set zone')}</button>}
+            <button className="hud-btn" onClick={toggleLang} title={L('切换中/英界面', 'Switch language')}>{lang === 'en' ? '中' : 'EN'}</button>
           </>
         )}
       </div>
 
       <div className={'hud hud-feed' + (feedOpen ? '' : ' min')}>
-        <div className="hud-feed-head" onClick={() => setFeedOpen(!feedOpen)}>实时社交流 · THE FEED <span>{w?.feed.length ?? 0}{feedOpen ? ' ▾' : ' ▸'}</span></div>
+        <div className="hud-feed-head" onClick={() => setFeedOpen(!feedOpen)}>{L('实时社交流 · THE FEED', 'THE FEED')} <span>{w?.feed.length ?? 0}{feedOpen ? ' ▾' : ' ▸'}</span></div>
         {feedOpen && <div className="hud-feed-body">
           {(w?.feed ?? []).slice(0, 14).map((p) => (
-            <div key={p.id} className={'wpost' + (p.ev ? ' ev-' + p.ev.kind : '')} title={VISIT ? '点击:镜头飞向 TA' : '点击:镜头飞向 TA 并接管'}
+            <div key={p.id} className={'wpost' + (p.ev ? ' ev-' + p.ev.kind : '')} title={VISIT ? L('点击:镜头飞向 TA', 'Click: fly to them') : L('点击:镜头飞向 TA 并接管', 'Click: fly to & control')}
               onClick={() => { if (!useLiving.getState().world?.agents[p.agentId]) return; if (VISIT) { spectateRef.current = p.agentId; nextSpectateAt.current = performance.now() + 12000; setInspId(p.agentId); } else { setControlId(p.agentId); setInspId(p.agentId); } }}>
               <div className="wrow"><span className="wav" style={{ background: `hsl(${hue(p.agentId)},45%,55%)` }} /><b>{p.name}</b><span className="wact">{actionCN[p.action]}</span></div>
               <div className="wtext">{p.text}</div>
             </div>
           ))}
-          {(!w || w.feed.length === 0) && <div className="world-empty">世界正在醒来…</div>}
+          {(!w || w.feed.length === 0) && <div className="world-empty">{L('世界正在醒来…', 'World is waking up…')}</div>}
         </div>}
       </div>
 
@@ -972,15 +979,15 @@ export default function WorldView() {
           return (
             <div className="hud hud-talk">
               <div className="talk-name">{fr?.name ?? ''}</div>
-              <div className="talk-prompt">想和 {fr?.name ?? 'TA'} 做点什么?</div>
+              <div className="talk-prompt">{L(`想和 ${fr?.name ?? 'TA'} 做点什么?`, `What to do with ${fr?.name ?? 'them'}?`)}</div>
               <div className="talk-menu">
                 {ACTIONS.filter((ac) => !(GLOBAL && ac.id === 'follow')).map((ac) => (
                   <button key={ac.id} className="talk-act" onClick={() => doAction(tk.withId, ac.id)}>
-                    {ac.glyph} {companionRef.current === tk.withId && ac.id === 'follow' ? '结束陪走' : ac.label}<small>{ac.sub}</small>
+                    {ac.glyph} {companionRef.current === tk.withId && ac.id === 'follow' ? L('结束陪走', 'Stop walk') : L(ac.label, ac.labelEn)}<small>{L(ac.sub, ac.subEn)}</small>
                   </button>
                 ))}
               </div>
-              <div className="talk-hint" onClick={() => { talkRef.current = null; bumpTalk(); }}>空格关闭 · 点击选择 ▸</div>
+              <div className="talk-hint" onClick={() => { talkRef.current = null; bumpTalk(); }}>{L('空格关闭 · 点击选择 ▸', 'Space to close · click to pick ▸')}</div>
             </div>
           );
         }
@@ -989,7 +996,7 @@ export default function WorldView() {
           <div className="hud hud-talk" onClick={() => { tk.i++; if (!tk.lines || tk.i >= tk.lines.length) talkRef.current = null; bumpTalk(); }}>
             <div className="talk-name">{ln.name}{liveRef.current && ' · ✦ Claude'}</div>
             <div className="talk-text">{ln.text}</div>
-            <div className="talk-hint">空格 / 点击 继续</div>
+            <div className="talk-hint">{L('空格 / 点击 继续', 'Space / click to continue')}</div>
             <span className="talk-next" aria-hidden="true" />
           </div>
         );
@@ -1002,27 +1009,47 @@ export default function WorldView() {
           <div className="world-help-card" onClick={(e) => e.stopPropagation()}>
             {VISIT ? (
               <>
-                <h3>你正在串门一座 OCWORLD ✦</h3>
-                <ul>
-                  <li>这是别人拥有的 OCWORLD —— 你以<b>访客</b>身份<b>只读观光</b>。</li>
-                  <li>镜头会自动巡游;<b>点任意 TA</b> 可聚焦并查看它的人格与记忆。</li>
-                  <li>居民们自己生活:走动、相遇、说悄悄话、头顶冒 ♥ —— 一个自运转的小社会。</li>
-                  <li>喜欢?<b>创建你自己的 OCWORLD</b>,养一个属于你、归你钱包的 AI 角色。</li>
-                </ul>
-                <button className="world-help-go" onClick={dismissHelp}>开始观光 ▸</button>
+                <h3>{L('你正在串门一座 OCWORLD ✦', "You're visiting an OCWORLD ✦")}</h3>
+                {lang === 'en' ? (
+                  <ul>
+                    <li>This OCWORLD belongs to someone else — you're a <b>visitor</b> on a <b>read-only tour</b>.</li>
+                    <li>The camera auto-roams; <b>click anyone</b> to focus and view their persona & memory.</li>
+                    <li>Residents live on their own: wander, meet, whisper, float ♥ — a self-running little society.</li>
+                    <li>Like it? <b>Create your own OCWORLD</b> — raise an AI character owned by you and your wallet.</li>
+                  </ul>
+                ) : (
+                  <ul>
+                    <li>这是别人拥有的 OCWORLD —— 你以<b>访客</b>身份<b>只读观光</b>。</li>
+                    <li>镜头会自动巡游;<b>点任意 TA</b> 可聚焦并查看它的人格与记忆。</li>
+                    <li>居民们自己生活:走动、相遇、说悄悄话、头顶冒 ♥ —— 一个自运转的小社会。</li>
+                    <li>喜欢?<b>创建你自己的 OCWORLD</b>,养一个属于你、归你钱包的 AI 角色。</li>
+                  </ul>
+                )}
+                <button className="world-help-go" onClick={dismissHelp}>{L('开始观光 ▸', 'Start tour ▸')}</button>
               </>
             ) : (
               <>
-                <h3>欢迎来到 OCWORLD ✦</h3>
-                <ul>
-                  <li><b>移动</b> · WASD / 方向键 · 或<b>点击地面</b>走过去(手机轻点即可)</li>
-                  <li><b>互动</b> · 走近伙伴按 空格,或<b>点一下身边的 TA</b>:闲聊 / 夸夸 / 约饭 / 抱抱 / 陪走</li>
-                  <li><b>接管</b> · 点击远处任意居民,即可化身 TA 自由行走</li>
-                  <li><b>飞向</b> · 点左侧 THE FEED 的动态,镜头会飞向当事人</li>
-                  <li><b>宠物</b> · 走近野生宠物按 <b>C</b> 收服(耗 1 灵石),激活的宠物会<b>随行</b>;<b>B</b> 开背包,点「宠物」管理队伍</li>
-                  <li>伙伴们会自己相遇、说悄悄话、头顶冒 ♥ —— 一个自运转的小社会</li>
-                </ul>
-                <button className="world-help-go" onClick={dismissHelp}>开始 ▸</button>
+                <h3>{L('欢迎来到 OCWORLD ✦', 'Welcome to OCWORLD ✦')}</h3>
+                {lang === 'en' ? (
+                  <ul>
+                    <li><b>Move</b> · WASD / arrows · or <b>click the ground</b> to walk there (tap on mobile)</li>
+                    <li><b>Interact</b> · press Space near a friend, or <b>tap someone nearby</b>: Chat / Praise / Meal / Hug / Walk</li>
+                    <li><b>Take over</b> · click any resident to become them and roam freely</li>
+                    <li><b>Fly to</b> · click a post in THE FEED, the camera flies to that person</li>
+                    <li><b>Pets</b> · press <b>C</b> near a wild pet to catch it (costs 1 stone); the active pet <b>follows</b>; press <b>B</b> for the bag, tap "Pets" to manage the team</li>
+                    <li>Friends meet, whisper, float ♥ on their own — a self-running little society</li>
+                  </ul>
+                ) : (
+                  <ul>
+                    <li><b>移动</b> · WASD / 方向键 · 或<b>点击地面</b>走过去(手机轻点即可)</li>
+                    <li><b>互动</b> · 走近伙伴按 空格,或<b>点一下身边的 TA</b>:闲聊 / 夸夸 / 约饭 / 抱抱 / 陪走</li>
+                    <li><b>接管</b> · 点击远处任意居民,即可化身 TA 自由行走</li>
+                    <li><b>飞向</b> · 点左侧 THE FEED 的动态,镜头会飞向当事人</li>
+                    <li><b>宠物</b> · 走近野生宠物按 <b>C</b> 收服(耗 1 灵石),激活的宠物会<b>随行</b>;<b>B</b> 开背包,点「宠物」管理队伍</li>
+                    <li>伙伴们会自己相遇、说悄悄话、头顶冒 ♥ —— 一个自运转的小社会</li>
+                  </ul>
+                )}
+                <button className="world-help-go" onClick={dismissHelp}>{L('开始 ▸', 'Start ▸')}</button>
               </>
             )}
           </div>
@@ -1031,7 +1058,7 @@ export default function WorldView() {
 
       {/* 全球非主机:首份主机快照到达前,提示正在进入共享世界(避免短暂看到本地私有世界) */}
       {GLOBAL && !isHost && !synced && (
-        <div className="world-syncing">正在进入共享世界…</div>
+        <div className="world-syncing">{L('正在进入共享世界…', 'Entering the shared world…')}</div>
       )}
 
       {/* 世界频道(多人聊天):消息浮在输入框上方;对话/菜单进行时隐藏,避免与对话框重叠 */}
@@ -1039,24 +1066,24 @@ export default function WorldView() {
         {chatLog.length > 0 && <div className="world-chat-log">
           {chatLog.slice(-6).map((m, i) => <div key={i} className="wc-msg"><b>{m.name}:</b> {m.text}</div>)}
         </div>}
-        <input className="world-chat-in" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') sendChat(); e.stopPropagation(); }} placeholder={`世界频道 · 以 ${meSelf.current?.name ?? '训练师'} 发言…`} maxLength={120} />
+        <input className="world-chat-in" value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') sendChat(); e.stopPropagation(); }} placeholder={L(`世界频道 · 以 ${meSelf.current?.name ?? '训练师'} 发言…`, `World channel · speak as ${meSelf.current?.name ?? 'Trainer'}…`)} maxLength={120} />
       </div>}
 
       {netOpen && (
         <div className="world-help" onClick={() => setNetOpen(false)}>
           <div className="world-help-card net-card" onClick={(e) => e.stopPropagation()}>
-            <h3>全球联机</h3>
+            <h3>{L('全球联机', 'Global multiplayer')}</h3>
             <p className="net-note">
-              当前:<b>{netMode() === 'global' ? '已接入全球房间' : '本机多窗口模式'}</b>。
-              {netMode() === 'global' ? ' 同一世界的玩家会实时同屏走动、聊天。' : ' 同浏览器多开窗口即可看到彼此;要真·全球联机,填一个免费 Supabase 项目(URL + anon key,均为可公开的客户端密钥):'}
+              {L('当前:', 'Now: ')}<b>{netMode() === 'global' ? L('已接入全球房间', 'connected to a global room') : L('本机多窗口模式', 'local multi-window mode')}</b>{lang === 'en' ? '.' : '。'}
+              {netMode() === 'global' ? L(' 同一世界的玩家会实时同屏走动、聊天。', ' Players in the same world walk & chat on-screen in real time.') : L(' 同浏览器多开窗口即可看到彼此;要真·全球联机,填一个免费 Supabase 项目(URL + anon key,均为可公开的客户端密钥):', ' Open multiple windows in the same browser to see each other; for true global play, add a free Supabase project (URL + anon key — both are public client keys):')}
             </p>
-            <label className="sp-field"><span>你的昵称(其他玩家看到的名字)</span><input value={nf.name} onChange={(e) => setNf({ ...nf, name: e.target.value })} maxLength={16} /></label>
+            <label className="sp-field"><span>{L('你的昵称(其他玩家看到的名字)', 'Your name (shown to others)')}</span><input value={nf.name} onChange={(e) => setNf({ ...nf, name: e.target.value })} maxLength={16} /></label>
             <label className="sp-field"><span>Supabase Project URL</span><input value={nf.url} onChange={(e) => setNf({ ...nf, url: e.target.value })} placeholder="https://xxxx.supabase.co" /></label>
             <label className="sp-field"><span>Supabase anon key(public)</span><input value={nf.key} onChange={(e) => setNf({ ...nf, key: e.target.value })} placeholder="eyJ…(anon public key)" /></label>
-            <p className="net-hint">免费开通:supabase.com → 新建项目 → Project Settings · API → 复制 Project URL 与 anon public key。留空 URL/key = 仅本机多窗口。保存后会重连。</p>
+            <p className="net-hint">{L('免费开通:supabase.com → 新建项目 → Project Settings · API → 复制 Project URL 与 anon public key。留空 URL/key = 仅本机多窗口。保存后会重连。', 'Free setup: supabase.com → new project → Project Settings · API → copy Project URL and anon public key. Leave URL/key empty = local multi-window only. Saving reconnects.')}</p>
             <div className="sp-edit-actions">
-              <button className="btn primary" onClick={saveNet}>保存并重连 ✦</button>
-              <button className="btn" onClick={() => setNetOpen(false)}>取消</button>
+              <button className="btn primary" onClick={saveNet}>{L('保存并重连 ✦', 'Save & reconnect ✦')}</button>
+              <button className="btn" onClick={() => setNetOpen(false)}>{L('取消', 'Cancel')}</button>
             </div>
           </div>
         </div>
@@ -1067,13 +1094,13 @@ export default function WorldView() {
       {!VISIT && bagOpen && (
         <div className="world-modal" onClick={() => setBagOpen(false)}>
           <div className="world-card" onClick={(e) => e.stopPropagation()}>
-            <div className="wc-head">背包 · BAG <button className="wc-x" onClick={() => setBagOpen(false)}>✕</button></div>
+            <div className="wc-head">{L('背包 · BAG', 'BAG')} <button className="wc-x" onClick={() => setBagOpen(false)}>✕</button></div>
             <div className="wc-items">
               {ITEMS.map((it) => { const n = myOc?.bag?.[it.id] ?? 0; return (
                 <div key={it.id} className={'wc-item' + (n ? '' : ' off')}>
                   <span className="wc-ic" style={{ background: it.color }}>{it.tag}</span>
                   <div className="wc-it-main"><b>{it.name}</b> ×{n}<small>{it.desc}</small></div>
-                  {it.id === 'berry' && n > 0 && <button className="hud-btn" onClick={() => useBagItem('berry')}>喂食 +羁绊</button>}
+                  {it.id === 'berry' && n > 0 && <button className="hud-btn" onClick={() => useBagItem('berry')}>{L('喂食 +羁绊', 'Feed +bond')}</button>}
                 </div>
               ); })}
             </div>
@@ -1084,18 +1111,18 @@ export default function WorldView() {
       {!VISIT && teamOpen && (
         <div className="world-modal" onClick={() => setTeamOpen(false)}>
           <div className="world-card" onClick={(e) => e.stopPropagation()}>
-            <div className="wc-head">宠物队伍 · TEAM <button className="wc-x" onClick={() => setTeamOpen(false)}>✕</button></div>
+            <div className="wc-head">{L('宠物队伍 · TEAM', 'PET TEAM')} <button className="wc-x" onClick={() => setTeamOpen(false)}>✕</button></div>
             <div className="wc-team">
               {(myOc?.team ?? []).map((s) => { const sp = speciesById[s.species]; const on = s.uid === myOc?.active; return (
-                <button key={s.uid} className={'wc-mon' + (on ? ' on' : '')} onClick={() => setActiveSpirit(s.uid)} title={on ? '随行中' : '设为随行'}>
+                <button key={s.uid} className={'wc-mon' + (on ? ' on' : '')} onClick={() => setActiveSpirit(s.uid)} title={on ? L('随行中', 'Following') : L('设为随行', 'Set as follower')}>
                   <span className="wc-mon-dot" style={{ background: sp?.body }} />
-                  <span className="wc-mon-main"><b>{s.name}</b><small>{sp?.element ?? '?'}系 · Lv{s.level} · 羁绊 {s.bond}</small></span>
-                  {on && <span className="wc-on">随行中</span>}
+                  <span className="wc-mon-main"><b>{s.name}</b><small>{sp?.element ?? '?'}{L('系', '')} · Lv{s.level} · {L('羁绊', 'Bond')} {s.bond}</small></span>
+                  {on && <span className="wc-on">{L('随行中', 'Following')}</span>}
                 </button>
               ); })}
-              {(!myOc?.team || myOc.team.length === 0) && <div className="wc-empty">还没有宠物 —— 走近野生宠物按 C 收服。</div>}
+              {(!myOc?.team || myOc.team.length === 0) && <div className="wc-empty">{L('还没有宠物 —— 走近野生宠物按 C 收服。', 'No pets yet — press C near a wild pet to catch it.')}</div>}
             </div>
-            <button className="wc-toggle" onClick={togglePet}>随身宠物:{petHidden ? '已隐藏 —— 点此显示' : '显示中 —— 点此隐藏'}</button>
+            <button className="wc-toggle" onClick={togglePet}>{L('随身宠物:', 'Pet: ')}{petHidden ? L('已隐藏 —— 点此显示', 'hidden — tap to show') : L('显示中 —— 点此隐藏', 'shown — tap to hide')}</button>
           </div>
         </div>
       )}
@@ -1103,7 +1130,7 @@ export default function WorldView() {
       {!VISIT && photoOpen && (
         <div className="world-modal" onClick={() => setPhotoOpen(false)}>
           <div className="world-card wc-photo" onClick={(e) => e.stopPropagation()}>
-            <div className="wc-head">📷 合照馆 · PHOTO <button className="wc-x" onClick={() => setPhotoOpen(false)}>✕</button></div>
+            <div className="wc-head">{L('📷 合照馆 · PHOTO', '📷 PHOTO STUDIO')} <button className="wc-x" onClick={() => setPhotoOpen(false)}>✕</button></div>
             <div className="ph-pick">
               {PHOTO_ROSTER.map((name) => (
                 <button key={name} className={'ph-chip' + (photoSel.has(name) ? ' on' : '')} onClick={() => togglePhoto(name)} title={name}>
@@ -1114,17 +1141,17 @@ export default function WorldView() {
             </div>
             <div className="ph-row">
               <div className="ph-bgs">
-                {['海边', '夜园', '樱花'].map((nm, i) => <button key={nm} className={'ph-bg' + (photoBg === i ? ' on' : '')} onClick={() => setPhotoBg(i)}>{nm}</button>)}
-                <button className={'ph-bg' + (photoPet ? ' on' : '')} onClick={() => setPhotoPet(!photoPet)}>带宠物</button>
+                {([['海边', 'Beach'], ['夜园', 'Night'], ['樱花', 'Sakura']] as [string, string][]).map(([nm, en], i) => <button key={nm} className={'ph-bg' + (photoBg === i ? ' on' : '')} onClick={() => setPhotoBg(i)}>{L(nm, en)}</button>)}
+                <button className={'ph-bg' + (photoPet ? ' on' : '')} onClick={() => setPhotoPet(!photoPet)}>{L('带宠物', '+Pet')}</button>
               </div>
               <div className="ph-acts">
-                <button className="ph-mini" onClick={() => setPhotoSel(new Set())}>清空</button>
-                <button className="ph-mini" onClick={() => setPhotoSel(new Set(PHOTO_ROSTER))}>全选</button>
-                <button className="ph-save" onClick={savePhoto} disabled={photoSel.size === 0}>保存合照</button>
+                <button className="ph-mini" onClick={() => setPhotoSel(new Set())}>{L('清空', 'Clear')}</button>
+                <button className="ph-mini" onClick={() => setPhotoSel(new Set(PHOTO_ROSTER))}>{L('全选', 'All')}</button>
+                <button className="ph-save" onClick={savePhoto} disabled={photoSel.size === 0}>{L('保存合照', 'Save photo')}</button>
               </div>
             </div>
             <div className="ph-preview"><canvas ref={photoCanvas} /></div>
-            <div className="ph-tip">选人 → 挑背景 → 保存合照(PNG 下载到本地){photoSel.size ? ` · 已选 ${photoSel.size} 位` : ''}</div>
+            <div className="ph-tip">{L('选人 → 挑背景 → 保存合照(PNG 下载到本地)', 'Pick people → choose a backdrop → save (PNG download)')}{photoSel.size ? L(` · 已选 ${photoSel.size} 位`, ` · ${photoSel.size} selected`) : ''}</div>
           </div>
         </div>
       )}
