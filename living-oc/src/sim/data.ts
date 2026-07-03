@@ -48,3 +48,7 @@ export const ARCHE_CN: Record<Archetype, string> = {
   creator: '创作者', trader: '投机者', helper: '守护者', worker: '匠人',
   socialite: '社交动物', gambler: '赌徒', saver: '积攒者',
 };
+export const ARCHE_EN: Record<Archetype, string> = {
+  creator: 'Creator', trader: 'Trader', helper: 'Guardian', worker: 'Artisan',
+  socialite: 'Socialite', gambler: 'Gambler', saver: 'Saver',
+};

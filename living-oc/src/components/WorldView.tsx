@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLiving } from '../store/useLiving';
-import { locById, ARCHE_CN } from '../sim/data';
-import { actionCN } from '../sim/text';
+import { locById, ARCHE_CN, ARCHE_EN } from '../sim/data';
+import { actionCN, actionEN } from '../sim/text';
 import type { Agent } from '../sim/types';
 import WorldGoLive from './WorldGoLive';
 import { liveSay, liveTalk } from '../live/liveProviders';
 import { toggleBgm, bgmPlaying } from '../live/bgm';
 import { makeNet, playerSelf, setPlayerName, netMode, netConfig, setNetConfig, clearNetConfig, type NetTransport, type NetSelf } from '../live/net';
 import { SPECIES, ITEMS, speciesById, drawSpirit, SPIRIT_ART, type Spirit } from '../world/spirits';
-import { LINE_BANKS } from '../world/lines';
+import { LINE_BANKS, LINE_BANKS_EN } from '../world/lines';
 
 const BASE = import.meta.env.BASE_URL;
 // 访客观光模式(?visit=1):只读串门 —— 无操控/接管/互动,自动巡游 + 点角色聚焦查看 + 转化 CTA
@@ -94,6 +94,25 @@ const PAIR_LINES: [string, string][] = [
   ['今天画了张小画,想给你看', '哇…你把那阵风都画进去了 (˶˃ ᵕ ˂˶)'],
   ['不太会说,但我都记着呢', '有人记着,就不怕走丢了 (´ω`)'],
 ];
+const PAIR_LINES_EN: [string, string][] = [
+  ["Let's go grab laksa? (´▽`)", "Yes yes, my treat today! (つ≧▽≦)つ"],
+  ['Night Safari tonight, you in?', 'In! Bringing my otter stickers (＾• ω •＾)'],
+  ["You've had it rough lately, hug? (つ´∀`)つ", "Ugh… so glad you're here (｡•́︿•̀｡)"],
+  ["Sunset at Marina Bay? I'll write, you shoot ✧", 'Deal~ your poems are the best (˘︶˘)'],
+  ['Psst, I saved the pudding for you (¬‿¬)', "Whoa! You're the best to me ♥"],
+  ['Hawker-centre crawl this weekend?', "Let's go! Chicken rice AND chilli crab (๑´ڡ`๑)"],
+  ["Hand please, don't get lost in the crowd (´｡• ᵕ •｡`)", 'Mm! Holding on tight (//ω//)'],
+  ['Finals done? Hug as a reward (づ｡◕‿‿◕｡)づ', 'Hehe… one more sec (˶′◡‵˶)'],
+  ["You're a little emo today, huh?", 'You saw right through me… just one hug (｡•́︿•̀｡)'],
+  ['I wrote a poem, want to hear it?', 'Read it! I love your poems most (˘︶˘)'],
+  ['Stop pulling all-nighters, teh tarik on me', "Just this last bit… okay, let's go (´-﹏-`)"],
+  ['Is that leopard still out tonight?', "Yep! Let's go see it quietly (//ω//)"],
+  ["Your hair's so purple and cool today", 'Hmph, proof my power has awakened ✧'],
+  ['Saved the last crab for you', "Aw you're the best… let's split it (つ´∀`)つ"],
+  ['Watch the sunset till dark together?', "Sure, I'll write today down (˶˘ ³˘)"],
+  ['Drew a little sketch today, wanna see?', 'Whoa… you drew that whole breeze in (˶˃ ᵕ ˂˶)'],
+  ["Not good with words, but I remember it all", "Someone remembering means you won't get lost (´ω`)"],
+];
 // 玩家走近伙伴后的互动动作菜单
 const ACTIONS: { id: string; label: string; labelEn: string; sub: string; subEn: string; glyph: string }[] = [
   { id: 'chat',   label: '闲聊', labelEn: 'Chat',   sub: '唠唠日常', subEn: 'small talk',  glyph: '♪' },
@@ -153,20 +172,21 @@ interface PP { mx: number; my: number; dir: string; moving: boolean; flip?: bool
 function Bar({ label, v }: { label: string; v: number }) {
   return (<div className="ibar"><div className="ibar-lab"><span>{label}</span><span>{Math.round(v * 100)}</span></div><div className="ibar-track"><span style={{ width: v * 100 + '%' }} /></div></div>);
 }
-function Inspector({ a, isOc }: { a: Agent; isOc: boolean }) {
+function Inspector({ a, isOc, lang }: { a: Agent; isOc: boolean; lang: 'zh' | 'en' }) {
+  const t = (zh: string, en: string) => (lang === 'en' ? en : zh);
   return (
     <div className="insp">
       <div className="insp-top"><span className="insp-av" style={{ background: `hsl(${hue(a.id)},45%,55%)` }} />
-        <div><div className="insp-nm">{a.name}{isOc && <span className="insp-you"> ★ 你的 OC</span>}</div>
-          <div className="insp-hd">{a.handle} · {ARCHE_CN[a.arche]} · 「{a.mood}」</div></div></div>
+        <div><div className="insp-nm">{a.name}{isOc && <span className="insp-you">{t(' ★ 你的 OC', ' ★ your OC')}</span>}</div>
+          <div className="insp-hd">{a.handle} · {lang === 'en' ? ARCHE_EN[a.arche] : ARCHE_CN[a.arche]} · 「{a.mood}」</div></div></div>
       <div className="insp-wallet">{a.wallet.slice(0, 18)}…</div>
       <div className={'insp-bal ' + (a.balance < 0 ? 'neg' : 'pos')}>{a.balance.toFixed(2)} <small>◈</small></div>
       {a.nfts.length > 0 && <div className="insp-nfts">{a.nfts.slice(-6).map((n, i) => <span key={i} className="nft">◆ {n}</span>)}</div>}
-      <div className="insp-sec">性格 · Traits</div>
-      <Bar label="野心" v={a.traits.ambition} /><Bar label="社交" v={a.traits.sociability} /><Bar label="冒险" v={a.traits.risk} /><Bar label="创造" v={a.traits.creativity} /><Bar label="节俭" v={a.traits.frugality} />
-      <div className="insp-sec">记忆流 · Memory</div>
+      <div className="insp-sec">{t('性格 · Traits', 'Traits')}</div>
+      <Bar label={t('野心', 'Ambition')} v={a.traits.ambition} /><Bar label={t('社交', 'Social')} v={a.traits.sociability} /><Bar label={t('冒险', 'Risk')} v={a.traits.risk} /><Bar label={t('创造', 'Creative')} v={a.traits.creativity} /><Bar label={t('节俭', 'Frugal')} v={a.traits.frugality} />
+      <div className="insp-sec">{t('记忆流 · Memory', 'Memory')}</div>
       {a.memory.slice(0, 5).map((m, i) => <div key={i} className="insp-mem"><span className="tk">e{m.e}</span> {m.t}</div>)}
-      {a.memory.length === 0 && <div className="insp-mem tk">尚无记忆</div>}
+      {a.memory.length === 0 && <div className="insp-mem tk">{t('尚无记忆', 'No memories yet')}</div>}
     </div>
   );
 }
@@ -423,7 +443,7 @@ export default function WorldView() {
 
   // 离线对话(无后端/未开真 LLM 时):用台词库拼一小段小智×伙伴的对话
   const offlineTalk = (meName: string, fr: Agent): { name: string; text: string }[] => {
-    const fb = LINE_BANKS[fr.name] || ['嗨~'], s = Math.floor(Date.now() / 1000);
+    const fb = (langRef.current === 'en' ? LINE_BANKS_EN : LINE_BANKS)[fr.name] || [langRef.current === 'en' ? 'Hi~' : '嗨~'], s = Math.floor(Date.now() / 1000);
     return [
       { name: meName, text: `${fr.name},今天过得怎样?` },
       { name: fr.name, text: fb[s % fb.length] },
@@ -452,7 +472,7 @@ export default function WorldView() {
       const fp = apos.current.get(friendId); if (fp) popEmote(fp.mx, fp.my - 36, on ? '✦' : '♥');
       talkRef.current = null; bumpTalk(); return;
     }
-    const fb = LINE_BANKS[fr.name] || ['嗨~']; const s = Math.floor(Date.now() / 1000);
+    const fb = (langRef.current === 'en' ? LINE_BANKS_EN : LINE_BANKS)[fr.name] || [langRef.current === 'en' ? 'Hi~' : '嗨~']; const s = Math.floor(Date.now() / 1000);
     let lines: { name: string; text: string }[];
     let glyph = '♪', gain = 1;
     if (action === 'praise') { glyph = '✦'; gain = 2; lines = [{ name: me.name, text: `${fr.name},你今天也超棒的!` }, { name: fr.name, text: fb[s % fb.length] }, { name: me.name, text: '嘿嘿…真心的。' }]; }
@@ -576,7 +596,7 @@ export default function WorldView() {
             let b = friends[(h + 1 + ((h >> 3) % (friends.length - 1))) % friends.length];
             if (b === a) b = friends[(friends.indexOf(a) + 1) % friends.length];
             if (b !== a) {
-              const pl = PAIR_LINES[h % PAIR_LINES.length];
+              const pairs = langRef.current === 'en' ? PAIR_LINES_EN : PAIR_LINES; const pl = pairs[h % pairs.length];
               meetRef.current = { a, b, until: now + 9000, met: false, lastHeart: 0 };
               meetLines.current.clear(); meetLines.current.set(a, pl[0]); meetLines.current.set(b, pl[1]);
             }
@@ -697,7 +717,7 @@ export default function WorldView() {
           if (mark) { ctx.font = '11px ' + fam; ctx.fillStyle = mark[0] === '✦' ? '#ffd24d' : '#ff5d8f'; ctx.fillText(mark, sx, sy + 27); }
         }
         // 头顶对话气泡(相会悄悄话优先 → 真 LLM → 离线台词库)
-        const bank = LINE_BANKS[a.name];
+        const bank = (langRef.current === 'en' ? LINE_BANKS_EN : LINE_BANKS)[a.name];
         const forced = (meetRef.current?.met && meetLines.current.get(id)) || null;
         if (forced || (bank && bank.length)) {
           const bline = forced || (liveRef.current && liveLines.current.get(a.name)) || bank[(Math.floor(now / 9000) + hue(id)) % bank.length];
@@ -957,7 +977,7 @@ export default function WorldView() {
           {(w?.feed ?? []).slice(0, 14).map((p) => (
             <div key={p.id} className={'wpost' + (p.ev ? ' ev-' + p.ev.kind : '')} title={VISIT ? L('点击:镜头飞向 TA', 'Click: fly to them') : L('点击:镜头飞向 TA 并接管', 'Click: fly to & control')}
               onClick={() => { if (!useLiving.getState().world?.agents[p.agentId]) return; if (VISIT) { spectateRef.current = p.agentId; nextSpectateAt.current = performance.now() + 12000; setInspId(p.agentId); } else { setControlId(p.agentId); setInspId(p.agentId); } }}>
-              <div className="wrow"><span className="wav" style={{ background: `hsl(${hue(p.agentId)},45%,55%)` }} /><b>{p.name}</b><span className="wact">{actionCN[p.action]}</span></div>
+              <div className="wrow"><span className="wav" style={{ background: `hsl(${hue(p.agentId)},45%,55%)` }} /><b>{p.name}</b><span className="wact">{lang === 'en' ? actionEN[p.action] : actionCN[p.action]}</span></div>
               <div className="wtext">{p.text}</div>
             </div>
           ))}
@@ -968,7 +988,7 @@ export default function WorldView() {
       {inspA && (
         <div className="hud hud-insp">
           <button className="hud-x" onClick={() => setInspId(null)}>✕</button>
-          <Inspector a={inspA} isOc={inspId === ocId} />
+          <Inspector a={inspA} isOc={inspId === ocId} lang={lang} />
         </div>
       )}
 

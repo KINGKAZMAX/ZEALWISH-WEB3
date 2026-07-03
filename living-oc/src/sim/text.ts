@@ -81,3 +81,7 @@ export const actionCN: Record<ActionKind, string> = {
   work: '打工', social: '社交', mint: '铸造', spend: '消费', transfer: '转账',
   gamble: '豪赌', travel: '迁徙', reflect: '反思', post: '发声', bankrupt: '破产',
 };
+export const actionEN: Record<ActionKind, string> = {
+  work: 'work', social: 'social', mint: 'mint', spend: 'spend', transfer: 'transfer',
+  gamble: 'gamble', travel: 'travel', reflect: 'reflect', post: 'post', bankrupt: 'bankrupt',
+};
