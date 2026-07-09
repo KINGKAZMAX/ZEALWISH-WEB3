@@ -265,6 +265,8 @@ html.oc-embed .world-fs{height:100vh}
 .hud-kit .kit-mon i{color:#ffd24d;font-style:normal;font-size:11px}
 .hud-kit .kit-mon.off{color:#9aa0aa}
 .hud-kit .kit-dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.4)}
+.hud-kit .kit-th{width:18px;height:18px;image-rendering:pixelated;flex:none}
+.wc-mon-th{width:26px;height:26px;image-rendering:pixelated;flex:none}
 .world-toast{position:absolute;left:50%;bottom:88px;transform:translateX(-50%);z-index:12;background:rgba(8,9,11,.88);border:1px solid #8cffa6;border-radius:999px;padding:9px 18px;font-size:13px;color:#dfffe6;white-space:nowrap}
 .world-modal{position:absolute;inset:0;z-index:14;display:flex;align-items:center;justify-content:center;background:rgba(4,5,7,.55);backdrop-filter:blur(3px)}
 .world-card{width:min(420px,86vw);max-height:78vh;overflow:auto;background:#101116;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:16px 18px;box-shadow:0 18px 60px rgba(0,0,0,.5)}

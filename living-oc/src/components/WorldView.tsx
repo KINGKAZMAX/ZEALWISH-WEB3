@@ -661,13 +661,20 @@ export default function WorldView() {
       if (!wildInit.current) {
         wildInit.current = true;
         const rc = GLOBAL ? REGION_DEFAULT : regionRef.current; const ccx = rc[0] * MAP_W, ccy = rc[1] * MAP_H;
-        // 区域指纹 → 本区物种池:不同活动区域出没不同灵宠组合,换区有探索感。
-        // 用完整 32 位哈希且起点/步长取自不同位段 —— hue() 会 %360 丢熵,曾致林海码头与南滨沙滩物种池完全相同(审查修正)。
-        // SPECIES 现为 12 种:步长取 {1,5,7}(均与 12 互质),保证 5 只取样不重复。
+        // 区域指纹 → 本区物种池:按「生态」分池(海岸偏水系、内陆偏火/土/草),神秘系全域出没;
+        // 同一候选池内用区域哈希做种子洗牌取 5 只(确定性:同区永远同组合,不同区组合不同)。
+        // 用完整 32 位哈希 —— hue() 会 %360 丢熵,曾致林海码头与南滨沙滩物种池完全相同(审查修正)。
         const key = 'wild:' + rc[0].toFixed(4) + ',' + rc[1].toFixed(4);
         let rh = 0; for (let k = 0; k < key.length; k++) rh = (rh * 31 + key.charCodeAt(k)) >>> 0;
-        const start = rh % SPECIES.length, stride = [1, 5, 7][(rh >>> 8) % 3];
-        for (let i = 0; i < 5; i++) { const sp = SPECIES[(start + i * stride) % SPECIES.length]; const ang = (i / 5) * Math.PI * 2; wild.current.push({ uid: 'w' + i, species: sp.id, bx: ccx + Math.cos(ang) * (84 + i * 22), by: ccy + Math.sin(ang) * (76 + i * 18), phase: i * 1.3, r: 14 + (i % 3) * 6, spd: 0.0006 + i * 0.0001 }); }
+        const regionId = REGIONS.find((r) => r.c[0] === rc[0] && r.c[1] === rc[1])?.id;
+        const COASTAL = new Set(['seaside', 'pier', 'cove', 'beach', 'isles', 'bridge']);
+        const WATERY = ['ripple', 'azure'], FIERY = ['ember', 'spark', 'blaze'], EARTHY = ['moss', 'pebble', 'maple'], MYSTIC = ['puff', 'breeze', 'glimmer', 'hex'];
+        const pool = regionId && COASTAL.has(regionId) ? [...WATERY, ...MYSTIC, 'moss', 'maple']   // 海岸:必有水系,不出火系
+          : regionId ? [...FIERY, ...EARTHY, ...MYSTIC]                                            // 内陆小镇/林地:火 + 土草,不出水系
+            : SPECIES.map((s) => s.id);                                                            // 自定义区:全物种
+        let rs = rh || 1; const rnd = () => { rs ^= rs << 13; rs ^= rs >>> 17; rs ^= rs << 5; rs >>>= 0; return rs / 4294967296; };   // xorshift32
+        const bagIds = [...pool]; for (let i = bagIds.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [bagIds[i], bagIds[j]] = [bagIds[j], bagIds[i]]; }
+        for (let i = 0; i < 5; i++) { const sp = speciesById[bagIds[i % bagIds.length]]; const ang = (i / 5) * Math.PI * 2; wild.current.push({ uid: 'w' + i, species: sp.id, bx: ccx + Math.cos(ang) * (84 + i * 22), by: ccy + Math.sin(ang) * (76 + i * 18), phase: i * 1.3, r: 14 + (i % 3) * 6, spd: 0.0006 + i * 0.0001 }); }
       }
       // 6. 最近可交互居民
       let near: string | null = null;
@@ -982,7 +989,7 @@ export default function WorldView() {
         {!VISIT && (
           <div className="hud-kit" title={L('随行宠物 · 背包灵石', 'Pet · bag stones')}>
             {activeSpirit
-              ? <button className="kit-mon" onClick={() => setTeamOpen(true)}><span className="kit-dot" style={{ background: speciesById[activeSpirit.species]?.body }} />{activeSpirit.name} <i>Lv{activeSpirit.level}</i></button>
+              ? <button className="kit-mon" onClick={() => setTeamOpen(true)}><canvas width={24} height={24} className="kit-th" ref={(el) => { if (!el) return; const cx2 = el.getContext('2d'); const im = spiritImg.current[activeSpirit.species]; if (cx2) { cx2.imageSmoothingEnabled = false; cx2.clearRect(0, 0, 24, 24); if (im && im.complete && im.naturalWidth) { const cell = im.naturalWidth === im.naturalHeight * 4 ? im.naturalHeight : im.naturalWidth; cx2.drawImage(im, 0, 0, cell, cell, 0, 0, 24, 24); } else { cx2.fillStyle = speciesById[activeSpirit.species]?.body ?? '#999'; cx2.beginPath(); cx2.arc(12, 12, 8, 0, 7); cx2.fill(); } } }} />{activeSpirit.name} <i>Lv{activeSpirit.level}</i></button>
               : <button className="kit-mon off" onClick={() => setTeamOpen(true)}>{L('无随行宠物', 'No pet')}</button>}
             <button className="kit-stone" onClick={() => setBagOpen(true)}>{L('灵石', 'Stones')} {myOc?.bag?.stone ?? 0}</button>
           </div>
@@ -1201,7 +1208,7 @@ export default function WorldView() {
               ); })()}
               {(myOc?.team ?? []).map((s) => { const sp = speciesById[s.species]; const on = myOc?.active !== 'none' && s.uid === myOc?.active; return (
                 <button key={s.uid} className={'wc-mon' + (on ? ' on' : '')} onClick={() => setActiveSpirit(s.uid)} title={on ? L('随行中(点「不跟随」可取消)', 'Following (tap "No follower" to unfollow)') : L('设为随行', 'Set as follower')}>
-                  <span className="wc-mon-dot" style={{ background: sp?.body }} />
+                  <canvas width={24} height={24} className="wc-mon-th" ref={(el) => { if (!el) return; const cx2 = el.getContext('2d'); const im = spiritImg.current[s.species]; if (cx2) { cx2.imageSmoothingEnabled = false; cx2.clearRect(0, 0, 24, 24); if (im && im.complete && im.naturalWidth) { const cell = im.naturalWidth === im.naturalHeight * 4 ? im.naturalHeight : im.naturalWidth; cx2.drawImage(im, 0, 0, cell, cell, 0, 0, 24, 24); } else { cx2.fillStyle = sp?.body ?? '#999'; cx2.beginPath(); cx2.arc(12, 12, 9, 0, 7); cx2.fill(); } } }} />
                   <span className="wc-mon-main"><b>{s.name}</b><small>{sp?.element ?? '?'}{L('系', '')} · Lv{s.level} · {L('羁绊', 'Bond')} {s.bond}</small></span>
                   {on && <span className="wc-on">{L('随行中', 'Following')}</span>}
                 </button>
