@@ -303,6 +303,18 @@ html.oc-embed .world-fs{height:100vh}
 .ph-preview{display:flex;justify-content:center;background:#e9e3cf;border:2px solid var(--gba-line,#c9c0a0);border-radius:8px;padding:8px;overflow:auto}
 .ph-preview canvas{max-width:100%;height:auto;image-rendering:pixelated;box-shadow:0 6px 20px rgba(0,0,0,.3)}
 .ph-tip{margin-top:8px;font-size:11px;color:#7a6f4e;text-align:center}
+/* GAMEX 游戏厅 */
+.wc-gamex{width:min(880px,94vw)}
+.gx-lore{font-size:12px;color:#7a6f4e;margin-bottom:10px;font-style:italic}
+.gx-frame{background:#0d0f14;border:2px solid var(--gba-line,#c9c0a0);border-radius:8px;overflow:hidden}
+.gx-frame iframe{display:block;width:100%;height:min(62vh,560px);border:0;background:#000}
+.gx-wait,.gx-down{background:#0d0f14;border:2px solid var(--gba-line,#c9c0a0);border-radius:8px;padding:22px;text-align:center;color:#cdd2e0;font-size:13px}
+.gx-down p{margin:6px 0}
+.gx-down code{display:inline-block;margin:8px 0;padding:7px 12px;border-radius:6px;background:rgba(255,255,255,.08);color:#8fe3a8;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.gx-hint{color:#8a90a0;font-size:11px}
+.gx-row{display:flex;gap:6px;margin-top:10px;align-items:center}
+.gx-url{flex:1;padding:7px 10px;border-radius:8px;border:2px solid var(--gba-line,#c9c0a0);background:#fffdf5;color:var(--gba-ink,#27314f);font-size:12px;font-family:ui-monospace,Menlo,monospace}
+.gx-open{text-decoration:none;display:inline-flex;align-items:center}
 /* 全图 */
 .wc-map{width:auto;max-width:94vw}
 .wm-wrap{display:flex;justify-content:center;background:#0d0f14;border:2px solid var(--gba-line,#c9c0a0);border-radius:8px;padding:6px;overflow:auto}

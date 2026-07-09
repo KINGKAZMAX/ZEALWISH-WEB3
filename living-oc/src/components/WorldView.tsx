@@ -205,6 +205,17 @@ export default function WorldView() {
   const [inspId, setInspId] = useState<string | null>(null);
   const [bagOpen, setBagOpen] = useState(false);
   const [teamOpen, setTeamOpen] = useState(false);
+  // GAMEX 游戏厅:传送门入口(游戏本体不在本仓;从本地/私有部署加载,URL 可配)
+  const [gamexOpen, setGamexOpen] = useState(false);
+  const [gamexUrl, setGamexUrl] = useState<string>(() => { try { return localStorage.getItem('oc-gamex-url') || 'http://localhost:5180'; } catch { return 'http://localhost:5180'; } });
+  const [gamexUp, setGamexUp] = useState<'checking' | 'up' | 'down'>('checking');
+  useEffect(() => {
+    if (!gamexOpen) return;
+    let alive = true; setGamexUp('checking');
+    const t = window.setTimeout(() => { if (alive) setGamexUp('down'); }, 2500);
+    fetch(gamexUrl, { mode: 'no-cors' }).then(() => { if (alive) { clearTimeout(t); setGamexUp('up'); } }).catch(() => { if (alive) { clearTimeout(t); setGamexUp('down'); } });
+    return () => { alive = false; clearTimeout(t); };
+  }, [gamexOpen, gamexUrl]);
   const [mapOpen, setMapOpen] = useState(false);                  // 全图(M / 点雷达)
   const mapModalCv = useRef<HTMLCanvasElement | null>(null);
   const [photoOpen, setPhotoOpen] = useState(false);              // 合照馆
@@ -1030,6 +1041,7 @@ export default function WorldView() {
             <button className="hud-btn" onClick={() => setTeamOpen(true)} title={L('宠物队伍', 'Pet team')}>{L('宠物', 'Pets')}</button>
             <button className="hud-btn" onClick={() => { setPhotoSel((p) => p.size ? p : new Set(['小智'])); setPhotoOpen(true); }} title={L('合照:选角色拍张合影', 'Group photo')}>📷 {L('合照', 'Photo')}</button>
             <button className="hud-btn" onClick={() => setMapOpen(true)} title={L('全图(M 键 / 点雷达):总览整张地图,点击任意点迁移过去', 'World map (M / click radar): click anywhere to travel')}>{L('地图', 'Map')}</button>
+            <button className="hud-btn" onClick={() => setGamexOpen(true)} title={L('GAMEX 游戏厅:居民打烊后偷偷去打老式掌机的地方', 'GAMEX arcade: retro handhelds after hours')}>🕹 GAMEX</button>
             <button className="hud-btn live" onClick={() => setLive(true)}>{L('真 LLM/链', 'Real LLM')}</button>
             <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title={L('温馨 8-bit 背景音乐', 'Cozy 8-bit BGM')}>♪ BGM {bgmOn ? L('开', 'On') : L('关', 'Off')}</button>
             <button className="hud-btn" onClick={() => setShowHelp(true)} title={L('玩法说明', 'How to play')}>?</button>
@@ -1267,6 +1279,32 @@ export default function WorldView() {
             <div className="ph-tip">{GLOBAL || VISIT
               ? L('总览:绿菱形=区域预设,红点=你的位置(共享世界/观光模式为只读)', 'Overview: green = zone presets, red dot = you (read-only here)')
               : L('点地图任意点 = 把活动区迁过去(就近吸附绿色区域预设);M 键或点雷达也可打开', 'Click anywhere to travel there (snaps to nearby zone presets); M key or radar click opens this')}</div>
+          </div>
+        </div>
+      )}
+
+      {gamexOpen && (
+        <div className="world-modal" onClick={() => setGamexOpen(false)}>
+          <div className="world-card wc-gamex" onClick={(e) => e.stopPropagation()}>
+            <div className="wc-head">🕹 GAMEX {L('游戏厅', 'ARCADE')} <button className="wc-x" onClick={() => setGamexOpen(false)}>✕</button></div>
+            <div className="gx-lore">{L('传说打烊之后,居民们会溜进这间小厅,围着一台会发光的老式掌机排队到深夜…', 'They say after hours, residents sneak in here and queue for a glowing old handheld till deep night…')}</div>
+            {gamexUp === 'up' && (
+              <div className="gx-frame"><iframe src={gamexUrl} title="GAMEX" allow="autoplay; fullscreen" /></div>
+            )}
+            {gamexUp === 'checking' && <div className="gx-wait">{L('正在点亮街机…', 'Powering on the cabinet…')}</div>}
+            {gamexUp === 'down' && (
+              <div className="gx-down">
+                <p><b>{L('街机还没通电', 'Cabinet is offline')}</b></p>
+                <p>{L('GAMEX 是独立运行的本地游戏合集(含第三方 IP 素材,不随本仓公开部署)。本机启动:', 'GAMEX is a separate local game hub (contains third-party IP assets, not deployed with this repo). Start it locally:')}</p>
+                <code>cd ~/Documents/GameX && npm run dev</code>
+                <p className="gx-hint">{L('默认地址 http://localhost:5180;如你有私有部署,可在下方改地址。', 'Default http://localhost:5180; if you have a private deployment, change the URL below.')}</p>
+              </div>
+            )}
+            <div className="gx-row">
+              <input className="gx-url" value={gamexUrl} onChange={(e) => setGamexUrl(e.target.value)} onBlur={() => { try { localStorage.setItem('oc-gamex-url', gamexUrl); } catch { /* ignore */ } }} placeholder="http://localhost:5180" />
+              <button className="ph-mini" onClick={() => { setGamexUp('checking'); const u = gamexUrl; fetch(u, { mode: 'no-cors' }).then(() => setGamexUp('up')).catch(() => setGamexUp('down')); }}>{L('重连', 'Retry')}</button>
+              <a className="ph-mini gx-open" href={gamexUrl} target="_blank" rel="noreferrer">{L('新窗口打开', 'Open in tab')}</a>
+            </div>
           </div>
         </div>
       )}
