@@ -35,6 +35,11 @@ frontend-v4/world/sprites/spirits/*
 !frontend-v4/world/sprites/spirits/breeze.png
 !frontend-v4/world/sprites/spirits/pebble.png
 !frontend-v4/world/sprites/spirits/glimmer.png
+!frontend-v4/world/sprites/spirits/maple.png
+!frontend-v4/world/sprites/spirits/azure.png
+!frontend-v4/world/sprites/spirits/spark.png
+!frontend-v4/world/sprites/spirits/hex.png
+!frontend-v4/world/sprites/spirits/blaze.png
 !frontend-v4/world/sprites/spirits/ATTRIBUTION.md
 !frontend-v4/world/sprites/spirits/LICENSE-PIXELMONS.txt
 frontend-v4/world/fonts/*
@@ -52,6 +57,11 @@ living-oc/public/sprites/spirits/*
 !living-oc/public/sprites/spirits/breeze.png
 !living-oc/public/sprites/spirits/pebble.png
 !living-oc/public/sprites/spirits/glimmer.png
+!living-oc/public/sprites/spirits/maple.png
+!living-oc/public/sprites/spirits/azure.png
+!living-oc/public/sprites/spirits/spark.png
+!living-oc/public/sprites/spirits/hex.png
+!living-oc/public/sprites/spirits/blaze.png
 !living-oc/public/sprites/spirits/ATTRIBUTION.md
 !living-oc/public/sprites/spirits/LICENSE-PIXELMONS.txt
 living-oc/public/fonts/*

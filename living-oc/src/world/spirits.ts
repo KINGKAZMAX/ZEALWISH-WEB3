@@ -12,6 +12,11 @@ export const SPECIES: Species[] = [
   { id: 'breeze', name: '云兔', element: '风', body: '#e8c878', accent: '#c8a858' },
   { id: 'pebble', name: '砂獾', element: '土', body: '#b89058', accent: '#8a6a44' },
   { id: 'glimmer', name: '微光', element: '光', body: '#ffd84a', accent: '#ffb52c' },
+  { id: 'maple', name: '枫狸', element: '枫', body: '#d8783d', accent: '#a8502c' },
+  { id: 'azure', name: '澜犬', element: '水', body: '#d8b878', accent: '#4a8ac8' },
+  { id: 'spark', name: '焰猬', element: '火', body: '#ff7a2c', accent: '#c83d1e' },
+  { id: 'hex', name: '星咒', element: '梦', body: '#9a7ad8', accent: '#6a4aa8' },
+  { id: 'blaze', name: '炽豚', element: '火', body: '#e84a2c', accent: '#a82c1e' },
 ];
 export const speciesById: Record<string, Species> = Object.fromEntries(SPECIES.map((s) => [s.id, s]));
 
@@ -22,13 +27,18 @@ export interface Spirit { uid: string; species: string; name: string; level: num
 // 物种id -> 文件名,文件位于 frontend-v4/world/sprites/spirits/<file>(由 living-oc/public 构建拷入)。
 // 切勿放入任何官方/受版权保护(如 Pokémon)的素材。缺图时回退到下方极简占位绘制。
 export const SPIRIT_ART: Record<string, string> = {
-  puff: 'puff.png',        // Cochini
-  ember: 'ember.png',      // Criniotherme
-  ripple: 'ripple.png',    // Dollfin
-  moss: 'moss.png',        // Viviphyta
-  breeze: 'breeze.png',    // Dandicub
-  pebble: 'pebble.png',    // Dune Pincher
-  glimmer: 'glimmer.png',  // Axylightl
+  puff: 'puff.png',
+  ember: 'ember.png',
+  ripple: 'ripple.png',
+  moss: 'moss.png',
+  breeze: 'breeze.png',
+  pebble: 'pebble.png',
+  glimmer: 'glimmer.png',
+  maple: 'maple.png',
+  azure: 'azure.png',
+  spark: 'spark.png',
+  hex: 'hex.png',
+  blaze: 'blaze.png',
 };
 
 export interface Item { id: string; name: string; tag: string; color: string; desc: string; }
@@ -52,9 +62,8 @@ export function newSpirit(speciesId: string, seedHint: string): Spirit {
   return { uid: 'sp_' + (h(speciesId + ':' + seedHint) >>> 0).toString(16), species: sp.id, name: sp.name, level: 2 + (h(seedHint) % 6), xp: 0, bond: 8 };
 }
 
-// 极简占位绘制(fallback):正常情况下 7 系均有 SPIRIT_ART 像素立绘,此函数不会被触发;
+// 极简占位绘制(fallback):正常情况下 12 系均有 SPIRIT_ART 像素立绘(Pixel Mons),此函数不会被触发;
 // 仅当某张精灵图加载失败时兜底,画一个按元素配色的柔和小团 + 阴影,避免空白/报错。
-// 旧的程序化「原创灵宠」多形状画法已移除(改用 Tuxemon 像素素材)。
 // cx,cy = 脚底中心点;size = 体高(px);frame = 呼吸相位 sin∈[-1,1]。
 export function drawSpirit(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number, speciesId: string, frame: number, _faceLeft: boolean) {
   const sp = speciesById[speciesId] || SPECIES[0];

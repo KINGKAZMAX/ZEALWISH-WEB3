@@ -661,11 +661,12 @@ export default function WorldView() {
       if (!wildInit.current) {
         wildInit.current = true;
         const rc = GLOBAL ? REGION_DEFAULT : regionRef.current; const ccx = rc[0] * MAP_W, ccy = rc[1] * MAP_H;
-        // 区域指纹 → 本区物种池:不同活动区域出没不同灵宠组合(SPECIES 共 7 种、7 为质数,任意步长都能取满不重复),换区有探索感。
+        // 区域指纹 → 本区物种池:不同活动区域出没不同灵宠组合,换区有探索感。
         // 用完整 32 位哈希且起点/步长取自不同位段 —— hue() 会 %360 丢熵,曾致林海码头与南滨沙滩物种池完全相同(审查修正)。
+        // SPECIES 现为 12 种:步长取 {1,5,7}(均与 12 互质),保证 5 只取样不重复。
         const key = 'wild:' + rc[0].toFixed(4) + ',' + rc[1].toFixed(4);
         let rh = 0; for (let k = 0; k < key.length; k++) rh = (rh * 31 + key.charCodeAt(k)) >>> 0;
-        const start = rh % SPECIES.length, stride = 1 + ((rh >>> 8) % 3);
+        const start = rh % SPECIES.length, stride = [1, 5, 7][(rh >>> 8) % 3];
         for (let i = 0; i < 5; i++) { const sp = SPECIES[(start + i * stride) % SPECIES.length]; const ang = (i / 5) * Math.PI * 2; wild.current.push({ uid: 'w' + i, species: sp.id, bx: ccx + Math.cos(ang) * (84 + i * 22), by: ccy + Math.sin(ang) * (76 + i * 18), phase: i * 1.3, r: 14 + (i % 3) * 6, spd: 0.0006 + i * 0.0001 }); }
       }
       // 6. 最近可交互居民
