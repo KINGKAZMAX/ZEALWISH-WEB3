@@ -47,6 +47,31 @@ function pump() {
 
 export function bgmPlaying() { return playing; }
 
+// ── 轻量音效(独立于 BGM 开关;首次调用惰性建 AudioContext)──
+function ctxFor(): AudioContext | null {
+  try {
+    if (!actx) { actx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)(); }
+    void actx.resume();
+    return actx;
+  } catch { return null; }
+}
+function blip(t0: number, freq: number, dur: number, vol: number, type: OscillatorType = 'square') {
+  const c = ctxFor(); if (!c) return;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(vol, t0 + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0 + dur + 0.02);
+}
+// catch=收服上扬三连音;shiny=闪光琶音(更亮更长);pop=菜单/交互轻点
+export function sfx(kind: 'catch' | 'shiny' | 'pop') {
+  const c = ctxFor(); if (!c) return; const t = c.currentTime + 0.01;
+  if (kind === 'pop') { blip(t, 660, 0.07, 0.10, 'triangle'); return; }
+  if (kind === 'catch') { blip(t, 523, 0.10, 0.12); blip(t + 0.09, 659, 0.10, 0.12); blip(t + 0.18, 784, 0.16, 0.13); return; }
+  // shiny
+  [880, 1109, 1319, 1760].forEach((f, i) => blip(t + i * 0.075, f, 0.14, 0.11, 'triangle'));
+  blip(t + 0.32, 2093, 0.22, 0.09, 'sine');
+}
+
 export function toggleBgm(): boolean {
   if (playing) {
     playing = false; if (timer) { clearTimeout(timer); timer = null; }

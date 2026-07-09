@@ -20,7 +20,9 @@ export const SPECIES: Species[] = [
 ];
 export const speciesById: Record<string, Species> = Object.fromEntries(SPECIES.map((s) => [s.id, s]));
 
-export interface Spirit { uid: string; species: string; name: string; level: number; xp: number; bond: number; }
+export interface Spirit { uid: string; species: string; name: string; level: number; xp: number; bond: number; shiny?: boolean; }
+// 闪光变体的画布滤镜(野生/随行/缩略图统一使用;像素图整体换色,零额外素材)
+export const SHINY_FILTER = 'hue-rotate(165deg) saturate(1.35) brightness(1.06)';
 
 // 随行宠物美术:采用 Pixel Mons(Akoro,免费版可商用,署名见 public/sprites/spirits/ATTRIBUTION.md)。
 // 每张为 96×24 横向条带 = 24×24 × 4 帧待机动画(WorldView.drawCreature 自动识别条带并逐帧播放)。

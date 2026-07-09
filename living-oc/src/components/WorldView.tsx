@@ -5,9 +5,9 @@ import { actionCN, actionEN } from '../sim/text';
 import type { Agent } from '../sim/types';
 import WorldGoLive from './WorldGoLive';
 import { liveSay, liveTalk } from '../live/liveProviders';
-import { toggleBgm, bgmPlaying } from '../live/bgm';
+import { toggleBgm, bgmPlaying, sfx } from '../live/bgm';
 import { makeNet, playerSelf, setPlayerName, netMode, netConfig, setNetConfig, clearNetConfig, type NetTransport, type NetSelf } from '../live/net';
-import { SPECIES, ITEMS, speciesById, drawSpirit, SPIRIT_ART, type Spirit } from '../world/spirits';
+import { SPECIES, ITEMS, speciesById, drawSpirit, SPIRIT_ART, SHINY_FILTER, type Spirit } from '../world/spirits';
 import { LINE_BANKS, LINE_BANKS_EN } from '../world/lines';
 
 const BASE = import.meta.env.BASE_URL;
@@ -261,7 +261,7 @@ export default function WorldView() {
   const bumpTalk = () => setTalkVer((v) => v + 1);
   // 灵宠玩法本地态:随行轨迹、野生灵宠、临近野生、提示 toast
   const trail = useRef<{ mx: number; my: number }[]>([]);
-  const wild = useRef<{ uid: string; species: string; bx: number; by: number; phase: number; r: number; spd: number; label?: string }[]>([]);
+  const wild = useRef<{ uid: string; species: string; bx: number; by: number; phase: number; r: number; spd: number; shiny?: boolean; label?: string }[]>([]);
   const wildInit = useRef(false);
   const nearWild = useRef<string | null>(null);
   const toastTimer = useRef(0);
@@ -277,7 +277,14 @@ export default function WorldView() {
     }
     if (!best) { showToast(Lr('附近没有野生宠物', 'No wild pet nearby')); return; }
     if ((useLiving.getState().oc?.bag?.stone || 0) <= 0) { showToast(Lr('灵石不足 · 无法收服', 'Not enough stones to catch')); return; }
-    if (tameSpirit(best.species)) { const sp = speciesById[best.species]; const bu = best.uid; wild.current = wild.current.filter((x) => x.uid !== bu); showToast(Lr('收服成功 · ' + (sp?.name || '宠物') + ' 加入队伍 ✦', 'Caught · ' + (sp?.name || 'pet') + ' joined the team ✦')); }
+    if (tameSpirit(best.species, best.shiny)) {
+      const sp = speciesById[best.species]; const bu = best.uid; const wasShiny = !!best.shiny;
+      wild.current = wild.current.filter((x) => x.uid !== bu);
+      sfx(wasShiny ? 'shiny' : 'catch');
+      showToast(wasShiny
+        ? Lr('✨ 收服了闪光的 ' + (sp?.name || '宠物') + '!超稀有!', '✨ Caught a SHINY ' + (sp?.name || 'pet') + '! Ultra rare!')
+        : Lr('收服成功 · ' + (sp?.name || '宠物') + ' 加入队伍 ✦', 'Caught · ' + (sp?.name || 'pet') + ' joined the team ✦'));
+    }
   };
   // ── 互动:飘心表情 / 好感度 / 陪走 / NPC 亲密相会 ──
   const emotes = useRef<{ mx: number; my: number; glyph: string; born: number }[]>([]);
@@ -463,7 +470,7 @@ export default function WorldView() {
     talkRef.current = { withId: friendId, lines, i: 0 }; bumpTalk();
   };
   // 走近伙伴 → 打开互动动作菜单
-  const openMenu = (friendId: string) => { talkRef.current = { withId: friendId, i: 0, menu: true }; bumpTalk(); };
+  const openMenu = (friendId: string) => { talkRef.current = { withId: friendId, i: 0, menu: true }; sfx('pop'); bumpTalk(); };
   // 执行一个互动动作:闲聊(可接 LLM)/ 夸夸 / 约饭 / 抱抱 / 陪走
   const doAction = (friendId: string, action: string) => {
     const w = useLiving.getState().world; if (!w) return;
@@ -524,7 +531,7 @@ export default function WorldView() {
     };
     // 灵宠绘制:登记了合规外部美术则用图片,否则回退内置原创程序化绘制
     // frame:连续浮点「呼吸相位」(典型取值 sin(...)∈[-1,1]),驱动静止时也有的轻微上下浮动,而非旧版离散两帧硬切。
-    const drawCreature = (cx: number, cy: number, size: number, sid: string, frame: number, faceLeft: boolean) => {
+    const drawCreature = (cx: number, cy: number, size: number, sid: string, frame: number, faceLeft: boolean, shiny?: boolean) => {
       const img = spiritImg.current[sid];
       if (img && img.complete && img.naturalWidth) {
         // 96×24 横向条带 = 4 帧待机动画(Pixel Mons):逐帧播放;非条带图则整图绘制
@@ -535,6 +542,7 @@ export default function WorldView() {
         const s = strip ? cell * Math.max(1, Math.round((size * 1.35) / cell)) : size * 1.35;
         const bob = strip ? 0 : -frame * size * 0.06;   // 条带自带动画,不再叠加呼吸浮动
         ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(cx, cy - s / 2 + bob); if (faceLeft) ctx.scale(-1, 1);
+        if (shiny) ctx.filter = SHINY_FILTER;
         if (strip) ctx.drawImage(img, fi * cell, 0, cell, cell, -s / 2, -s / 2, s, s);
         else ctx.drawImage(img, -s / 2, -s / 2, s, s);
         ctx.restore();
@@ -674,7 +682,8 @@ export default function WorldView() {
             : SPECIES.map((s) => s.id);                                                            // 自定义区:全物种
         let rs = rh || 1; const rnd = () => { rs ^= rs << 13; rs ^= rs >>> 17; rs ^= rs << 5; rs >>>= 0; return rs / 4294967296; };   // xorshift32
         const bagIds = [...pool]; for (let i = bagIds.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [bagIds[i], bagIds[j]] = [bagIds[j], bagIds[i]]; }
-        for (let i = 0; i < 5; i++) { const sp = speciesById[bagIds[i % bagIds.length]]; const ang = (i / 5) * Math.PI * 2; wild.current.push({ uid: 'w' + i, species: sp.id, bx: ccx + Math.cos(ang) * (84 + i * 22), by: ccy + Math.sin(ang) * (76 + i * 18), phase: i * 1.3, r: 14 + (i % 3) * 6, spd: 0.0006 + i * 0.0001 }); }
+        // 闪光变体:每槽位 1/16 的确定性概率(区域哈希不同位段)——"这个区藏着一只闪光"的探索钩子
+        for (let i = 0; i < 5; i++) { const sp = speciesById[bagIds[i % bagIds.length]]; const shiny = ((rh >>> (7 + i * 4)) & 15) === 7; const ang = (i / 5) * Math.PI * 2; wild.current.push({ uid: 'w' + i, species: sp.id, shiny, bx: ccx + Math.cos(ang) * (84 + i * 22), by: ccy + Math.sin(ang) * (76 + i * 18), phase: i * 1.3, r: 14 + (i % 3) * 6, spd: 0.0006 + i * 0.0001 }); }
       }
       // 6. 最近可交互居民
       let near: string | null = null;
@@ -687,7 +696,7 @@ export default function WorldView() {
           const idx = Math.max(0, trail.current.length - 1 - 7), f = trail.current[idx], fp = trail.current[Math.max(0, idx - 2)];
           const fx = SX(f.mx), fy = SY(f.my), sz = TILE * 0.82;
           ctx.fillStyle = 'rgba(0,0,0,.32)'; ctx.beginPath(); ctx.ellipse(fx, fy, sz * 0.32, sz * 0.13, 0, 0, 7); ctx.fill();
-          drawCreature(fx, fy, sz, act.species, Math.sin(now / 420), f.mx < fp.mx - 0.5);
+          drawCreature(fx, fy, sz, act.species, Math.sin(now / 420), f.mx < fp.mx - 0.5, act.shiny);
         }
       }
       // 7. 居民(按 y 排序)
@@ -755,10 +764,11 @@ export default function WorldView() {
           if (cpp) { const d = (wx - cpp.mx) ** 2 + (wy - cpp.my) ** 2; if (d < wbd) { wbd = d; nearWild.current = wd.uid; } }
           const sz = TILE * 0.78;
           ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(sx, sy, sz * 0.32, sz * 0.13, 0, 0, 7); ctx.fill();
-          drawCreature(sx, sy, sz, wd.species, Math.sin(now / 420 + wd.phase * 3), false);   // 各自相位错开,呼吸不同步更自然
-          const sp = speciesById[wd.species]; const label = Lr('野生·', 'Wild·') + (sp?.name ?? '');   // 中英随语言切换,故不缓存(短字符串每帧拼接开销可忽略)
+          drawCreature(sx, sy, sz, wd.species, Math.sin(now / 420 + wd.phase * 3), false, wd.shiny);   // 各自相位错开,呼吸不同步更自然
+          const sp = speciesById[wd.species]; const label = (wd.shiny ? '✦' : '') + Lr('野生·', 'Wild·') + (sp?.name ?? '');   // 中英随语言切换,故不缓存
           ctx.font = labelFont; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,9,11,.8)';
-          ctx.strokeText(label, sx, sy + 13); ctx.fillStyle = 'rgba(220,255,220,.9)'; ctx.fillText(label, sx, sy + 13);
+          ctx.strokeText(label, sx, sy + 13); ctx.fillStyle = wd.shiny ? 'rgba(255,224,120,.98)' : 'rgba(220,255,220,.9)'; ctx.fillText(label, sx, sy + 13);
+          if (wd.shiny) { const tw = 0.5 + 0.5 * Math.sin(now / 260 + wd.phase * 7); ctx.globalAlpha = 0.35 + tw * 0.6; ctx.fillStyle = '#ffe082'; ctx.font = '10px ' + fam; ctx.fillText('✦', sx + sz * 0.55, sy - sz - 2); ctx.globalAlpha = 1; }
           if (nearWild.current === wd.uid) { ctx.fillStyle = 'rgba(140,255,170,.96)'; ctx.font = '11px ' + fam; ctx.fillText(Lr('C · 收服', 'C · catch'), sx, sy - sz - 4); }
         }
       }
@@ -989,7 +999,7 @@ export default function WorldView() {
         {!VISIT && (
           <div className="hud-kit" title={L('随行宠物 · 背包灵石', 'Pet · bag stones')}>
             {activeSpirit
-              ? <button className="kit-mon" onClick={() => setTeamOpen(true)}><canvas width={24} height={24} className="kit-th" ref={(el) => { if (!el) return; const cx2 = el.getContext('2d'); const im = spiritImg.current[activeSpirit.species]; if (cx2) { cx2.imageSmoothingEnabled = false; cx2.clearRect(0, 0, 24, 24); if (im && im.complete && im.naturalWidth) { const cell = im.naturalWidth === im.naturalHeight * 4 ? im.naturalHeight : im.naturalWidth; cx2.drawImage(im, 0, 0, cell, cell, 0, 0, 24, 24); } else { cx2.fillStyle = speciesById[activeSpirit.species]?.body ?? '#999'; cx2.beginPath(); cx2.arc(12, 12, 8, 0, 7); cx2.fill(); } } }} />{activeSpirit.name} <i>Lv{activeSpirit.level}</i></button>
+              ? <button className="kit-mon" onClick={() => setTeamOpen(true)}><canvas width={24} height={24} className="kit-th" ref={(el) => { if (!el) return; const cx2 = el.getContext('2d'); const im = spiritImg.current[activeSpirit.species]; if (cx2) { cx2.imageSmoothingEnabled = false; cx2.clearRect(0, 0, 24, 24); if (im && im.complete && im.naturalWidth) { if (activeSpirit.shiny) cx2.filter = SHINY_FILTER; const cell = im.naturalWidth === im.naturalHeight * 4 ? im.naturalHeight : im.naturalWidth; cx2.drawImage(im, 0, 0, cell, cell, 0, 0, 24, 24); cx2.filter = 'none'; } else { cx2.fillStyle = speciesById[activeSpirit.species]?.body ?? '#999'; cx2.beginPath(); cx2.arc(12, 12, 8, 0, 7); cx2.fill(); } } }} />{activeSpirit.shiny ? '✦' : ''}{activeSpirit.name} <i>Lv{activeSpirit.level}</i></button>
               : <button className="kit-mon off" onClick={() => setTeamOpen(true)}>{L('无随行宠物', 'No pet')}</button>}
             <button className="kit-stone" onClick={() => setBagOpen(true)}>{L('灵石', 'Stones')} {myOc?.bag?.stone ?? 0}</button>
           </div>
@@ -1208,8 +1218,8 @@ export default function WorldView() {
               ); })()}
               {(myOc?.team ?? []).map((s) => { const sp = speciesById[s.species]; const on = myOc?.active !== 'none' && s.uid === myOc?.active; return (
                 <button key={s.uid} className={'wc-mon' + (on ? ' on' : '')} onClick={() => setActiveSpirit(s.uid)} title={on ? L('随行中(点「不跟随」可取消)', 'Following (tap "No follower" to unfollow)') : L('设为随行', 'Set as follower')}>
-                  <canvas width={24} height={24} className="wc-mon-th" ref={(el) => { if (!el) return; const cx2 = el.getContext('2d'); const im = spiritImg.current[s.species]; if (cx2) { cx2.imageSmoothingEnabled = false; cx2.clearRect(0, 0, 24, 24); if (im && im.complete && im.naturalWidth) { const cell = im.naturalWidth === im.naturalHeight * 4 ? im.naturalHeight : im.naturalWidth; cx2.drawImage(im, 0, 0, cell, cell, 0, 0, 24, 24); } else { cx2.fillStyle = sp?.body ?? '#999'; cx2.beginPath(); cx2.arc(12, 12, 9, 0, 7); cx2.fill(); } } }} />
-                  <span className="wc-mon-main"><b>{s.name}</b><small>{sp?.element ?? '?'}{L('系', '')} · Lv{s.level} · {L('羁绊', 'Bond')} {s.bond}</small></span>
+                  <canvas width={24} height={24} className="wc-mon-th" ref={(el) => { if (!el) return; const cx2 = el.getContext('2d'); const im = spiritImg.current[s.species]; if (cx2) { cx2.imageSmoothingEnabled = false; cx2.clearRect(0, 0, 24, 24); if (im && im.complete && im.naturalWidth) { if (s.shiny) cx2.filter = SHINY_FILTER; const cell = im.naturalWidth === im.naturalHeight * 4 ? im.naturalHeight : im.naturalWidth; cx2.drawImage(im, 0, 0, cell, cell, 0, 0, 24, 24); cx2.filter = 'none'; } else { cx2.fillStyle = sp?.body ?? '#999'; cx2.beginPath(); cx2.arc(12, 12, 9, 0, 7); cx2.fill(); } } }} />
+                  <span className="wc-mon-main"><b>{s.shiny ? '✦' : ''}{s.name}</b><small>{sp?.element ?? '?'}{L('系', '')} · Lv{s.level} · {L('羁绊', 'Bond')} {s.bond}</small></span>
                   {on && <span className="wc-on">{L('随行中', 'Following')}</span>}
                 </button>
               ); })}

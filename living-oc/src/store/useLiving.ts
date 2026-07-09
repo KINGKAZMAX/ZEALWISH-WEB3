@@ -72,7 +72,7 @@ interface LivingState {
   guide(text: string): void;
   editOc(patch: { name?: string; bio?: string; arche?: Archetype }): void;
   ensureKit(): void;
-  tameSpirit(speciesId: string): boolean;
+  tameSpirit(speciesId: string, shiny?: boolean): boolean;
   useBagItem(itemId: string): void;
   setActiveSpirit(uid: string): void;
   load(): void;
@@ -143,13 +143,14 @@ export const useLiving = create<LivingState>((set, get) => ({
     if (!oc.active && oc.team.length) { oc.active = oc.team[0].uid; changed = true; }
     if (changed) { saveOc(oc); set({ version: get().version + 1 }); }
   },
-  tameSpirit(speciesId) {
+  tameSpirit(speciesId, shiny) {
     const oc = get().oc; if (!oc) return false;
     if (!oc.bag) oc.bag = starterBag();
     if ((oc.bag.stone || 0) <= 0) return false;
     if (!oc.team) oc.team = [];
     oc.bag.stone -= 1;
     const sp = newSpirit(speciesId, speciesId + ':' + oc.team.length + ':' + oc.id);
+    if (shiny) sp.shiny = true;
     oc.team.push(sp);
     if (!oc.active) oc.active = sp.uid;
     saveOc(oc); set({ version: get().version + 1 });
