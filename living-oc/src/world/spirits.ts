@@ -5,21 +5,21 @@
 export interface Species { id: string; name: string; element: string; body: string; accent: string; round?: boolean; }
 export const SPECIES: Species[] = [
   // 泡芙:圆滚滚的粉色团子萌宠(原创设计,圆身大眼腮红小脚丫;默认随身宠)
-  { id: 'puff', name: '泡芙', element: '梦', body: '#ffb0d4', accent: '#f47ba8', round: true },
-  { id: 'ember', name: '焰狐', element: '火', body: '#ff8a3d', accent: '#ffe08a' },
-  { id: 'ripple', name: '涟漪', element: '水', body: '#57b6ff', accent: '#d6f0ff' },
-  { id: 'moss', name: '苔团', element: '草', body: '#6fcf6f', accent: '#e2ffcf' },
-  { id: 'breeze', name: '云羊', element: '风', body: '#e9eef7', accent: '#bcd0ff' },
-  { id: 'pebble', name: '砂蟹', element: '土', body: '#d8b483', accent: '#8a6a44' },
-  { id: 'glimmer', name: '微光', element: '光', body: '#c79bff', accent: '#fff0a6' },
+  { id: 'puff', name: '泡芙', element: '梦', body: '#e08ab8', accent: '#b85c9a', round: true },
+  { id: 'ember', name: '焰狐', element: '火', body: '#ff8a3d', accent: '#ffd25a' },
+  { id: 'ripple', name: '涟漪', element: '水', body: '#8a7ad8', accent: '#5a6ac8' },
+  { id: 'moss', name: '苔团', element: '草', body: '#b8a83d', accent: '#8a8a2c' },
+  { id: 'breeze', name: '云兔', element: '风', body: '#e8c878', accent: '#c8a858' },
+  { id: 'pebble', name: '砂獾', element: '土', body: '#b89058', accent: '#8a6a44' },
+  { id: 'glimmer', name: '微光', element: '光', body: '#ffd84a', accent: '#ffb52c' },
 ];
 export const speciesById: Record<string, Species> = Object.fromEntries(SPECIES.map((s) => [s.id, s]));
 
 export interface Spirit { uid: string; species: string; name: string; level: number; xp: number; bond: number; }
 
-// 随行宠物美术:采用开源怪物收集游戏 Tuxemon 的像素立绘(CC BY-SA 4.0,合法可再分发,
-// 署名见 public/sprites/spirits/ATTRIBUTION.md)。物种id -> 文件名,文件位于
-//   frontend-v4/world/sprites/spirits/<file>(由 living-oc/public/sprites/spirits 构建拷入)。
+// 随行宠物美术:采用 Pixel Mons(Akoro,免费版可商用,署名见 public/sprites/spirits/ATTRIBUTION.md)。
+// 每张为 96×24 横向条带 = 24×24 × 4 帧待机动画(WorldView.drawCreature 自动识别条带并逐帧播放)。
+// 物种id -> 文件名,文件位于 frontend-v4/world/sprites/spirits/<file>(由 living-oc/public 构建拷入)。
 // 切勿放入任何官方/受版权保护(如 Pokémon)的素材。缺图时回退到下方极简占位绘制。
 export const SPIRIT_ART: Record<string, string> = {
   puff: 'puff.png',        // Cochini

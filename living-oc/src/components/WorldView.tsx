@@ -205,6 +205,8 @@ export default function WorldView() {
   const [inspId, setInspId] = useState<string | null>(null);
   const [bagOpen, setBagOpen] = useState(false);
   const [teamOpen, setTeamOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);                  // 全图(M / 点雷达)
+  const mapModalCv = useRef<HTMLCanvasElement | null>(null);
   const [photoOpen, setPhotoOpen] = useState(false);              // 合照馆
   const [photoSel, setPhotoSel] = useState<Set<string>>(new Set());
   const [photoBg, setPhotoBg] = useState(0);
@@ -496,6 +498,7 @@ export default function WorldView() {
       if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) { keys.current.add(k); e.preventDefault(); }
       if (k === 'b') { setBagOpen((o) => !o); return; }        // 背包
       if (k === 'c') { attemptTameRef.current(); return; }     // 收服临近野生灵宠
+      if (k === 'm') { setMapOpen((o) => !o); return; }        // 全图
       if (k === ' ') {
         const tk = talkRef.current;
         if (tk) {
@@ -524,9 +527,17 @@ export default function WorldView() {
     const drawCreature = (cx: number, cy: number, size: number, sid: string, frame: number, faceLeft: boolean) => {
       const img = spiritImg.current[sid];
       if (img && img.complete && img.naturalWidth) {
-        const s = size * 1.35, bob = -frame * size * 0.06;
+        // 96×24 横向条带 = 4 帧待机动画(Pixel Mons):逐帧播放;非条带图则整图绘制
+        const strip = img.naturalWidth === img.naturalHeight * 4;
+        const cell = strip ? img.naturalHeight : img.naturalWidth;
+        const fi = strip ? Math.floor(performance.now() / 240) % 4 : 0;
+        // 原生 24px 素材:取整数倍缩放,像素干净不糊
+        const s = strip ? cell * Math.max(1, Math.round((size * 1.35) / cell)) : size * 1.35;
+        const bob = strip ? 0 : -frame * size * 0.06;   // 条带自带动画,不再叠加呼吸浮动
         ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(cx, cy - s / 2 + bob); if (faceLeft) ctx.scale(-1, 1);
-        ctx.drawImage(img, -s / 2, -s / 2, s, s); ctx.restore();
+        if (strip) ctx.drawImage(img, fi * cell, 0, cell, cell, -s / 2, -s / 2, s, s);
+        else ctx.drawImage(img, -s / 2, -s / 2, s, s);
+        ctx.restore();
       } else drawSpirit(ctx, cx, cy, size, sid, frame, faceLeft);
     };
     const draw = (now: number) => {
@@ -824,6 +835,10 @@ export default function WorldView() {
     const w = useLiving.getState().world; if (!w) return;
     if (talkRef.current) return;                                  // 对话/菜单进行中,交给对话框处理
     const rect = e.currentTarget.getBoundingClientRect();
+    { // 点右下角雷达 = 打开全图(与雷达绘制参数一致:MM=168, mg=16)
+      const cxp = e.clientX - rect.left, cyp = e.clientY - rect.top, MM = 168, mg = 16;
+      if (cxp >= rect.width - MM - mg && cxp <= rect.width - mg && cyp >= rect.height - MM - mg && cyp <= rect.height - mg) { setMapOpen(true); return; }
+    }
     const mx = view.current.sx + (e.clientX - rect.left) / MAP_SCALE, my = view.current.sy + (e.clientY - rect.top) / MAP_SCALE;
     let best: string | null = null, bd = 28 * 28;
     for (const id of w.order) { const p = apos.current.get(id); if (!p) continue; const d = (p.mx - mx) ** 2 + (p.my - 16 - my) ** 2; if (d < bd) { bd = d; best = id; } }
@@ -902,7 +917,14 @@ export default function WorldView() {
         c.font = '10px ' + font; c.textAlign = 'center'; c.fillStyle = 'rgba(0,0,0,.55)'; c.fillText(name, x + cw / 2 + 1, groundY + 13); c.fillStyle = '#fff'; c.fillText(name, x + cw / 2, groundY + 12);
         x += cw + gap;
       });
-      if (photoPet && activeSpirit) { const sp = spiritImg.current[activeSpirit.species]; const ps = Math.min(26, ch * 0.34), px = x - cw * 0.4, py = groundY - ps; if (sp && sp.complete && sp.naturalWidth) { c.fillStyle = 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(px + ps / 2, groundY - 1, ps * 0.34, ps * 0.13, 0, 0, 7); c.fill(); c.drawImage(sp, px, py, ps, ps); } }
+      if (photoPet && activeSpirit) {
+        const sp = spiritImg.current[activeSpirit.species]; const ps = Math.min(48, ch * 0.5), px = x - cw * 0.4, py = groundY - ps;
+        if (sp && sp.complete && sp.naturalWidth) {
+          c.fillStyle = 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(px + ps / 2, groundY - 1, ps * 0.34, ps * 0.13, 0, 0, 7); c.fill();
+          const strip = sp.naturalWidth === sp.naturalHeight * 4, cell = strip ? sp.naturalHeight : sp.naturalWidth;
+          if (strip) c.drawImage(sp, 0, 0, cell, cell, px, py, ps, ps); else c.drawImage(sp, px, py, ps, ps);
+        }
+      }
     }
     c.restore();
     c.strokeStyle = 'rgba(40,53,98,.25)'; c.lineWidth = 1; c.strokeRect(ix + .5, itop + .5, iw - 1, ih - 1);
@@ -912,6 +934,41 @@ export default function WorldView() {
   };
   useEffect(() => { if (photoOpen && photoCanvas.current) drawPhoto(photoCanvas.current); }, [photoOpen, photoSel, photoBg, photoPet, font, lang]);   // eslint-disable-line react-hooks/exhaustive-deps
   const savePhoto = () => { const cv = photoCanvas.current; if (!cv) return; try { const d = new Date(), p2 = (x: number) => String(x).padStart(2, '0'); const a = document.createElement('a'); a.download = '夜间动物园合照-' + d.getFullYear() + p2(d.getMonth() + 1) + p2(d.getDate()) + '-' + p2(d.getHours()) + p2(d.getMinutes()) + '.png'; a.href = cv.toDataURL('image/png'); a.click(); } catch { /* ignore */ } };
+
+  // ── 全图(M / 点雷达):整张大地图总览,标注区域预设与你的位置;点击任意点即把活动区迁过去(全球模式只读)──
+  const drawWorldMap = (cv: HTMLCanvasElement) => {
+    const mm = miniMap.current; if (!mm) return;
+    const maxW = Math.min(720, window.innerWidth * 0.86);
+    const scale = maxW / mm.width, W = Math.round(mm.width * scale), H = Math.round(mm.height * scale);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    const c = cv.getContext('2d'); if (!c) return; c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.imageSmoothingEnabled = false; c.drawImage(mm, 0, 0, W, H);
+    c.fillStyle = 'rgba(8,9,11,.18)'; c.fillRect(0, 0, W, H);
+    const curRc = regionRef.current;
+    for (const rg of REGIONS) {   // 区域预设:绿菱形 + 名字;当前区高亮红
+      const px = rg.c[0] * W, py = rg.c[1] * H, cur = rg.c[0] === curRc[0] && rg.c[1] === curRc[1], rr = cur ? 7 : 5.5;
+      c.fillStyle = cur ? '#ff2d2d' : 'rgba(140,230,160,.95)';
+      c.beginPath(); c.moveTo(px, py - rr); c.lineTo(px + rr, py); c.lineTo(px, py + rr); c.lineTo(px - rr, py); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(8,9,11,.8)'; c.lineWidth = 1.5; c.stroke();
+      c.font = '600 11px ' + font; c.textAlign = 'center'; c.lineWidth = 3; c.strokeStyle = 'rgba(8,9,11,.85)';
+      const nm = lang === 'en' ? rg.en : rg.name;
+      c.strokeText(nm, px, py - 10); c.fillStyle = cur ? '#ffb0b0' : 'rgba(220,255,230,.96)'; c.fillText(nm, px, py - 10);
+    }
+    const meId = ctrlRef.current, mp = meId ? apos.current.get(meId) : null;   // 你的位置:红点白圈
+    if (mp) { const px = mp.mx / MAP_W * W, py = mp.my / MAP_H * H; c.fillStyle = '#ff2d2d'; c.beginPath(); c.arc(px, py, 4.5, 0, 7); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.stroke(); }
+  };
+  useEffect(() => { if (mapOpen && mapModalCv.current) drawWorldMap(mapModalCv.current); }, [mapOpen, lang, font]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const onMapTravel = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (GLOBAL || VISIT) return;   // 全球共享世界固定区域 / 访客只读:总览不可迁移
+    const cv = e.currentTarget, rect = cv.getBoundingClientRect();
+    let nx = (e.clientX - rect.left) / rect.width, ny = (e.clientY - rect.top) / rect.height;
+    let bestR: typeof REGIONS[number] | null = null, bd = 0.035 ** 2;   // 就近吸附区域预设(约 3.5% 图幅)
+    for (const rg of REGIONS) { const d = (rg.c[0] - nx) ** 2 + (rg.c[1] - ny) ** 2; if (d < bd) { bd = d; bestR = rg; } }
+    if (bestR) { nx = bestR.c[0]; ny = bestR.c[1]; }
+    applyRegion([+nx.toFixed(4), +ny.toFixed(4)]);
+    setMapOpen(false);
+  };
 
   return (
     <section className="world-fs" style={{ '--world-font': font } as CSSProperties}>
@@ -954,6 +1011,7 @@ export default function WorldView() {
             <button className="hud-btn" onClick={() => setBagOpen(true)} title={L('背包(B 键)', 'Bag (B)')}>{L('背包', 'Bag')}</button>
             <button className="hud-btn" onClick={() => setTeamOpen(true)} title={L('宠物队伍', 'Pet team')}>{L('宠物', 'Pets')}</button>
             <button className="hud-btn" onClick={() => { setPhotoSel((p) => p.size ? p : new Set(['小智'])); setPhotoOpen(true); }} title={L('合照:选角色拍张合影', 'Group photo')}>📷 {L('合照', 'Photo')}</button>
+            <button className="hud-btn" onClick={() => setMapOpen(true)} title={L('全图(M 键 / 点雷达):总览整张地图,点击任意点迁移过去', 'World map (M / click radar): click anywhere to travel')}>{L('地图', 'Map')}</button>
             <button className="hud-btn live" onClick={() => setLive(true)}>{L('真 LLM/链', 'Real LLM')}</button>
             <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title={L('温馨 8-bit 背景音乐', 'Cozy 8-bit BGM')}>♪ BGM {bgmOn ? L('开', 'On') : L('关', 'Off')}</button>
             <button className="hud-btn" onClick={() => setShowHelp(true)} title={L('玩法说明', 'How to play')}>?</button>
@@ -1179,6 +1237,18 @@ export default function WorldView() {
             </div>
             <div className="ph-preview"><canvas ref={photoCanvas} /></div>
             <div className="ph-tip">{L('选人 → 挑背景 → 保存合照(PNG 下载到本地)', 'Pick people → choose a backdrop → save (PNG download)')}{photoSel.size ? L(` · 已选 ${photoSel.size} 位`, ` · ${photoSel.size} selected`) : ''}</div>
+          </div>
+        </div>
+      )}
+
+      {mapOpen && (
+        <div className="world-modal" onClick={() => setMapOpen(false)}>
+          <div className="world-card wc-map" onClick={(e) => e.stopPropagation()}>
+            <div className="wc-head">{L('全图 · WORLD MAP', 'WORLD MAP')} <button className="wc-x" onClick={() => setMapOpen(false)}>✕</button></div>
+            <div className="wm-wrap"><canvas ref={mapModalCv} onClick={onMapTravel} style={{ cursor: GLOBAL || VISIT ? 'default' : 'crosshair' }} /></div>
+            <div className="ph-tip">{GLOBAL || VISIT
+              ? L('总览:绿菱形=区域预设,红点=你的位置(共享世界/观光模式为只读)', 'Overview: green = zone presets, red dot = you (read-only here)')
+              : L('点地图任意点 = 把活动区迁过去(就近吸附绿色区域预设);M 键或点雷达也可打开', 'Click anywhere to travel there (snaps to nearby zone presets); M key or radar click opens this')}</div>
           </div>
         </div>
       )}

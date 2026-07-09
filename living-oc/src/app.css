@@ -301,6 +301,10 @@ html.oc-embed .world-fs{height:100vh}
 .ph-preview{display:flex;justify-content:center;background:#e9e3cf;border:2px solid var(--gba-line,#c9c0a0);border-radius:8px;padding:8px;overflow:auto}
 .ph-preview canvas{max-width:100%;height:auto;image-rendering:pixelated;box-shadow:0 6px 20px rgba(0,0,0,.3)}
 .ph-tip{margin-top:8px;font-size:11px;color:#7a6f4e;text-align:center}
+/* 全图 */
+.wc-map{width:auto;max-width:94vw}
+.wm-wrap{display:flex;justify-content:center;background:#0d0f14;border:2px solid var(--gba-line,#c9c0a0);border-radius:8px;padding:6px;overflow:auto}
+.wm-wrap canvas{image-rendering:pixelated;border-radius:4px}
 
 /* ── GBA 复古 RPG 框风(原创复刻观感:米白框 + 深蓝双描边 + 深色字)——覆盖默认暗色玻璃皮 ── */
 :root{--gba-cream:#f7f3e3;--gba-ink:#27314f;--gba-navy:#1c2547;--gba-line:#c9c0a0;--gba-hi:#8aa0d8}
