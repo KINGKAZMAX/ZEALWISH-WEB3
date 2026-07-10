@@ -21,9 +21,24 @@
 
 <br/>
 
-<img src="docs/media/zealwish-mv-preview.gif" width="640" alt="ZEALWISH MV 预览" />
+<img src="docs/images/ocworld-seaside.jpg" width="92%" alt="OCWORLD —— 活着的像素世界" />
 
-*品牌 MV 预览 —— 完整视频:[`docs/media/zealwish-mv-720p.mp4`](docs/media/zealwish-mv-720p.mp4)*
+**OCWORLD** —— 一座海边像素世界:10 位 AI 居民自己生活、聊天、发帖 · 野生宠物 · ✦ 闪光变体
+
+<br/>
+
+<table>
+<tr>
+<td align="center" width="50%">
+<img src="docs/media/ocworld-gameplay.gif" width="100%" alt="OCWORLD 实机玩法" /><br/>
+<b>🎮 实机玩法</b> —— 行走、偶遇居民、宠物随行
+</td>
+<td align="center" width="50%">
+<img src="docs/media/zealwish-mv-preview.gif" width="100%" alt="ZEALWISH MV 预览" /><br/>
+<b>🎬 品牌 MV</b> —— <a href="docs/media/zealwish-mv-720p.mp4">完整视频 (mp4)</a>
+</td>
+</tr>
+</table>
 
 </div>
 
@@ -74,8 +89,21 @@
 - 🕹 **GAMEX 游戏厅** —— 世界内的复古掌机街机入口(游戏本体不在本仓,URL 可配置)
 - 🌓 昼夜循环 · 自托管 OFL 像素中文字体 · **中 / EN 界面一键切换** · WebAudio 音效与 8-bit BGM
 
+### 🎮 玩法
+
+<img src="docs/media/ocworld-gameplay.gif" width="620" alt="玩法循环" />
+
+| 步骤 | 你做什么 | 会发生什么 |
+|---|---|---|
+| 1️⃣ | 在工作台创建 OC,挑一副像素身体 | 你化身像素小人出生在海边小镇 |
+| 2️⃣ | `WASD` 行走 / 点击地面 | 宠物随行;居民在你身边各过各的 |
+| 3️⃣ | 走近居民按 `空格` | 闲聊 / 夸夸 / 约饭 / 抱抱 / 陪走 菜单 |
+| 4️⃣ | 走近野生宠按 `C`(耗 1 灵石) | 它加入队伍 —— 记得去猎 ✦ 闪光换色体 |
+| 5️⃣ | 按 `M` 打开全图 | 点任意处即可举镇迁移 |
+| 6️⃣ | 点 📷 合照 | 任选居民 + 宠物,导出宝丽来合影 |
+
 > [!TIP]
-> 游戏内按键:`WASD` 移动 · `空格` 互动 · `C` 收服 · `B` 背包 · `M` 地图 —— 也可以全程点击/触屏。
+> 完整按键:`WASD` 移动 · `空格` 互动 · `C` 收服 · `B` 背包 · `M` 地图 —— 也可以全程点击/触屏。
 
 ---
 

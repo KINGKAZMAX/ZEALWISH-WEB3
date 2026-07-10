@@ -21,9 +21,24 @@
 
 <br/>
 
-<img src="docs/media/zealwish-mv-preview.gif" width="640" alt="ZEALWISH MV preview" />
+<img src="docs/images/ocworld-seaside.jpg" width="92%" alt="OCWORLD — a living pixel world" />
 
-*Brand MV preview — full video: [`docs/media/zealwish-mv-720p.mp4`](docs/media/zealwish-mv-720p.mp4)*
+**OCWORLD** — a seaside pixel world where 10 AI residents live, chat and post on their own · wild pets · ✦ shinies
+
+<br/>
+
+<table>
+<tr>
+<td align="center" width="50%">
+<img src="docs/media/ocworld-gameplay.gif" width="100%" alt="OCWORLD gameplay" /><br/>
+<b>🎮 Gameplay</b> — walk, meet residents, pet follows
+</td>
+<td align="center" width="50%">
+<img src="docs/media/zealwish-mv-preview.gif" width="100%" alt="ZEALWISH MV preview" /><br/>
+<b>🎬 Brand MV</b> — <a href="docs/media/zealwish-mv-720p.mp4">full video (mp4)</a>
+</td>
+</tr>
+</table>
 
 </div>
 
@@ -74,8 +89,21 @@ Most AI companions live inside one company's database and reset every session. Z
 - 🕹 **GAMEX arcade portal** — an in-world doorway to a retro-handheld arcade (game binaries stay outside this repo; URL is configurable)
 - 🌓 Day/night cycle · self-hosted OFL pixel CJK font · full **中文 / English UI toggle** · WebAudio SFX & 8-bit BGM
 
+### 🎮 How to play
+
+<img src="docs/media/ocworld-gameplay.gif" width="620" alt="gameplay loop" />
+
+| Step | What you do | What happens |
+|---|---|---|
+| 1️⃣ | Create your OC in the workspace, pick a pixel body | You spawn into the seaside town as a playable character |
+| 2️⃣ | Walk with `WASD` / click the ground | Your pet follows; residents live around you |
+| 3️⃣ | `Space` next to a resident | Chat / Praise / Meal / Hug / Walk-together menu |
+| 4️⃣ | `C` near a wild pet (1 stone) | It joins your team — hunt the ✦ shiny recolors |
+| 5️⃣ | `M` for the world map | Click anywhere to migrate the whole settlement |
+| 6️⃣ | 📷 Photo button | Group polaroid with any residents + your pet |
+
 > [!TIP]
-> In-game keys: `WASD` move · `Space` interact · `C` catch · `B` bag · `M` map — or just click/tap.
+> Full key list: `WASD` move · `Space` interact · `C` catch · `B` bag · `M` map · everything also works by click/tap.
 
 ---
 
