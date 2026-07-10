@@ -216,6 +216,10 @@ export default function WorldView() {
     fetch(gamexUrl, { mode: 'no-cors' }).then(() => { if (alive) { clearTimeout(t); setGamexUp('up'); } }).catch(() => { if (alive) { clearTimeout(t); setGamexUp('down'); } });
     return () => { alive = false; clearTimeout(t); };
   }, [gamexOpen, gamexUrl]);
+  const [dexOpen, setDexOpen] = useState(false);                  // 宠物图鉴
+  const [dexSeen, setDexSeen] = useState<Set<string>>(() => { try { const v = JSON.parse(localStorage.getItem('oc-dex-seen') || '[]'); return new Set(Array.isArray(v) ? v : []); } catch { return new Set(); } });
+  const markSeen = (ids: string[]) => setDexSeen((prev) => { const n = new Set(prev); let ch = false; for (const id of ids) if (!n.has(id)) { n.add(id); ch = true; } if (ch) { try { localStorage.setItem('oc-dex-seen', JSON.stringify([...n])); } catch { /* ignore */ } } return ch ? n : prev; });
+  const markSeenRef = useRef(markSeen); markSeenRef.current = markSeen;   // RAF 循环内经 ref 调用,避免陈旧闭包
   const [mapOpen, setMapOpen] = useState(false);                  // 全图(M / 点雷达)
   const mapModalCv = useRef<HTMLCanvasElement | null>(null);
   const [photoOpen, setPhotoOpen] = useState(false);              // 合照馆
@@ -695,6 +699,7 @@ export default function WorldView() {
         const bagIds = [...pool]; for (let i = bagIds.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [bagIds[i], bagIds[j]] = [bagIds[j], bagIds[i]]; }
         // 闪光变体:每槽位 1/16 的确定性概率(区域哈希不同位段)——"这个区藏着一只闪光"的探索钩子
         for (let i = 0; i < 5; i++) { const sp = speciesById[bagIds[i % bagIds.length]]; const shiny = ((rh >>> (7 + i * 4)) & 15) === 7; const ang = (i / 5) * Math.PI * 2; wild.current.push({ uid: 'w' + i, species: sp.id, shiny, bx: ccx + Math.cos(ang) * (84 + i * 22), by: ccy + Math.sin(ang) * (76 + i * 18), phase: i * 1.3, r: 14 + (i % 3) * 6, spd: 0.0006 + i * 0.0001 }); }
+        markSeenRef.current(wild.current.map((x) => x.species));   // 图鉴:本区出没即「见过」
       }
       // 6. 最近可交互居民
       let near: string | null = null;
@@ -1039,6 +1044,7 @@ export default function WorldView() {
             {ocIsCustom && <button className="hud-btn" onClick={() => { setControlId(ocId); setInspId(ocId); }} title={L('回到你创建的角色', 'Back to your character')}>{L('我', 'Me')} · {ocName}</button>}
             <button className="hud-btn" onClick={() => setBagOpen(true)} title={L('背包(B 键)', 'Bag (B)')}>{L('背包', 'Bag')}</button>
             <button className="hud-btn" onClick={() => setTeamOpen(true)} title={L('宠物队伍', 'Pet team')}>{L('宠物', 'Pets')}</button>
+            <button className="hud-btn" onClick={() => setDexOpen(true)} title={L('宠物图鉴:收集进度与闪光标记', 'Pet dex: collection & shiny tracker')}>{L('图鉴', 'Dex')}</button>
             <button className="hud-btn" onClick={() => { setPhotoSel((p) => p.size ? p : new Set(['小智'])); setPhotoOpen(true); }} title={L('合照:选角色拍张合影', 'Group photo')}>📷 {L('合照', 'Photo')}</button>
             <button className="hud-btn" onClick={() => setMapOpen(true)} title={L('全图(M 键 / 点雷达):总览整张地图,点击任意点迁移过去', 'World map (M / click radar): click anywhere to travel')}>{L('地图', 'Map')}</button>
             <button className="hud-btn" onClick={() => setGamexOpen(true)} title={L('GAMEX 游戏厅:居民打烊后偷偷去打老式掌机的地方', 'GAMEX arcade: retro handhelds after hours')}>🕹 GAMEX</button>
@@ -1309,6 +1315,41 @@ export default function WorldView() {
           </div>
         </div>
       )}
+
+      {!VISIT && dexOpen && (() => {
+        const team = myOc?.team ?? [];
+        const caught = new Set(team.map((s) => s.species));
+        const shinyOwned = new Set(team.filter((s) => s.shiny).map((s) => s.species));
+        return (
+          <div className="world-modal" onClick={() => setDexOpen(false)}>
+            <div className="world-card wc-dex" onClick={(e) => e.stopPropagation()}>
+              <div className="wc-head">{L('📖 宠物图鉴 · DEX', '📖 PET DEX')} <button className="wc-x" onClick={() => setDexOpen(false)}>✕</button></div>
+              <div className="dex-progress">
+                <span>{L('已收服', 'Caught')} <b>{caught.size}</b>/{SPECIES.length}</span>
+                <span>✦ {L('闪光', 'Shiny')} <b>{shinyOwned.size}</b></span>
+                <span>{L('已目击', 'Seen')} <b>{[...dexSeen].filter((id) => speciesById[id]).length}</b>/{SPECIES.length}</span>
+                <span className="dex-bar"><i style={{ width: `${Math.round(caught.size / SPECIES.length * 100)}%` }} /></span>
+              </div>
+              <div className="dex-grid">
+                {SPECIES.map((sp) => {
+                  const got = caught.has(sp.id), seen = dexSeen.has(sp.id), shy = shinyOwned.has(sp.id);
+                  return (
+                    <div key={sp.id} className={'dex-card' + (got ? ' got' : seen ? ' seen' : ' unk')} title={got ? (shy ? L('已收服 · 拥有闪光', 'Caught · shiny owned') : L('已收服', 'Caught')) : seen ? L('目击过 —— 去它出没的区域按 C 收服', 'Seen — catch it with C where it roams') : L('未知 —— 换个区域找找看', 'Unknown — explore other zones')}>
+                      {shy && <span className="dex-shiny">✦</span>}
+                      <canvas width={24} height={24} className="dex-th" ref={(el) => { if (!el) return; const c2 = el.getContext('2d'); const im = spiritImg.current[sp.id]; if (!c2) return; c2.imageSmoothingEnabled = false; c2.clearRect(0, 0, 24, 24);
+                        if (im && im.complete && im.naturalWidth && (got || seen)) { const cell = im.naturalWidth === im.naturalHeight * 4 ? im.naturalHeight : im.naturalWidth; if (!got) c2.filter = 'brightness(0) opacity(0.55)'; else if (shy) c2.filter = SHINY_FILTER; c2.drawImage(im, 0, 0, cell, cell, 0, 0, 24, 24); c2.filter = 'none'; }
+                        else { c2.fillStyle = 'rgba(0,0,0,.28)'; c2.font = '16px monospace'; c2.textAlign = 'center'; c2.fillText('?', 12, 18); } }} />
+                      <b>{got ? sp.name : seen ? sp.name : '???'}</b>
+                      <small>{got || seen ? sp.element + L('系', '') : '—'}</small>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="ph-tip">{L('剪影 = 目击未收服;??? = 尚未发现;✦ = 拥有闪光变体。不同区域出没不同物种(M 全图换区)。', 'Silhouette = seen, not caught; ??? = undiscovered; ✦ = shiny owned. Species vary by zone (M to travel).')}</div>
+            </div>
+          </div>
+        );
+      })()}
     </section>
   );
 }

@@ -316,6 +316,20 @@ html.oc-embed .world-fs{height:100vh}
 .gx-row{display:flex;gap:6px;margin-top:10px;align-items:center}
 .gx-url{flex:1;padding:7px 10px;border-radius:8px;border:2px solid var(--gba-line,#c9c0a0);background:#fffdf5;color:var(--gba-ink,#27314f);font-size:12px;font-family:ui-monospace,Menlo,monospace}
 .gx-open{text-decoration:none;display:inline-flex;align-items:center}
+/* 宠物图鉴 */
+.wc-dex{width:min(560px,92vw)}
+.dex-progress{display:flex;align-items:center;gap:14px;font-size:12.5px;color:var(--gba-ink,#27314f);margin-bottom:10px;flex-wrap:wrap}
+.dex-progress b{color:#c0392b}
+.dex-bar{flex:1;min-width:90px;height:8px;border-radius:5px;background:#e3dcc2;border:1px solid var(--gba-line,#c9c0a0);overflow:hidden}
+.dex-bar i{display:block;height:100%;background:linear-gradient(90deg,#7cb56b,#4e9a4e);border-radius:5px}
+.dex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.dex-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px 8px;border-radius:10px;background:#fffdf5;border:2px solid var(--gba-line,#c9c0a0);color:var(--gba-ink,#27314f)}
+.dex-card.got{border-color:var(--gba-navy,#1c2547);background:#eaf0ff}
+.dex-card.unk{opacity:.72}
+.dex-card b{font-size:12.5px}
+.dex-card small{font-size:10.5px;color:#8a7f5e}
+.dex-th{width:44px;height:44px;image-rendering:pixelated}
+.dex-shiny{position:absolute;top:5px;right:7px;color:#d99a1f;font-size:13px;text-shadow:0 1px 0 rgba(0,0,0,.15)}
 /* 全图 */
 .wc-map{width:auto;max-width:94vw}
 .wm-wrap{display:flex;justify-content:center;background:#0d0f14;border:2px solid var(--gba-line,#c9c0a0);border-radius:8px;padding:6px;overflow:auto}
