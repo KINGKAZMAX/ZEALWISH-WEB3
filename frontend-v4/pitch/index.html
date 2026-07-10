@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>ZEALWISH · OCWORLD — 路演汇报</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0A0A0B" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230A0A0B'/%3E%3Cpath d='M10 12h12l5 23 8-23h10l8 23 5-23h6L52 52H40l-8-22-8 22H12z' fill='%23FF2D2D'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Teko:wght@500;600;700&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0A0A0B; --panel:#141418; --surface:#1b1b21;
+    --white:#F5F5F7; --muted:rgba(245,245,247,.66); --faint:rgba(245,245,247,.42);
+    --red:#FF2D2D; --red-deep:#C81E1E; --red-soft:rgba(255,45,45,.12);
+    --line:rgba(255,255,255,.09); --line-strong:rgba(255,255,255,.16);
+    --glass:rgba(22,22,26,.55);
+    --c-blue:#5AA9FF; --c-green:#5AD48A; --c-purple:#B58CFF; --c-gold:#FFC24D; --c-pink:#FF7BA8; --c-teal:#4FD6C8;
+    --disp:'Teko','Archivo','Noto Sans SC',system-ui,sans-serif;
+    --body:'Archivo','Noto Sans SC',system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sc:'Noto Sans SC',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--ink);color:var(--white);font-family:var(--body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .deck{scroll-snap-type:y proximity}
+  .slide{position:relative;min-height:100vh;padding:64px clamp(20px,6vw,110px);display:flex;flex-direction:column;justify-content:center;scroll-snap-align:start;border-bottom:1px solid var(--line);overflow:hidden}
+  .slide::before{content:'';position:absolute;inset:0;background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(255,45,45,.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(90,169,255,.06), transparent 55%);
+    pointer-events:none}
+  .cn{font-family:var(--sc)}
+  .mono{font-family:var(--mono);letter-spacing:.06em}
+  .wrap{position:relative;max-width:1180px;margin:0 auto;width:100%}
+
+  /* kicker / section number */
+  .sn{display:inline-flex;align-items:center;gap:12px;font-family:var(--mono);font-size:12px;letter-spacing:.34em;text-transform:uppercase;color:var(--faint);margin-bottom:22px}
+  .sn b{color:var(--ink);font-family:var(--disp);font-size:15px;letter-spacing:.1em;background:var(--acc,var(--red));padding:3px 10px;border-radius:5px}
+  .sn.cn-k{font-family:var(--sc);letter-spacing:.24em}
+
+  h1.big{font-family:var(--sc);font-weight:900;line-height:1.02;letter-spacing:-.01em;font-size:clamp(40px,7vw,96px)}
+  h2{font-family:var(--sc);font-weight:900;line-height:1.06;font-size:clamp(30px,4.6vw,60px);letter-spacing:-.01em}
+  h2 .em{color:var(--acc,var(--red))}
+  .lead{font-family:var(--sc);color:var(--muted);font-size:clamp(15px,1.5vw,20px);line-height:1.7;max-width:62ch;margin-top:18px}
+  .en{font-family:var(--mono);color:var(--faint);font-size:12.5px;letter-spacing:.02em;margin-top:8px}
+
+  /* cover */
+  .cover{align-items:flex-start}
+  .cover .logo{width:min(340px,64vw);filter:drop-shadow(0 12px 40px rgba(0,0,0,.5));margin-bottom:6px}
+  .cover .tag{display:inline-block;font-family:var(--mono);font-size:12px;letter-spacing:.32em;color:var(--red);border:1px solid var(--line-strong);border-radius:999px;padding:7px 16px;margin-bottom:26px}
+  .cover .sub{font-family:var(--sc);color:var(--muted);font-size:clamp(15px,1.7vw,22px);margin-top:20px;max-width:56ch;line-height:1.6}
+  .cover .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:34px}
+  .chip{font-family:var(--sc);font-size:13.5px;padding:8px 15px;border-radius:999px;background:var(--glass);border:1px solid var(--line);color:var(--white);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+  .chip b{color:var(--red)}
+  .cover .char{position:absolute;right:clamp(-40px,-2vw,40px);bottom:0;width:min(520px,46vw);pointer-events:none;filter:drop-shadow(0 30px 80px rgba(0,0,0,.6));opacity:.96}
+  .cover-foot{position:absolute;left:clamp(20px,6vw,110px);bottom:34px;font-family:var(--mono);font-size:11.5px;color:var(--faint);letter-spacing:.08em}
+
+  /* generic grids */
+  .grid{display:grid;gap:16px;margin-top:34px}
+  .g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)}
+  .card{background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:22px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  .card .k{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--acc,var(--red));text-transform:uppercase}
+  .card h3{font-family:var(--sc);font-weight:700;font-size:19px;margin:10px 0 8px}
+  .card p{font-family:var(--sc);color:var(--muted);font-size:13.5px;line-height:1.65}
+  .card .em{font-family:var(--disp);font-size:40px;font-weight:700;color:var(--white);line-height:1}
+
+  .figrow{display:grid;grid-template-columns:1.15fr .85fr;gap:26px;align-items:center;margin-top:30px}
+  .fig{border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 24px 70px rgba(0,0,0,.5);background:#000}
+  .fig img{display:block;width:100%;height:auto}
+  .fig.cap{position:relative}
+  .fig .capt{position:absolute;left:12px;bottom:10px;font-family:var(--mono);font-size:11px;color:#fff;background:rgba(0,0,0,.5);padding:4px 9px;border-radius:6px}
+
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
+  .step{display:flex;gap:12px;align-items:flex-start;padding:14px 15px;border-radius:13px;background:var(--glass);border:1px solid var(--line)}
+  .step .no{font-family:var(--disp);font-weight:700;font-size:26px;color:var(--acc,var(--red));line-height:1;min-width:26px}
+  .step .t{font-family:var(--sc);font-size:13.5px;line-height:1.5}
+  .step .t b{color:var(--white)}
+
+  .featlist{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 26px;margin-top:22px}
+  .feat{display:flex;gap:11px;align-items:flex-start;font-family:var(--sc);color:var(--muted);font-size:14px;line-height:1.55}
+  .feat .d{color:var(--acc,var(--red));font-weight:800;margin-top:1px}
+  .feat b{color:var(--white)}
+
+  .thesis{font-family:var(--sc);font-weight:900;font-size:clamp(26px,3.6vw,48px);line-height:1.18;letter-spacing:-.01em}
+  .thesis .em{color:var(--acc,var(--red))}
+  .quote-en{font-family:var(--mono);color:var(--faint);font-size:13px;margin-top:18px;letter-spacing:.02em}
+
+  .road{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:30px}
+  .rcol{background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:22px}
+  .rcol.done{border-color:rgba(90,212,138,.4)} .rcol.next{border-color:rgba(90,169,255,.4)}
+  .rcol h3{font-family:var(--sc);font-weight:800;font-size:18px;margin-bottom:14px;display:flex;align-items:center;gap:9px}
+  .rcol h3 .dot{width:9px;height:9px;border-radius:50%}
+  .rcol.done .dot{background:var(--c-green)} .rcol.next .dot{background:var(--c-blue)}
+  .rcol li{font-family:var(--sc);list-style:none;color:var(--muted);font-size:13.5px;line-height:1.5;padding:6px 0 6px 22px;position:relative}
+  .rcol li::before{content:'';position:absolute;left:0;top:12px;width:8px;height:8px;border-radius:2px;background:var(--faint)}
+  .rcol.done li::before{background:var(--c-green)} .rcol.next li::before{background:var(--c-blue);border-radius:50%}
+
+  .cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:34px}
+  .btn{font-family:var(--sc);font-weight:700;font-size:15px;padding:13px 26px;border-radius:11px;text-decoration:none;display:inline-flex;align-items:center;gap:9px;transition:.15s}
+  .btn.primary{background:var(--red);color:#0A0A0B} .btn.primary:hover{background:var(--red-deep);color:#fff}
+  .btn.ghost{border:1px solid var(--line-strong);color:var(--white)} .btn.ghost:hover{border-color:var(--red);color:var(--red)}
+
+  .navdots{position:fixed;right:20px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:11px;z-index:50}
+  .navdots a{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.22);transition:.2s}
+  .navdots a:hover{background:var(--red);transform:scale(1.3)}
+
+  .foot{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.1em;margin-top:30px}
+
+  @media (max-width:820px){
+    .figrow{grid-template-columns:1fr} .g4{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:1fr}
+    .steps{grid-template-columns:1fr} .featlist,.road{grid-template-columns:1fr}
+    .cover .char{opacity:.14;width:70vw;right:-10vw} .navdots{display:none}
+  }
+</style>
+</head>
+<body>
+<nav class="navdots" aria-hidden="true">
+  <a href="#s0" title="封面"></a><a href="#s1" title="问题"></a><a href="#s2" title="方案"></a><a href="#s3" title="产品"></a><a href="#s4" title="玩法"></a><a href="#s5" title="技术"></a><a href="#s6" title="世界观"></a><a href="#s7" title="路线图"></a><a href="#s8" title="愿景"></a>
+</nav>
+
+<div class="deck">
+
+  <!-- 封面 -->
+  <section class="slide cover" id="s0">
+    <img class="char" src="media/character.webp" alt="ZEALWISH 主角" />
+    <div class="wrap">
+      <span class="tag mono">钱包主权 · AI 分身 · 像素世界</span>
+      <img class="logo" src="media/logo.png" alt="ZEALWISH" />
+      <h1 class="big cn">会记得你的<br/>AI 分身<span style="color:var(--red)">，归你所有</span></h1>
+      <p class="sub cn">ZEALWISH 是一个以钱包主权为根的 AI 角色平台。你创造一个有持续记忆的分身，它在一座自运转的像素世界 <b style="color:var(--white)">OCWORLD</b> 里自己生活；<b style="color:var(--white)">共创即拥有</b>。</p>
+      <div class="chips cn">
+        <span class="chip">🧠 持续记忆</span>
+        <span class="chip">🔑 <b>钱包主权</b>身份</span>
+        <span class="chip">🌏 多人 · 多 Agent 共享世界</span>
+        <span class="chip">🎮 像素社会 OCWORLD</span>
+      </div>
+    </div>
+    <div class="cover-foot">ZEALWISH · OCWORLD　|　路演汇报 Pitch Deck　|　2026</div>
+  </section>
+
+  <!-- 01 问题 -->
+  <section class="slide" id="s1" style="--acc:var(--c-blue)">
+    <div class="wrap">
+      <div class="sn cn-k"><b>01</b> 问题 · THE PROBLEM</div>
+      <h2 class="cn">今天的 AI 陪伴，<span class="em">留不住、也不属于你</span></h2>
+      <p class="lead cn">对话一关就忘、人设锁在某个平台的数据库里、只会当"工具"服务单一场景——用户投入的情感与共创，最后什么都带不走。</p>
+      <div class="grid g3">
+        <div class="card"><div class="k">记忆断裂</div><h3 class="cn">聊完就忘</h3><p class="cn">每次都从零开始，关系无法沉淀，"陪伴感"始终是假象。</p></div>
+        <div class="card"><div class="k">不属于用户</div><h3 class="cn">锁在平台里</h3><p class="cn">角色、记忆、创作都存在别人的数据库，平台关停即归零。</p></div>
+        <div class="card"><div class="k">场景单一</div><h3 class="cn">只是效率工具</h3><p class="cn">大多是任务机器人，不是能长成"生命"的角色系统。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 方案 -->
+  <section class="slide" id="s2" style="--acc:var(--red)">
+    <div class="wrap">
+      <div class="sn cn-k"><b>02</b> 方案 · THE SOLUTION</div>
+      <h2 class="cn">为<span class="em">所有权</span>而造，不为投机</h2>
+      <p class="lead cn">ZEALWISH 给每个人一个<b style="color:var(--white)">有持续记忆</b>的 AI 分身：身份以链上护照可验证、归你钱包所有；它能跨越单个聊天窗口，栖居于可组合的共享世界。</p>
+      <div class="grid g3">
+        <div class="card" style="--acc:var(--c-purple)"><div class="k">Create · 创建</div><h3 class="cn">创造你的 OC</h3><p class="cn">语音优先、零门槛，捏出人格、声音与来历。</p></div>
+        <div class="card" style="--acc:var(--c-green)"><div class="k">Memory · 记忆</div><h3 class="cn">记忆造就连续</h3><p class="cn">它记住你的节奏与瞬间，关系随时间真正生长。</p></div>
+        <div class="card" style="--acc:var(--c-gold)"><div class="k">Own · 拥有</div><h3 class="cn">钱包主权护照</h3><p class="cn">NFT 不是产品，<b style="color:var(--white)">所有权</b>才是。角色归你，可携带、可传承。</p></div>
+      </div>
+      <p class="thesis cn" style="margin-top:34px">"<span class="em">共创即拥有</span>"　—　Create&#8209;to&#8209;own.</p>
+    </div>
+  </section>
+
+  <!-- 03 产品双层 -->
+  <section class="slide" id="s3" style="--acc:var(--c-teal)">
+    <div class="wrap">
+      <div class="sn cn-k"><b>03</b> 产品 · 双层架构</div>
+      <h2 class="cn">一个平台，<span class="em">两层体验</span></h2>
+      <div class="figrow">
+        <div class="fig cap"><img src="media/create-oc.jpg" alt="ZEALWISH 工作台"/><span class="capt">ZEALWISH · 创建/记忆/护照</span></div>
+        <div>
+          <div class="featlist">
+            <div class="feat"><span class="d">◤</span><span class="cn"><b>ZEALWISH（外壳）</b>：语音对话 · 记忆金库 · 角色护照 · 钱包登录，是"养成"与"拥有"的入口。</span></div>
+            <div class="feat"><span class="d">◤</span><span class="cn"><b>OCWORLD（世界）</b>：把你的 OC 化为像素小人，进入一座 10 位居民自运转的海边小社会。</span></div>
+            <div class="feat"><span class="d">◤</span><span class="cn"><b>一体化</b>:工作台创建 → 化身入世 → 世界里成长 → 记忆回流护照,闭环。</span></div>
+          </div>
+          <div class="grid g3" style="margin-top:16px">
+            <div class="card"><span class="em">10</span><p class="cn" style="margin-top:8px">AI 居民</p></div>
+            <div class="card"><span class="em">12</span><p class="cn" style="margin-top:8px">宠物物种 +✦闪光</p></div>
+            <div class="card"><span class="em">8</span><p class="cn" style="margin-top:8px">地图区域</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 玩法 -->
+  <section class="slide" id="s4" style="--acc:var(--c-green)">
+    <div class="wrap">
+      <div class="sn cn-k"><b>04</b> OCWORLD · 玩法</div>
+      <h2 class="cn">一座<span class="em">自己运转</span>的像素小社会</h2>
+      <div class="figrow">
+        <div class="fig"><img src="media/gameplay.gif" alt="OCWORLD 实机"/></div>
+        <div class="steps">
+          <div class="step"><span class="no">1</span><span class="t cn"><b>创建 OC</b>、挑像素身体，出生在海边小镇</span></div>
+          <div class="step"><span class="no">2</span><span class="t cn"><b>WASD/点击</b>行走，宠物随行、居民各过各的</span></div>
+          <div class="step"><span class="no">3</span><span class="t cn">走近居民 <b>空格</b>:闲聊/夸夸/约饭/抱抱/陪走</span></div>
+          <div class="step"><span class="no">4</span><span class="t cn"><b>C</b> 收服野生宠,去猎 <b>✦闪光</b>变体</span></div>
+          <div class="step"><span class="no">5</span><span class="t cn"><b>M</b> 全图,点任意处举镇迁移</span></div>
+          <div class="step"><span class="no">6</span><span class="t cn"><b>📷 合照</b> · 📖 图鉴 · 🕹️ 游戏厅</span></div>
+        </div>
+      </div>
+      <div class="featlist" style="margin-top:20px">
+        <div class="feat"><span class="d">✦</span><span class="cn"><b>活的社会</b>:居民自己相遇、说悄悄话、发 THE FEED 动态、头顶冒 ♥</span></div>
+        <div class="feat"><span class="d">✦</span><span class="cn"><b>宠物收集</b>:12 物种按生态分区出没、1/16 闪光、宠物图鉴集齐钩子</span></div>
+        <div class="feat"><span class="d">✦</span><span class="cn"><b>社交留存</b>:合照馆导出宝丽来、只读观光链接串门、世界频道</span></div>
+        <div class="feat"><span class="d">✦</span><span class="cn"><b>中英一键切</b>:界面/台词/详情面板全量双语,给外国朋友也能玩</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 技术 -->
+  <section class="slide" id="s5" style="--acc:var(--c-purple)">
+    <div class="wrap">
+      <div class="sn cn-k"><b>05</b> 技术 · UNDER THE HOOD</div>
+      <h2 class="cn">轻、稳、<span class="em">中立</span></h2>
+      <div class="grid g4">
+        <div class="card"><div class="k">Deterministic</div><h3 class="cn">确定性世界引擎</h3><p class="cn">纯函数 sim + 种子 RNG,同种子同世界,13/13 单测护航。</p></div>
+        <div class="card"><div class="k">Local-first</div><h3 class="cn">本地优先</h3><p class="cn">角色/记忆/养成存本地,零后端也能玩;LLM 后端可选接入(StepFun/Claude)。</p></div>
+        <div class="card"><div class="k">Canvas</div><h3 class="cn">纯前端渲染</h3><p class="cn">单 Canvas 全屏世界 + 4 帧宠物动画,无重引擎,秒开。</p></div>
+        <div class="card"><div class="k">Web3 rails</div><h3 class="cn">中立轨道</h3><p class="cn">身份走可验证护照,anon key 公开安全;所有权而非投机。</p></div>
+      </div>
+      <div class="featlist" style="margin-top:22px">
+        <div class="feat"><span class="d">▸</span><span class="cn">多人:Host 权威 + Supabase Realtime / 本机多窗口,共享同一座世界</span></div>
+        <div class="feat"><span class="d">▸</span><span class="cn">素材合规:像素宠物用 CC0/免费商用授权,自托管 OFL 像素中文字体,公开仓干净可发布</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 世界观 -->
+  <section class="slide" id="s6" style="--acc:var(--c-gold)">
+    <div class="wrap">
+      <div class="sn cn-k"><b>06</b> 世界观 · WORLDVIEW</div>
+      <h2 class="cn">「<span class="em">夜间动物园</span>」的一群人</h2>
+      <p class="lead cn">十位在新加坡留学的年轻人,组了个叫"夜间动物园"的群;他们化作 OCWORLD 的居民,在海边继续各自的日子——话少的小智、中二社畜范范兔、治愈熊熊、文艺鹿鹿鹅、美食党猪猪仔、高冷理科冰冰雁、INFP 杏子、靠谱许恒、动手派俊烨、温柔的小树老师。</p>
+      <div class="figrow">
+        <div class="fig cap"><img src="media/ocworld-photo.jpg" alt="OCWORLD 合照馆"/><span class="capt">合照馆 · 全员宝丽来</span></div>
+        <div class="fig cap"><img src="media/ocworld-worldmap.jpg" alt="OCWORLD 全图"/><span class="capt">全图 · 8 区域可迁移</span></div>
+      </div>
+      <p class="lead cn" style="margin-top:20px"><b style="color:var(--white)">世界法则</b>:① 记忆会留下 ② 世界自己运转 ③ 温柔会累积。</p>
+    </div>
+  </section>
+
+  <!-- 07 路线图 -->
+  <section class="slide" id="s7" style="--acc:var(--c-green)">
+    <div class="wrap">
+      <div class="sn cn-k"><b>07</b> 进展 · 路线图</div>
+      <h2 class="cn">已跑通的,与<span class="em">下一步</span></h2>
+      <div class="road">
+        <div class="rcol done">
+          <h3 class="cn"><span class="dot"></span>已完成 · 可玩</h3>
+          <ul class="cn">
+            <li>创建 OC → 化身入世 → 世界成长 全链路打通</li>
+            <li>10 居民自运转社会 + 626×2 双语原创台词</li>
+            <li>12 宠物 + ✦闪光变体 + 随行/取消跟随/选择</li>
+            <li>宠物图鉴(剪影/收集进度)· 合照馆 · 全图旅行</li>
+            <li>中英一键切 · 音效 · 生态化野生分布</li>
+            <li>双语 README + Demo,GitHub 公开可跑</li>
+          </ul>
+        </div>
+        <div class="rcol next">
+          <h3 class="cn"><span class="dot"></span>下一步 · 路线</h3>
+          <ul class="cn">
+            <li>🕹️ GAMEX 游戏厅:世界内嵌复古掌机小游戏门户</li>
+            <li>图鉴集齐奖励 · 收服连锁 · 每日"闪光区"</li>
+            <li>护照上链 & 记忆金库可验证导出</li>
+            <li>创作者市集:角色/皮肤/世界可组合流通</li>
+            <li>移动端手感打磨 + 全球多人房间</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 愿景 / Ask -->
+  <section class="slide" id="s8" style="--acc:var(--red)">
+    <div class="wrap">
+      <div class="sn cn-k"><b>08</b> 愿景 · THE ASK</div>
+      <h2 class="cn">让角色,<span class="em">走得比一个聊天窗口更远</span></h2>
+      <p class="lead cn">我们在造一个"人人可拥有一个会成长的 AI 生命"的世界。现在它已经能玩、能看、能带走——欢迎现场体验、共创、或一起把它推向更大的世界。</p>
+      <div class="cta">
+        <a class="btn primary cn" href="/world/?visit=1" target="_blank">▶ 现场体验 OCWORLD(只读观光)</a>
+        <a class="btn ghost cn" href="/web.html#/create" target="_blank">✦ 创建你的 OC</a>
+        <a class="btn ghost mono" href="https://github.com/KINGKAZMAX/ZEALWISH-WEB3" target="_blank">GitHub 仓库</a>
+      </div>
+      <div class="foot">ZEALWISH · OCWORLD　—　Create · Grow · Own your AI character.　钱包主权 · 持续记忆 · 共创即拥有</div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
