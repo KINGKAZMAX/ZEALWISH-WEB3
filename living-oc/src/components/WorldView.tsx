@@ -1157,6 +1157,7 @@ export default function WorldView() {
                     <li>伙伴们会自己相遇、说悄悄话、头顶冒 ♥ —— 一个自运转的小社会</li>
                   </ul>
                 )}
+                <div className="world-help-lore">{L('「这个世界在你离开时也在生长:潮汐照涨,浆果照熟,GAMEX 的灯从不熄灭。」', '"This world keeps growing while you\'re away — tides rise, berries ripen, and the GAMEX arcade never turns off its lights."')}</div>
                 <button className="world-help-go" onClick={dismissHelp}>{L('开始 ▸', 'Start ▸')}</button>
               </>
             )}
