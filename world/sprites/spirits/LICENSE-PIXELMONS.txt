@@ -1,0 +1,10 @@
+Pet sprites in this directory: "Pixel Mons" (free set) by Akoro
+Source: https://akoro.itch.io/pixel-mons-52-monsters-size-24x24
+
+License terms (as stated by the author on the asset page):
+- You can use/modify this asset for personal and commercial purposes.
+- Credit is not required but would be appreciated. (We credit Akoro — thank you!)
+- You cannot resell this asset as is.
+
+These files are 24x24 sprites with a 4-frame idle animation, sliced from the
+free spritesheet into per-species horizontal strips (96x24). No other changes.
