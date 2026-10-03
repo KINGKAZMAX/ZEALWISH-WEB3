@@ -1051,7 +1051,7 @@ export default function WorldView() {
             <button className="hud-btn live" onClick={() => setLive(true)}>{L('真 LLM/链', 'Real LLM')}</button>
             <button className={'hud-btn' + (bgmOn ? ' on' : '')} onClick={() => setBgmOn(toggleBgm())} title={L('温馨 8-bit 背景音乐', 'Cozy 8-bit BGM')}>♪ BGM {bgmOn ? L('开', 'On') : L('关', 'Off')}</button>
             <button className="hud-btn" onClick={() => setShowHelp(true)} title={L('玩法说明', 'How to play')}>?</button>
-            <button className="hud-btn" title={L('复制只读观光链接,发给朋友来串门', 'Copy read-only tour link for friends')} onClick={() => { const url = window.location.origin + '/world/?visit=1'; try { void navigator.clipboard?.writeText(url); } catch { /* ignore */ } window.prompt(L('把这个只读观光链接发给朋友来串门:', 'Send this read-only tour link to a friend:'), url); }}>{L('分享观光', 'Share tour')}</button>
+            <button className="hud-btn" title={L('复制只读观光链接,发给朋友来串门', 'Copy read-only tour link for friends')} onClick={() => { const url = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '') + '/world/?visit=1'; try { void navigator.clipboard?.writeText(url); } catch { /* ignore */ } window.prompt(L('把这个只读观光链接发给朋友来串门:', 'Send this read-only tour link to a friend:'), url); }}>{L('分享观光', 'Share tour')}</button>
             <select className="hud-sel" value={FONTS.find((f) => f.css === font)?.id ?? FONTS[0].id} title={L('选择字体', 'Font')} onChange={(e) => { const f = FONTS.find((x) => x.id === e.target.value) ?? FONTS[0]; setFont(f.css); try { localStorage.setItem('oc-world-font', f.id); } catch { /* ignore */ } }}>
               {FONTS.map((f) => <option key={f.id} value={f.id}>{L('字', 'Font')} · {L(f.name, f.en)}</option>)}
             </select>

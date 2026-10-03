@@ -68,3 +68,7 @@ living-oc/public/fonts/*
 !living-oc/public/fonts/README.md
 !living-oc/public/fonts/pixel.woff2
 !living-oc/public/fonts/pixel.OFL.txt
+
+# macOS AppleDouble / exFAT 拷贝垃圾(LaCie 移动硬盘):资源叉文件,永不入库
+._*
+__MACOSX/

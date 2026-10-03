@@ -1152,7 +1152,7 @@ function CreateView({ identity, wallet, onSaveIdentity, onGeneratePortrait, port
                 onClick={() => setSprite(b.id)}
                 style={{
                   width: 42, height: 90, padding: 0, cursor: 'pointer', overflow: 'hidden',
-                  borderRadius: 8, background: '#0d0d10 no-repeat 0px 3px', backgroundImage: `url(/world/sprites/chr-${b.id}.png)`,
+                  borderRadius: 8, background: '#0d0d10 no-repeat 0px 3px', backgroundImage: `url(world/sprites/chr-${b.id}.png)`,
                   backgroundSize: 'auto 84px', imageRendering: 'pixelated',
                   border: sprite === b.id ? '2px solid #ff2d2d' : '1px solid rgba(255,255,255,.18)'
                 }}
@@ -1597,7 +1597,7 @@ function WorldView({ activeScene, signedPassport, portraitState, onApplySkin, on
   const skinBusy = portraitState === 'rendering' || portraitState === 'slow';
   // If Create just handed off a character ("spawn as pixel avatar"), pass ?spawn=<ts> so the embedded world spawns as it
   const spawnTs = (() => { try { return JSON.parse(localStorage.getItem(WORLD_SPAWN_KEY) || 'null')?.ts || null; } catch { return null; } })();
-  const worldSrc = '/world/?embed=1' + (spawnTs ? `&spawn=${spawnTs}` : '');
+  const worldSrc = 'world/?embed=1' + (spawnTs ? `&spawn=${spawnTs}` : '');
 
   return (
     <>
@@ -1611,7 +1611,7 @@ function WorldView({ activeScene, signedPassport, portraitState, onApplySkin, on
             <div className="code mono">00 / LIVING OC · OCWORLD</div>
             <h2>ENTER OCWORLD</h2>
           </div>
-          <a className="button-secondary edge" href="/world/" target="_blank" rel="noopener noreferrer">OPEN FULLSCREEN ⤢</a>
+          <a className="button-secondary edge" href="world/" target="_blank" rel="noopener noreferrer">OPEN FULLSCREEN ⤢</a>
         </div>
         <div className="living-embed-frame">
           <iframe src={worldSrc} title="LIVING OC · OCWORLD" loading="lazy" allow="autoplay"></iframe>

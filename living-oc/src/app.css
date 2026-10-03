@@ -386,7 +386,8 @@ html.oc-embed .world-fs{height:100vh}
 .talk-next{position:absolute;right:14px;bottom:11px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid var(--gba-navy);animation:talkblink 1.05s steps(1,end) infinite}
 @keyframes talkblink{0%,55%{opacity:1}55.01%,100%{opacity:0}}
 /* 自托管开放许可像素中文字体:把 OFL 字体的 woff2 放到 public/fonts/pixel.woff2 即生效(见该目录 README);未放置则字体选「像素」时回退等宽,优雅降级 */
-@font-face{font-family:'PixelCJK';src:url('/world/fonts/pixel.woff2') format('woff2');font-display:swap}
+/* 注意:相对路径按「构建后 CSS 位于 world/assets/」书写(../fonts = world/fonts),根路径部署与 GitHub Pages 子路径部署均可用 */
+@font-face{font-family:'PixelCJK';src:url('../fonts/pixel.woff2') format('woff2');font-display:swap}
 .net-card{width:min(460px,88vw)}
 .net-note{font-size:13px;line-height:1.6;color:var(--muted);margin-bottom:12px}
 .net-note b{color:var(--text)}
