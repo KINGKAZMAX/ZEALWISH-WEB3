@@ -56,6 +56,7 @@ const PLAYER_SPRITES = ['red_normal', ...NPC_CHARS];
 const NAMED_SPRITE: Record<string, string> = {
   '范范兔': 'fanfan', '熊熊': 'xiongxiong', '鹿鹿鹅': 'lulu', '猪猪仔': 'zhuzhu', '冰冰雁': 'bingbing', '杏子': 'beauty',
   '许恒': 'youngster', '俊烨': 'boy', '小树老师': 'beauty',
+  '小半': 'xiaoban', '小漁': 'xiaoyu',
 };
 // 戴眼镜的角色:渲染时在面部叠一副像素眼镜(见 drawResident 中的 GLASSES 叠加)
 const GLASSES = new Set<string>(['许恒', '俊烨']);

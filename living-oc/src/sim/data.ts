@@ -32,6 +32,8 @@ export const SEED_PERSONAS: SeedPersona[] = [
   { name: '许恒', handle: '@xuheng', bio: '黑衣戴眼镜的冷静男生;话不多却把事情默默搞定的技术担当,偶尔一句干巴巴的冷幽默,不煽情但都记在心里。', arche: 'worker' },
   { name: '俊烨', handle: '@junye', bio: '绿工装戴眼镜的动手派;爱捣鼓、爱修东西,谁的东西坏了都找他,务实憨厚又热心。', arche: 'creator' },
   { name: '小树老师', handle: '@xiaoshu_ss', bio: '長髮白裙的溫柔老師,像大家的大姐姐與引路人;說話用繁體,語氣溫暖、會在你迷路焦慮時輕輕點醒。', arche: 'helper' },
+  { name: '小半', handle: '@xiaoban', bio: '藍裙長發的安靜男生,總在數據港灣看船發呆;說話慢半拍但很溫柔,畫得一手好像素畫,隨身帶著速寫本。', arche: 'creator' },
+  { name: '小漁', handle: '@xiaoyu', bio: '雙馬尾的白裙少女,藍色絲帶是她出海回來的記號;像海風一樣愛跑愛笑,養了一缸水母,夢想看遍全世界的海。', arche: 'socialite' },
 ];
 
 export const ARCHE_TRAITS: Record<Archetype, Traits> = {
